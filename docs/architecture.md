@@ -4,6 +4,23 @@ Status: unfinished checkpoint; further scientific implementation awaits plan
 approval. The [foundation design](development/features/foundation/design.md)
 contains requirements, reuse assessments, evidence, API proposal and milestones.
 
+**Table of contents**
+
+- [Checkpoint and target overview](#checkpoint-and-target-overview)
+- [Planned upstream signal path and workbenches](#planned-upstream-signal-path-and-workbenches)
+- [Planned code layout](#planned-code-layout)
+- [Configuration and source](#configuration-and-source)
+- [PRBS block architecture](#prbs-block-architecture)
+- [CM-US-TX block architecture](#cm-us-tx-block-architecture) and [TX stage index](#internal-stage-sequence)
+- [Deferred burst modes and preambles](#deferred-burst-modes-and-preambles)
+- [Channel Simulator](#channel-simulator-unity-stub-first) and [channel stage index](#channel-stage-sequence)
+- [RxMER input](#rxmer-input)
+- [CMTS-RX stages](#cmts-rx-stages)
+- [Shared QAM Analyzer and Spectrum Analyzer](#shared-qam-analyzer-and-spectrum-analyzer)
+- [Ownership, results and acceptance](#ownership-results-and-acceptance)
+
+## Checkpoint and target overview
+
 | Current owner | Responsibility | Status |
 | --- | --- | --- |
 | `crates/ldpc` | Upstream QC matrices, sparse systematic encoder, shortening, bounded layered soft decoder | Implemented; normative table review incomplete |
@@ -25,6 +42,7 @@ Planned top-level path (expanded in the workbench section below):
 flowchart LR
     PRBS[PRBS source] --> TX[CM-US-TX]
     TX --> CH[Channel Simulator: unity first]
+    MER[RxMER input: optional] -. accepted residual model, later .-> CH
     CH --> RX[CMTS-RX]
     CFG[Virtual CMTS configuration] -. configuration .-> TX
     CFG -. configuration .-> RX
@@ -58,6 +76,9 @@ Use the same left-to-right organization as the reference workbench:
 **PRBS → CM-US-TX → Channel Simulator → CMTS-RX → PRBS-RX/results**.
 CM-US-TX and CMTS-RX open their own stage workbenches. Test-point actions open
 the shared **QAM Analyzer** or **Spectrum Analyzer (SA)** for the selected tap.
+The separate [RxMER input](#rxmer-input) sits above the
+[Channel Simulator](#channel-simulator-unity-stub-first) and feeds its future
+residual-power planner. Accepting a measurement does not enable an impairment.
 The direction changes to CM transmission and CMTS reception; upstream FEC,
 framing, pilot and interleaving rules determine the actual stage order.
 
@@ -78,7 +99,7 @@ validation and bounded orchestration stay Rust; adapters present owned results.
 | --- | --- | --- |
 | `Cargo.toml` | Extend (existing) | Register the future PHY member/dependency when implemented; update `Cargo.lock` through Cargo. |
 | `crates/phy/Cargo.toml`, `crates/phy/src/lib.rs`, `crates/phy/src/error.rs` | Create (planned) | Rust PHY crate, module declarations/public domain surface and typed stage errors. |
-| `crates/phy/src/configuration/mod.rs` | Create (planned) | Accepted virtual-CMTS configuration, profiles, waveform geometry, burst modes and Pre-Eq banks. |
+| `crates/phy/src/configuration/mod.rs` | Create (planned) | Accepted virtual-CMTS/profile/waveform/burst/Pre-Eq configuration and separate channel/RxMER selections. |
 | `crates/phy/src/types/mod.rs` | Create (planned) | Register `bits.rs`, `iq.rs` and `samples.rs` in this directory for bit ranges, complex cells and indexed sample blocks. |
 | `crates/phy/src/source/mod.rs` | Create (planned) | PRBS source and independent verifier. |
 | `crates/phy/src/resources/mod.rs` | Create (planned) | Shared grant grids, pilot roles/patterns, block partitioning and cell permutations. |
@@ -87,6 +108,7 @@ validation and bounded orchestration stay Rust; adapters present owned results.
 | `crates/phy/src/signal_processing/mod.rs` | Create (planned) | Shared QAM/transform/coefficient-bank arithmetic and focused cyclic-extension, transmit-window and overlap owners. |
 | `crates/phy/src/transmitter/mod.rs` | Create (planned) | Compose the eight TX stage adapters. |
 | `crates/phy/src/channel/mod.rs` | Create (planned) | Unity sample transport and future ordered channel stages. |
+| `crates/phy/src/measurements/mod.rs` | Create (planned) | Register upstream RxMER observation/admission types; future measured inputs retain separate source/reference semantics. |
 | `crates/phy/src/receiver/mod.rs` | Create (planned) | Compose the nine RX stage adapters without source truth. |
 | `crates/phy/src/instruments/mod.rs` | Create (planned) | Bounded passive observations and shared QAM/SA calculations. |
 | `crates/phy/src/simulation/mod.rs` | Create (planned) | Run lifecycle, source associations and independent comparisons. |
@@ -2204,30 +2226,356 @@ closed loop remain unfinished and require the existing approval/prerequisites.
 
 ### Channel Simulator: unity stub first
 
+Status: **staged architecture defined; implementation remains planned**.
+The Channel Simulator consumes the actual indexed
+[TX-08 output](#tx-08-sample-assembly) and delivers received samples to CMTS-RX.
+Its initial mode is exact unity, independent of whether an RxMER file is open.
+The [channel design/checklist](development/features/channel-simulator/design.md)
+separates completed boundary/input architecture from pending impairment designs.
+
 **Planned code paths (repository-relative).**
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/channel/unity.rs` | Create (planned) | Exact bounded pass-through of sample blocks and metadata, with no random state. |
-| `crates/phy/src/channel/mod.rs` | Create (planned) | Channel boundary/dispatch; reject nonidentity configuration until supported. |
-| `crates/phy/tests/unity_channel.rs` | Create (planned) | Bit-exact sample/metadata transport, arbitrary chunking and rejection cases. |
+| `crates/phy/src/configuration/channel.rs` | Create (planned) | Accepted mode, enabled stage order, budgets and support-state validation. |
+| `crates/phy/src/channel/mod.rs` | Create (planned) | Register focused channel owners; dispatch unity or explicitly supported future models. |
+| `crates/phy/src/channel/pipeline.rs` | Create (planned) | Input identity/cursor validation, transactional stage execution and bounded output lifecycle. |
+| `crates/phy/src/channel/unity.rs` | Create (planned) | Exact finite sample/metadata transfer, with no RNG or numerical rewriting. |
+| `crates/phy/src/types/samples.rs` | Create (planned) | Same indexed blocks and burst/tail/guard/partial validity as TX-08 and RX input. |
+| `crates/phy/tests/channel_pipeline.rs` | Create (planned) | Admission/order/budget/backpressure and lifecycle acceptance. |
+| `crates/phy/tests/unity_channel.rs` | Create (planned) | Bit-identical I/Q/metadata, chunk invariance and observer neutrality. |
 
+#### Channel stage sequence
 
-The Channel Simulator remains a visible stage with input/output test points even
-when it has no impairment controls. Its first future implementation is an exact
-pass-through: `y[n] = x[n]`, unit gain, zero delay and zero added samples/noise.
-Preserve sample rate, complex values, sample indices, burst boundaries and
-normalization. Input and output snapshots identify the same transported samples;
-do not regenerate them from symbols or change them according to chunk size.
-No random draws, filtering, resampling, quantization, clipping, jitter, frequency
-offset or phase change occurs in this baseline. There is no impairment engine yet.
+The table is the linked stage index for the diagram. "Boundary defined" is an
+architecture status; all channel-stage scientific code remains unimplemented. Future-stage
+placeholders reserve ownership without claiming their detailed algorithms.
 
-The stub exposes one bounded sample-processing boundary and retained input/output
-observations. Reserve an ordered channel-stage contract for later complex response,
-AWGN, ingress/impulsive noise and timing/frequency/phase models. Unsupported
-nonidentity configuration must be rejected until implemented. An empty stage list
-must remain equivalent to the unity stub. Keep truth parameters in channel/metrics
-ownership; never pass them to CMTS-RX for ordinary channel correction.
+| Stage | Responsibility / output | Architecture and initial mode |
+| --- | --- | --- |
+| [CH-01: Input admission](#ch-01-input-admission) | Validate immutable samples, timing/identity and bounded execution request. | Boundary defined; required. |
+| [CH-02: Unity transport](#ch-02-unity-transport) | Preserve the admitted waveform/reference plane exactly. | Boundary defined; initial transport owner. |
+| [CH-03: Channel response](#ch-03-channel-response) | Future deterministic response/filter with explicit delay/tail semantics. | Placeholder; disabled. |
+| [CH-04: Residual error](#ch-04-residual-error) | Future RxMER-conditioned or separately selected controlled noise synthesis. | Placeholder; disabled. |
+| [CH-05: Timing and phase](#ch-05-timing-and-phase) | Future timing/frequency/phase effects with an explicit clock contract. | Placeholder; disabled. |
+| [CH-06: Output and observations](#ch-06-output-and-observations) | Commit/deliver indexed samples and passive SA observations with completion status. | Boundary defined; required. |
+
+```mermaid
+flowchart LR
+    TX[TX-08 emitted samples] --> C1[CH-01 admission]
+    C1 --> C2[CH-02 unity transport]
+    C2 --> C6[CH-06 output and observations]
+    C6 --> RX[CMTS-RX received samples]
+    INPUT[RxMER input] -. derived residual powers, later .-> C4[CH-04 residual error]
+    C2 -. future enabled order .-> C3[CH-03 channel response]
+    C3 -.-> C4
+    C4 -.-> C5[CH-05 timing and phase]
+    C5 -.-> C6
+```
+
+The solid path is the baseline. A later nonunity mode uses one ordered path
+through its enabled stages; it does not run a second parallel channel and add
+another copy of the transmitted signal. CH-02 is the identity starting boundary.
+An empty impairment list is exactly unity. Until a stage is implemented and
+accepted, enabling it is an unsupported-mode error, never a silent bypass.
+No read-only input preview runs a channel or consumes source/noise state.
+
+#### RxMER input
+
+[Return to channel stages](#channel-stage-sequence).
+
+Status: **input architecture defined; import, playback and UI remain planned**.
+Use the reference workbench's separate RxMER input concept: select one or more
+local inputs, inspect original/combined values, choose policy, then Apply an
+accepted immutable draft. A future focused editor/viewer opens from this input;
+it is independent of transmitter settings, channel Start and receiver metrics.
+The first unity run needs no RxMER. Loading/applying observations alone leaves
+channel mode unchanged; a future measured-residual mode must be selected
+explicitly and supported before it can run.
+
+**Planned code paths (repository-relative; all create, planned).**
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/measurements/rxmer.rs` | Create (planned) | Typed original upstream observations, provenance, reference and exact grid/coverage validation. |
+| `crates/phy/src/configuration/rxmer.rs` | Create (planned) | Accepted source selection, association/time tolerance and explicit playback policy. |
+| `crates/phy/src/signal_processing/residual_power.rs` | Create (planned) | Single Rust owner of dB-to-error-power conversion, power combination and equivalent-dB preview. |
+| `crates/phy/src/channel/measurement_playback.rs` | Create (planned) | Immutable symbol-scheduled power queries with source IDs/weights and no RNG. |
+| `crates/morgana/src/inputs/mod.rs` | Create (planned) | Register bounded format adapters around the shared typed Rust models. |
+| `crates/morgana/src/inputs/rxmer.rs` | Create (planned) | Preserve original capture bytes; identify/decode only verified upstream formats and versioned decoded inputs. |
+| `crates/phy/tests/rxmer_input.rs` | Create (planned) | Reference/identity/grid/null/range and atomic-admission cases. |
+| `crates/phy/tests/measurement_playback.rs` | Create (planned) | Independent power-average/schedule/interpolation, bounds and immutable-query cases. |
+| `crates/morgana/tests/rxmer_import.rs` | Create (planned) | Source-format fixtures, exact provenance and malformed/unsupported/bounded import cases. |
+
+The existing planned measurement/configuration/signal-processing/channel roots
+register the PHY leaves. Future facade registration extends
+`crates/morgana/src/lib.rs` (existing) only after shared Rust operations exist.
+There is no new capture dependency or GUI implementation now. Original bytes
+belong to the application/import adapter; numerical owners receive typed data,
+not file paths. Any later source adaptation retains licenses and attribution.
+
+**Upstream observation and association.** PHY I20 §9.4.8, PDF p196 defines
+upstream RxMER from the equalized received probe and known ideal BPSK value.
+It is a CMTS measurement for a particular CM/user and upstream channel. Preserve
+that endpoint/reference explicitly; a downstream CM RxMER capture is not an
+upstream measurement just because both arrays have dB values.
+
+Keep source name/kind/format version, original byte count and SHA-256, original
+capture epoch, CM/user/channel identity, reference-plane declaration, physical
+first-bin/count/frequency origin/spacing and every optional dB reading. Retain
+original missing entries/exclusion masks and full resolution, independent of
+chart decimation. Do not derive IDs/times from filenames or rewrite capture
+epochs to fit a synthetic run. Synthetic inputs must be labeled synthetic,
+with an explicit grid/reference, rather than forged measured provenance.
+
+Match the accepted upstream profile/geometry: N=2048/4096, 50/25 kHz spacing,
+physical-bin/frequency mapping and CM/user/channel association. Preserve a
+captured subgrid as supplied, then map exact physical coordinates; do not pack
+active carriers, shift the origin to the first active bin, interpolate frequency
+or silently extrapolate. Required active grant carriers, including known pilots
+and complementary data, need valid readings for a model using those cells.
+Excluded/inactive gaps may remain missing; a missing required value is an
+admission error, not zero error power, zero dB or a guessed neighbor value.
+
+Measured association requires the source identities/reference and epoch needed
+by the selected policy. A readable but unassociated capture may be inspected
+without becoming ready for simulation. Apply validates the whole selection,
+explicit capture-time tolerance and geometry generation atomically; rejected
+drafts leave prior accepted inputs intact. A configuration change invalidates
+derived compatibility/results and requires revalidation. Applying edits affects
+a fresh run, not the measurements frozen into an active or paused run.
+
+Binary support is conditional on a verified upstream type/version/scale/null
+contract and decoder fixtures. Do not reuse downstream file-type numbers,
+DPD/PLC metadata or receiver identities. Rust typed inputs come first; decoded
+JSON needs an explicit versioned schema and the same validation. Unsupported
+binary/JSON types fail clearly. Actual upstream capture format support remains
+RXMER-FORMAT-01 work, not a capability implied by this input diagram. No live
+SNMP/TFTP/device acquisition is introduced.
+
+**Selection and temporal policy.** Define dimensionless error-power ratio
+`rho[k] = 10^(-mer_db[k]/10)` at the declared equalized probe reference.
+Convert finite present readings with numeric overflow/underflow checks; retain
+the original dB array. A normalized power preview is derived data, not an altered
+measurement or an output noise waveform.
+
+| Policy | Derived power and scheduling contract |
+| --- | --- |
+| Single | Exactly one selected capture; fixed rho for the run. |
+| Average | One or more compatible captures; equal-capture arithmetic mean of rho at each required carrier. Report equivalent dB as `-10*log10(mean_rho)`. |
+| Hold | At least two explicitly ordered captures at strictly increasing configured physical-symbol offsets; hold the current rho until the next offset. |
+| Interpolate | Same explicit schedule; interpolate rho linearly between neighboring capture offsets, never dB. Hold the final capture after its offset. |
+
+For sequence policies the first offset is zero. A positive interval in symbols
+may generate the offsets with checked multiplication; all transitions must fit
+the accepted observation/burst interval. Original capture times and synthetic
+playback offsets remain separate. Optional original-time playback would need
+an explicit epoch-to-symbol policy before support; timestamps are not silently
+reinterpreted. Queries return derived powers, contributing source identities
+and weights without changing frames, cursors or RNG. At a transition boundary
+the newly selected capture applies exactly once; prefix/useful/tail scheduling
+uses the same `(N+C)/fs` cadence as TX-08, independent of output chunk size.
+
+Power averaging here is an engineering model-combination policy. It does not
+replace §9.4.8's specified dB statistics for its CMTS performance test. Do not
+combine different grids/users/reference planes or drop missing required values
+to make a mean. The future preview shows original captures, derived effective
+power/equivalent dB, source ordering and selected symbol; missing-value breaks
+remain visible. Charts may be decimated, simulation data may not.
+
+Proposed application bounds are 1..256 selected captures, at most 4096 readings
+per capture and 1,048,576 selected readings total; 16 MiB per input and 64 MiB
+original bytes per batch. These are resource budgets, not DOCSIS limits. Check
+lengths before allocation and schedule arithmetic before acceptance; cancel
+imports without replacing accepted state. Numerical model admission also needs
+an explicit finite residual-power budget; extreme readings are not clamped to
+fit it. A valid observation may remain inspectable when a particular model
+cannot represent its power. Format fixtures must verify these bounds are usable.
+
+**Model and metric boundaries.** A probe RxMER array does not specify error
+phase, impulse timing, time correlation, RF noise PSD or an exact channel H.
+The later CH-04 Gaussian model is an explicit approximation, not playback of the
+original RF event. Treat selected RxMER as its total residual-error budget;
+do not also add an implicit thermal/system floor or reinject an impairment
+already included in that input. Controlled AWGN is a separate selection until
+an explicit independent-power composition contract is designed.
+
+Channel truth, chosen powers, seeds and applied H/C stay in channel/planning
+and independent diagnostics. Normal CMTS-RX receives waveform/configuration
+and estimates effective C×H from received pilots. Input targets do not become
+receiver noise estimates, observed RxMER, decoded BER or FEC results. Reusing
+probe statistics for scheduled data requires declared normalization/role and
+stationarity assumptions. Simulated data-reference/pilot/decision metrics must
+retain their own names; normative probe measurement remains a separate future
+mode. Rust owns import validation, arithmetic, playback and eventual public API;
+future Python/UI adapters only select inputs and display owned results.
+
+Acceptance will cover exact original bytes/hash/grid/nulls, wrong endpoint/
+identity/reference, incomplete active coverage, unsupported formats and atomic
+failure; 10 dB and 20 dB inputs must average to power 0.055 rather than 15 dB.
+Test single/average and both sides of hold/interpolation boundaries, final hold,
+schedule overflow, stale generations and pure repeated queries. Ensure disabled
+RxMER leaves unity output bit-identical and never starts or seeds a run.
+
+Source: CM-SP-PHYv3.1-I20-230419 §9.4.8, PDF p196, rendered and visually
+reviewed for probe/equalization/endpoint meaning and the distinct performance
+statistics context. Exact-grid association, power playback, budgets and editor
+lifecycle are local engineering contracts informed by read-only reference review.
+No downstream field-guide thresholds, binary formats or supplied-H receiver
+behavior are promoted to upstream requirements.
+
+#### CH-01: Input admission
+
+[Return to channel stages](#channel-stage-sequence).
+
+Status: **boundary architecture defined; implementation planned**.
+
+| Planned path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/configuration/channel.rs` | Create (planned) | Freeze mode, sample/work limits and enabled stage order. |
+| `crates/phy/src/channel/pipeline.rs` | Create (planned) | Validate input metadata/cursor before any state or RNG changes. |
+| `crates/phy/src/types/samples.rs` | Create (planned) | Preserve shared sample/timing/validity types. |
+| `crates/phy/tests/channel_pipeline.rs` | Create (planned) | Invalid identity/grid/range/budget and unchanged-state cases. |
+
+Accept finite complex blocks, fs, absolute first index, exact length, burst/run/
+configuration identity and TX-08 useful/tail/guard/partial metadata. Empty blocks
+are no-op only, not end-of-stream. Require contiguous indices within a declared
+stream; reject unexplained gaps, overlaps, duplicate ranges, stale generations,
+unsupported units/clock and overflowing end indices. A new declared burst is
+an explicit boundary. Do not synthesize missing gaps as silence.
+Bound blocks to at most 65,536 samples (application choice) and cumulative run
+work/output/retention to accepted budgets. Admit storage/output capacity before
+processing. Unity does not require frequency-grid captures, RxMER or H. A request
+enabling unimplemented stages fails before consuming any TX block. Acceptance
+covers invalid finite/range/identity cases and transactionally preserved state.
+
+#### CH-02: Unity transport
+
+[Return to channel stages](#channel-stage-sequence).
+
+Status: **boundary architecture defined; implementation planned**.
+
+| Planned path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/channel/unity.rs` | Create (planned) | Identity transport of validated finite samples/metadata. |
+| `crates/phy/tests/unity_channel.rs` | Create (planned) | Bit-pattern equality, metadata preservation and chunk invariance. |
+
+The initial channel is `y[n] = x[n]`: unit gain, zero delay, no added/removed
+samples and no random state. Preserve sample bit patterns, including finite
+signed zero, plus indices, rate, normalization, burst boundaries, tail/guards
+and partial validity. Ownership may move or a bounded snapshot may copy bytes;
+do not recompute samples by multiplication, FFT/IFFT, quantization or symbol
+regeneration. Grouping blocks differently cannot change the concatenated
+waveform. No filter, resampling, clipping, noise, jitter, frequency offset or
+phase rotation is applied. Tests compare bits and metadata, not approximate
+float equality alone. Empty impairment configuration must take this same path.
+
+#### CH-03: Channel response
+
+[Return to channel stages](#channel-stage-sequence).
+
+Status: **placeholder; detailed architecture and implementation planned**.
+
+| Planned path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/channel/response.rs` | Create (planned) | Future response/filter adapter with explicitly declared domain and delay. |
+| `crates/phy/src/signal_processing/channel_response.rs` | Create (planned) | One Rust owner for the eventual accepted response operation. |
+| `crates/phy/tests/channel_response.rs` | Create (planned) | Independent response/delay/history and unity-limit acceptance. |
+
+Reserve deterministic H or a time-domain response with explicit units, frequency
+origin, causal delay/history, warm-up/tail and chunk invariance. A diagonal
+symbol model and continuous convolution are different support modes. Measured
+TX Pre-Eq C is not H; inferring H from C requires a separately justified model.
+Detailed mode choice, response admission and timing remain ARCH-CH-03 work.
+This stage is disabled in unity; the future dispatcher must reject nonidentity
+settings until the selected response operation is supported.
+
+#### CH-04: Residual error
+
+[Return to channel stages](#channel-stage-sequence).
+
+Status: **placeholder; detailed synthesis architecture and implementation planned**.
+
+| Planned path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/channel/residual.rs` | Create (planned) | Future sample-stream residual synthesis/composition adapter. |
+| `crates/phy/src/channel/measurement_playback.rs` | Create (planned) | Shared RxMER-derived power query owner defined above. |
+| `crates/phy/src/signal_processing/residual_power.rs` | Create (planned) | Shared conversion/combination arithmetic; no duplicate adapter math. |
+| `crates/phy/src/signal_processing/noise.rs` | Create (planned) | Future bounded Rust Gaussian draws; algorithm/version/order need detailed CH-04 design. |
+| `crates/phy/src/signal_processing/transform.rs` | Create (planned) | Same unitary upstream numerical transform owner as TX-07. |
+| `crates/phy/src/signal_processing/cyclic_extension.rs` | Create (planned) | Same pure cyclic-copy owner as TX-08. |
+| `crates/phy/src/signal_processing/transmit_window.rs` | Create (planned) | Same immutable upstream taper owner as TX-08. |
+| `crates/phy/src/signal_processing/overlap_add.rs` | Create (planned) | Same overlap primitive as TX-08 with independent residual-stream state. |
+| `crates/phy/tests/channel_residual.rs` | Create (planned) | Independent power/reference, seeded reproducibility and stream acceptance. |
+
+Reserve an explicit controlled-noise selection or the accepted
+[RxMER input](#rxmer-input), never both by implicit default. A proposed first
+measured mode uses conditionally independent complex Gaussian residuals at an
+aligned symbol grid, with a declared ideal-cell power reference and I/Q variance
+split. It must synthesize actual contiguous residual samples with upstream
+IFFT/extension/window/overlap and then compose them with the transported waveform;
+changing receiver QAM points or LLRs is not channel simulation.
+
+ARCH-CH-04 must fix power normalization for data/pilot/complementary roles,
+Pre-Eq/response composition, synthesis history/tail, RNG algorithm/version and
+canonical draw ordering before implementation. The simplest initial residual
+acceptance may require unity C/H; any such restriction must be explicit.
+Reuse shared TX-07/TX-08 numerical owners rather than another transform/window
+implementation. Schedule changes preserve source, RNG and overlap history.
+No impulse/noise-correlation process is inferred from RxMER alone. This stage
+stays disabled/rejected until its detailed architecture and acceptance exist.
+
+#### CH-05: Timing and phase
+
+[Return to channel stages](#channel-stage-sequence).
+
+Status: **placeholder; detailed architecture and implementation planned**.
+
+| Planned path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/channel/timing_phase.rs` | Create (planned) | Future timing/oscillator state and sample-domain effect composition. |
+| `crates/phy/tests/channel_timing_phase.rs` | Create (planned) | Independent phase/timing vectors, absolute-clock and pause/chunk cases. |
+
+Reserve separately selected delay, clock/frequency offset and phase processes.
+Their sign/units/reference clock, absolute phase, sample count/index mapping and
+state across pause/reset must be designed under ARCH-CH-05. RxMER arrays do not
+specify these processes. Keep zero-offset unity exact; do not sneak an extra
+resample/delay or random phase into the baseline. Enabled effects must be rejected
+until supported.
+
+#### CH-06: Output and observations
+
+[Return to channel stages](#channel-stage-sequence).
+
+Status: **boundary architecture defined; implementation planned**.
+
+| Planned path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/channel/pipeline.rs` | Create (planned) | Commit valid output and preserve bounded delivery/pause/cancel state. |
+| `crates/phy/src/instruments/observation.rs` | Create (planned) | Shared passive input/output tap and bounded retention owner. |
+| `crates/phy/tests/channel_pipeline.rs` | Create (planned) | Atomic delivery, backpressure, partial results and failure behavior. |
+| `crates/phy/tests/unity_channel.rs` | Create (planned) | Matching input/output/SA intervals and observer neutrality. |
+
+Commit only complete valid blocks to the output queue, with at most one bounded
+ready block and delivery cursor. Return owned immutable snapshots or explicit
+borrows without changing scientific state through observers. Input and output
+SA taps identify actual complex samples at their respective reference planes.
+Unity must match for the same interval/settings; unavailable retained ranges
+are unavailable rather than fabricated zeros or substituted TX data.
+
+Backpressure retains pending output and stops admission; no block is dropped or
+processed twice. Pause retains cursors and future stage state; resume preserves
+sample order. Cancellation/failure retains completed delivery and reports input
+accepted, samples delivered, pending count and partial status. Empty input or
+end of one transport chunk is not finish. Unity adds no tail; normal completion
+requires explicit upstream finish and every TX-08 tail/declared guard sample
+delivered. Future stage drains need stage-specific rules before support.
+
+Channel plan/seed/H/RxMER truth remains in simulation and independent metrics.
+CMTS-RX accepts received samples and its configured grant/timing, never an
+injected target or hidden H/C. Tests cover pause/cancel at different drain
+positions, failed observers and unchanged truth separation. Core Rust operations
+precede matching future Python/UI adapters; no channel implementation is added now.
 
 ### CMTS-RX stages
 

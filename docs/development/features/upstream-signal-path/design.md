@@ -8,6 +8,8 @@ Task: ARCH-01. This request authorizes documentation, not scientific or Qt code.
 - Show PRBS → CM-US-TX → Channel Simulator → CMTS-RX → independent PRBS check.
 - Name ordered TX/RX stages and their state/data boundaries.
 - Keep the first channel a genuine unity pass-through; reserve impairment extension points.
+- Add a separate optional upstream RxMER input for later channel residual models,
+  preserving original observations and distinct input/derived/receiver results.
 - Specify the same shared QAM Analyzer and Spectrum Analyzer interaction model
   as the reference workbench, with upstream metadata and clear reference planes.
 - Preserve upstream normative processing and distinguish planned support from the
@@ -25,6 +27,14 @@ Existing files are identified as reuse/extension; proposed files remain absent.
 Own PRBS generation, configuration, TX/channel/RX, instruments and orchestration
 in Rust; adapters present snapshots. A future neutral shared numerical crate is
 a candidate, not an approved migration of another repository.
+
+The [Channel Simulator design](../channel-simulator/design.md) now expands that
+boundary into six linked stages and a separate
+[RxMER input](../../../architecture.md#rxmer-input). Admission, unity and output
+contracts are defined; response/residual/timing sections remain explicit pending
+placeholders. RxMER input uses the reference selection/power-playback workflow
+with upstream CMTS/user/probe semantics, not downstream DPD/file assumptions.
+The first waveform milestone still requires exact unity without measurements.
 
 Read-only reference inspection: MERLIN architecture, source/PRBS implementation,
 waveform spectrum estimator and QAM/SA instrument adapters at revision

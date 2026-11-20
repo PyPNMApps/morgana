@@ -17,6 +17,10 @@
   [TX-07 IFFT](../architecture.md#tx-07-ifft),
   [TX-08 sample assembly](../architecture.md#tx-08-sample-assembly)
   and [transmitter design/checklist](features/cm-us-tx/design.md)
+- [Channel Simulator architecture](../architecture.md#channel-simulator-unity-stub-first),
+  [channel stage sequence](../architecture.md#channel-stage-sequence),
+  [RxMER input](../architecture.md#rxmer-input)
+  and [channel design/checklist](features/channel-simulator/design.md)
 - [Official checklist](checklist.md)
 - [Foundation design and reuse/specification assessments](features/foundation/design.md)
 - [Checkpoint validation](features/foundation/validation.md)

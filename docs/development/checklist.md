@@ -44,6 +44,21 @@ See [architecture](../architecture.md) and [foundation design](features/foundati
 - [x] ARCH-TX-08: Define upstream CP/RP, extension/taper/overlap, prefix/useful
   origins, tail/guards, bounded chunk emission and planned code/test paths;
   see [TX-08](../architecture.md#tx-08-sample-assembly). Architecture only.
+- [x] ARCH-CH-00: Stage the Channel Simulator with six linked sections, support
+  states and planned files; add the architecture's major-section table of contents.
+  See [channel design](features/channel-simulator/design.md).
+- [x] ARCH-CH-01/02/06: Define sample admission, exact unity transport, output
+  observations and bounded lifecycle. Architecture only; no channel execution.
+- [x] ARCH-RXMER-01: Add the separate upstream RxMER input, original provenance,
+  exact association, power selection/playback and model/metric boundaries;
+  see [RxMER input](../architecture.md#rxmer-input). Implementation remains planned.
+- [ ] ARCH-CH-03: Expand channel response/filter/delay as the next channel
+  architecture stage, with explicit domain, history and drain conventions.
+- [ ] ARCH-CH-04: Expand RxMER-conditioned sample synthesis, power reference,
+  RNG/draw ordering, role/Pre-Eq/H composition and independent acceptance.
+- [ ] ARCH-CH-05: Expand timing/frequency/phase models and sample-clock semantics.
+- [ ] RXMER-FORMAT-01: Verify upstream format/type/units/null handling and lawful
+  fixtures before claiming a binary/decoded capture adapter.
 - [x] ARCH-RANGING-00: Reserve explicit future ranging/preamble and probing modes;
   see [placeholder](../architecture.md#deferred-burst-modes-and-preambles).
 - [x] SETUP-01..03: Adopt generic installer guidance and implement/test explicit
@@ -75,8 +90,10 @@ See [architecture](../architecture.md) and [foundation design](features/foundati
   initially with configured burst timing and received-pilot channel correction.
 - [ ] INSTRUMENTS-01: Add shared Rust QAM/SA collectors and matched TX/channel/RX
   taps from the [signal path architecture](../architecture.md#planned-upstream-signal-path-and-workbenches).
-- [ ] WAVE-CH-02: Add controlled impairments and provenance-preserving measured
-  Pre-Eq inputs after the unity closed loop passes.
+- [ ] RXMER-INPUT-01: Implement typed Rust observations/association and shared
+  power playback; import and future Python/UI adapters follow validated contracts.
+- [ ] WAVE-CH-02: Add approved RxMER residual/response/controlled impairments and
+  provenance-preserving measured Pre-Eq inputs after the unity closed loop passes.
 - [ ] ARCH-RANGING-01: Detail initial/fine-ranging preambles, distinct probing
   waveforms and matching RX acquisition after the scheduled-data unity loop;
   keep these modes unsupported until implemented and validated.

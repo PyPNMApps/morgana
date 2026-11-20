@@ -94,6 +94,7 @@ Windows/macOS execution remain unverified.
 flowchart LR
     SOURCE[PRBS source] --> TX[CM-US-TX]
     TX --> CHANNEL[Channel Simulator: unity first]
+    MER[RxMER input: optional] -. residual model, later .-> CHANNEL
     CHANNEL --> RX[CMTS-RX]
     RX --> VERIFY[Independent PRBS-RX comparison]
     SOURCE -. expected stream only .-> VERIFY
@@ -108,6 +109,9 @@ The first Channel Simulator will pass samples through unchanged. Shared
 **QAM Analyzer** and **Spectrum Analyzer (SA)** views will inspect bounded Rust
 observations at TX, channel and RX test points. Impairments follow the unity
 closed loop. A full MAC, scheduler and downstream waveform are outside scope.
+The planned [RxMER input](docs/architecture.md#rxmer-input) preserves upstream
+measurements and offers single, power-average and scheduled playback policies
+for a later residual model. Loading measurements leaves unity mode unchanged.
 
 The [canonical architecture](docs/architecture.md#planned-upstream-signal-path-and-workbenches)
 defines ordered stages, instrument contracts and ownership. The
