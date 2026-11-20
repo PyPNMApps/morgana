@@ -6,12 +6,18 @@ See [architecture](../architecture.md) and [foundation design](features/foundati
 
 - [x] FOUNDATION-01: Inspect PDE and record selective adoption decisions.
 - [x] FOUNDATION-02: Inspect MERLIN and document reusable/upstream-specific owners.
-- [x] ARCH-01: Define PRBS → CM-US-Tx → unity Channel Simulator → CMTS-RX,
+- [x] ARCH-01: Define PRBS → CM-US-TX → unity Channel Simulator → CMTS-RX,
   ordered processing stages and shared QAM/SA observation contracts. This is
   documentation only; see [design](features/upstream-signal-path/design.md).
 - [x] ARCH-PRBS-01: Define the self-contained PRBS-TX/PRBS-RX block, sequence,
   interfaces, lifecycle, readiness and independent comparison contracts;
   see [PRBS design](features/prbs-source/design.md). Implementation stays planned.
+- [x] ARCH-TX-00: Define the CM-US-TX block, eight internal stages and typed
+  observation boundaries; see [transmitter design](features/cm-us-tx/design.md).
+- [x] ARCH-TX-01: Expand grant framing/FEC selection, source/fill/shortening/pad
+  accounting, bounded admission and stage acceptance. Documentation only.
+- [ ] ARCH-TX-02..08: Expand the remaining transmitter stages one at a time in
+  processing order, starting with upstream LDPC encode/shorten.
 - [x] SETUP-01..03: Adopt generic installer guidance and implement/test explicit
   development setup. Nineteen setup tests and Ubuntu 22.04 read-only modes pass;
   see [design/checklist](features/development-setup/design.md).
@@ -28,7 +34,9 @@ See [architecture](../architecture.md) and [foundation design](features/foundati
   23 unit tests pass, including Gaussian-reference comparison, controlled/AWGN
   LLRs, nonconvergence and shortening. They share source table constants, so they
   do not resolve LDPC-01. External vectors are unavailable; no external claim.
-- [ ] PHY-01: Validate grant/codeword selection and virtual CMTS configuration.
+- [ ] PHY-01: Implement and validate grant/codeword selection and virtual CMTS
+  configuration against [TX-01](../architecture.md#tx-01-grant-framing-and-fec-selection),
+  including byte-residue ones, zero grant padding and shortened-codeword borrowing.
 - [ ] SOURCE-01: Implement the explicit continuous PRBS15 source and independent
   verifier against the [PRBS block contract](../architecture.md#prbs-block-architecture),
   including upstream grant lengths, incomplete-recovery accounting and bounds.

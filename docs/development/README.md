@@ -5,6 +5,9 @@
   and [ARCH-01 design](features/upstream-signal-path/design.md)
 - [PRBS block architecture](../architecture.md#prbs-block-architecture)
   and [ARCH-PRBS-01 design/checklist](features/prbs-source/design.md)
+- [CM-US-TX block architecture](../architecture.md#cm-us-tx-block-architecture),
+  [TX-01 grant framing](../architecture.md#tx-01-grant-framing-and-fec-selection)
+  and [transmitter design/checklist](features/cm-us-tx/design.md)
 - [Official checklist](checklist.md)
 - [Foundation design and reuse/specification assessments](features/foundation/design.md)
 - [Checkpoint validation](features/foundation/validation.md)

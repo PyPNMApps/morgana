@@ -23,7 +23,7 @@ Planned top-level path (expanded in the workbench section below):
 
 ```mermaid
 flowchart LR
-    PRBS[PRBS source] --> TX[CM-US-Tx]
+    PRBS[PRBS source] --> TX[CM-US-TX]
     TX --> CH[Channel Simulator: unity first]
     CH --> RX[CMTS-RX]
     CFG[Virtual CMTS configuration] -. configuration .-> TX
@@ -55,8 +55,8 @@ the existing executable still runs isolated LDPC trials. No PRBS waveform,
 channel object, CMTS receiver, instrument or GUI is claimed implemented here.
 
 Use the same left-to-right organization as the reference workbench:
-**PRBS → CM-US-Tx → Channel Simulator → CMTS-RX → PRBS-RX/results**.
-CM-US-Tx and CMTS-RX open their own stage workbenches. Test-point actions open
+**PRBS → CM-US-TX → Channel Simulator → CMTS-RX → PRBS-RX/results**.
+CM-US-TX and CMTS-RX open their own stage workbenches. Test-point actions open
 the shared **QAM Analyzer** or **Spectrum Analyzer (SA)** for the selected tap.
 The direction changes to CM transmission and CMTS reception; upstream FEC,
 framing, pilot and interleaving rules determine the actual stage order.
@@ -98,7 +98,7 @@ the PRBS seed nor expected bits enter the receiver's decoding/equalization API.
 flowchart TB
     SETTINGS[Accepted PRBS15 settings] --> GENERATOR[PRBS-TX generator]
     GENERATOR --> CHUNK[Bounded payload bits and absolute range]
-    CHUNK --> TRANSPORT[CM-US-Tx then channel then CMTS-RX]
+    CHUNK --> TRANSPORT[CM-US-TX then channel then CMTS-RX]
     CHUNK -. range metadata only .-> LEDGER[Orchestration source-range ledger]
     TRANSPORT --> RECOVERED[Decoded bits and grant/codeword coordinates]
     RECOVERED --> ASSOCIATE[Associate recovered payload range]
@@ -258,7 +258,22 @@ observer neutrality and Rust/future Python contract parity. The feature record
 maps these requirements to owners and planned checks:
 [PRBS block design](development/features/prbs-source/design.md).
 
-### CM-US-Tx stages
+### CM-US-TX block architecture
+
+Status: **planned**. ARCH-TX-00 defines the transmitter block and ARCH-TX-01
+expands its first stage below. The current isolated LDPC codec is a dependency;
+it does not make this transmitter implemented. CM-US-TX converts meaningful
+PRBS source bits and an accepted upstream grant into complex baseband samples
+delivered to the Channel Simulator.
+
+Rust owns every stage, its validation and bounded observations. The transmitter
+accepts an immutable run configuration: channel geometry/clock, grant/profile,
+pilot/loading/resource plan, randomizer seed, Pre-Eq response and execution
+limits. Source generation keeps its own state. Injected channel impairments and
+receiver estimates are outside this block. A presentation adapter opens a
+transmitter workbench; opening an inspector does not start transmission.
+
+#### Internal stage sequence
 
 ```mermaid
 flowchart LR
@@ -284,6 +299,29 @@ flowchart LR
 | TX-07: IFFT | Convert the complete physical frequency grid into complex baseband useful-symbol samples with explicit transform normalization and bin order. |
 | TX-08: sample assembly | Add configured CP/roll-off extension, apply the specified transmit window/overlap treatment, and emit correctly indexed burst/guard samples. Preserve state across arbitrary output chunk boundaries. |
 
+The boundaries carry three different representations: TX-01..03 operate on
+information/coded bits and explicit bit-role plans; TX-04..06 operate on loaded
+complex cells and the complete frequency grid; TX-07..08 produce useful-symbol
+and assembled time samples. Each stage accepts the preceding representation
+with matching run/grant/configuration identity, not an untyped array whose
+meaning depends on the selected viewer.
+
+| Stage output | Retained identity and inspection |
+| --- | --- |
+| TX-01 grant plan | Ordered codewords, source ranges, information fill, shortening and grant padding; plan/bit inspector. |
+| TX-02 encoded grant | Actual systematic/parity bits, transmitted lengths and zero grant padding; bounded bit inspector. |
+| TX-03 randomized grant | Actual post-randomization bits with accepted seed/grant epoch; bounded bit inspector. |
+| TX-04 mapped cells | Actual symbol values, constellation/loading and logical cell identity; shared QAM Analyzer. |
+| TX-05 physical grid | Physical carrier/symbol coordinates with known-pilot, complementary-data, data and excluded/unused roles; shared QAM Analyzer. |
+| TX-06 Pre-Eq grid | Actual corrected carrier values and response reference plane; shared QAM Analyzer. |
+| TX-07 useful samples | Contiguous complex time samples per symbol, transform normalization and sample rate; shared Spectrum Analyzer. |
+| TX-08 burst samples | Actual windowed/assembled stream with sample indices and burst boundaries; shared Spectrum Analyzer and channel input. |
+
+Retain the existing shared tap names; detailed later stages may add a typed tap
+only for an actual produced boundary. Bit arrays are not QAM or SA inputs, and
+frequency-grid lists are not time waveforms. Disable or bound inspection without
+changing source/randomizer/overlap state or processing decisions.
+
 TX-04 and TX-05 are functional boundaries, not permission to invent a separate
 downstream bit-interleaver. PHY3.1 §7.4.5 couples address generation, bit loading
 and cell placement; an implementation may fuse them while retaining observable
@@ -294,6 +332,164 @@ Excluded/unused carriers and zero-valued minislots follow upstream mapping rules
 The initial path is a normal scheduled data burst. Do not insert a generic
 training/ranging preamble into every data burst. Dedicated ranging/probe formats,
 their preambles and special coding are later modes requiring their own evidence.
+
+The first run uses accepted scheduled-data resources, unity Pre-Eq and the unity
+channel. Grant validation/readiness is separate from source acceptance. Start
+freezes the complete request; pause/resume preserves accepted source/randomizer,
+grant progress and waveform history. A configuration change applies to a fresh
+run and invalidates older observations by generation. Explicit cancellation
+retains completed work and reports partial emission rather than treating
+generated codewords as proof that their waveform was delivered.
+
+The following detail begins with TX-01. TX-02 through TX-08 remain overview
+contracts and will be expanded one at a time in processing order. The local
+[CM-US-TX feature record](development/features/cm-us-tx/design.md) tracks those
+architecture steps separately from implementation.
+
+#### TX-01: Grant framing and FEC selection
+
+**Purpose:** build a complete, deterministic upstream grant plan before consuming
+source bits. This is a PHY convergence/planning boundary, not a MAC scheduler.
+Both CM transmission and CMTS reception derive the same codeword layout from
+accepted grant/profile information; receiver recovery must not need hidden
+transmitter decisions to discover that layout.
+
+```mermaid
+flowchart LR
+    CONTEXT[Accepted grant and profile] --> RESOURCES[Count loaded grant bits]
+    RESOURCES --> SELECT[Select ordered FEC codewords]
+    SELECT --> LAYOUT[Plan information, fill, shortening and pad]
+    LAYOUT --> CHECK[Validate totals and reserve bounded work]
+    CHECK --> SOURCE[Request exact meaningful PRBS range]
+    SOURCE --> OUTPUT[Framed information blocks to TX-02]
+```
+
+**Inputs and ownership.** A proposed Rust `TxGrantContext` carries run/configuration
+identity, grant epoch/ordered minislots, selected IUC/profile, per-cell loading
+and role, exclusions, accepted timing and explicit work limits. The common
+resource-plan owner supplies the same cell geometry/order used by TX-04/05;
+TX-01 does not duplicate a different pilot/exclusion counter. The virtual CMTS
+supplies these accepted synthetic inputs without a real UCD/MAP parser. IUC
+selects a profile; it does not by itself determine one QAM order or codeword size.
+
+Count grant capacity `G` in **transmitted coded-bit positions**: sum the loading
+of granted data and data-bearing complementary-pilot cells. Known pilot cells,
+excluded/unused carriers and ungranted resources contribute no FEC capacity.
+Keep complementary-pilot loading distinct from ordinary data loading. A
+codeword may cross minislot/frame boundaries; neither an OFDMA symbol nor a
+minislot boundary implicitly resets FEC selection or starts another codeword.
+
+**Selection.** For normal scheduled data, implement the ordered algorithm in
+CM-SP-PHYv3.1-I20-230419 §7.4.3.1.1. Both endpoint plans must agree on count,
+type, retained size and order. The following is a design summary of that
+algorithm, not a replacement reference for implementation-time source checks:
+
+| Decision | Rule |
+| --- | --- |
+| Too-small grant | Below 700 bits, select no codewords. The specification says the CM SHOULD NOT transmit; the initial simulator policy is an explicit no-transmission outcome with no PRBS consumption. Do not emit a fake all-padding burst. |
+| Long codes | Take full 16200-bit codewords while possible; if the remainder is at least 11881 bits, use one shortened long codeword and finish selection. |
+| Medium codes | Otherwise take full 5940-bit codewords while possible; if the remainder is at least 3421 bits, use one shortened medium codeword and finish selection. |
+| Short codes | Otherwise take full 1120-bit codewords while possible; a remainder of at least 281 bits starts the shortened-short decision. A standalone shortened short needs at least 420 information bits plus 280 parity bits. |
+| Borrowing | If that final short remainder would provide fewer than 420 information bits, remove exactly 420 bits from the last full codeword, making it shortened, and add those 420 positions to the final shortened short. Preserve both shortened descriptors and their order. |
+| Remaining positions | A remainder too small to make another codeword becomes zero grant padding outside FEC. |
+
+The filled/transmitted order is full long, shortened long, full medium,
+shortened medium, full short, shortened short, then zero grant padding, omitting
+absent categories. Borrowing can produce two shortened codewords; an output
+model with only one optional shortened descriptor is insufficient. For a
+transmitted codeword with mother dimensions `N`, `K`, parity `P = N - K` and
+shortening `S`, retain `I = K - S` information bits and `T = I + P = N - S`
+transmitted bits. Shortening removes information coordinates, not parity.
+
+**Framing and bit roles.** First compute the complete ordered information region
+from the selected plan. Group the available information bits into whole payload
+bytes; consume the PRBS stream in that byte-bearing region and retain byte/bit
+coordinates across codeword boundaries. A synthetic source byte uses its next
+eight sequential PRBS bits in MSB-first byte order; it never reverses the PRBS
+emission sequence. Unused whole information bytes are `0xFF`, and any final
+1–7 information bits that cannot form a byte are ones before FEC. The first
+continuous PRBS run fills all available whole payload bytes, so unused whole
+information bytes arise only in a later explicit finite-source policy.
+
+Keep these roles separate in every plan and count:
+
+| Bit role | Value/handling | PRBS comparison |
+| --- | --- | --- |
+| Meaningful source | Continuous PRBS bits in payload byte order. | Advances PRBS and contributes to source comparison. |
+| Unused information bytes | `0xFF` before encoding when the accepted source policy leaves whole bytes unfilled. | Does not advance PRBS; exclude from its BER. |
+| Information byte residue | Mandatory ones for the final non-byte-aligned information remainder. | Does not advance PRBS; exclude from its BER. |
+| Shortening zeros | TX-02 appends zeros after retained information to form the mother input, encodes, then removes only those appended coordinates. | Not transmitted and not source bits. |
+| LDPC parity | Computed by TX-02 and retained in each transmitted codeword. | Not source bits. |
+| Grant padding | Zero positions after encoded codewords and before TX-03 grant randomization. | Outside FEC and source comparison. |
+
+For a transmittable grant, enforce the checked conservation identities
+`G = sum(T_i) + grant_pad_bits` and
+`sum(I_i) = meaningful_source_bits + information_fill_bits`, where information
+fill includes unused whole bytes and byte-residue ones. The source request is
+the meaningful count, not `G`, the mother-code `K` total or the number of QAM
+cells. For the no-transmission outcome, report unused grant capacity explicitly
+instead of claiming pad bits were emitted.
+
+For example, a 700-bit capacity selects a shortened short codeword with 420
+retained information bits and 280 parity bits. Its meaningful byte capacity is
+416 bits (52 bytes), followed by four one-valued information-fill bits; 420
+additional zeros restore the 840-bit mother input and are omitted from the
+transmitted word after encoding. This example is an integer-capacity planner
+case, not evidence that a particular physical minislot allocation realizes it.
+
+**Output and failure boundaries.** A proposed immutable `TxGrantPlan` contains
+the accepted resource/configuration identity, transmission/no-transmission
+status, ordered codeword descriptors, retained/mother lengths, shortening,
+information-role ranges and encoded-stream offsets, and final grant-padding
+count. Planning from configuration is pure and consumes no PRBS. A separate
+admitted-payload result attaches the actual source range and ledger association
+during bounded payload admission; CMTS-RX derives
+its layout independently from the accepted grant configuration without the
+transmitter's source ledger or original bits.
+
+Validate missing profiles, unsupported burst modes, inconsistent cells/loading,
+exclusion conflicts, arithmetic overflow and grant/codeword/in-flight limits
+before accepting a plan or consuming source bits. Reserve output/queue capacity
+before generation; build the next bounded payload against candidate source state
+and commit source progress plus its ledger entry together. Rejecting a plan or
+an admission request leaves the accepted configuration, source and prior results
+unchanged. Bound grants, descriptors and pending work; continuous operation must
+retire completed ledger entries rather than retain all source history.
+
+Rust owns planning and all totals. The future Rust facade exposes typed plans,
+errors and owned snapshots; future Python uses the same planner, validates
+integers before narrowing, and maps typed errors/absent values consistently.
+Neither Qt nor Python reconstructs selection, capacity or fill arithmetic.
+These public operations and exported report fields remain proposed and require
+versioned API work before they become callable or persisted contracts.
+
+**Stage view and acceptance.** The future TX-01 view shows the accepted grant,
+IUC/profile identity, coded-bit capacity, ordered codewords, transmitted and
+information lengths, source bits, information fill, omitted shortening and grant
+padding. These are Rust-derived read-only results. A bounded bit-role inspector
+shows actual admitted bits after generation; a pre-run plan must be labeled as a
+plan. Source acceptance alone cannot make TX-01 ready, and this stage offers no
+QAM or SA view of its bit arrays.
+
+Validation must cover minimum-grant boundaries, both sides of every shortening
+threshold, exact full words, zero-pad remainders, borrowing from each mother
+code, multiple full words, both shortened descriptors, information-byte residue,
+mixed loading/pilot roles, cross-minislot/frame continuity and matching independent
+endpoint plans. Include 699/700, 3420/3421 and 11880/11881 capacities and 281-bit
+remainders after a full word. Check conservation, exact bit roles and rejected-
+call/source invariance independently of encode/decode round trips. Normative
+matrix review LDPC-01 remains a prerequisite for claiming validated FEC output;
+correct selection arithmetic does not resolve the known matrix transcription.
+
+Evidence: CM-SP-PHYv3.1-I20-230419 §7.4.1.1–3, PDF p50; §7.4.3–7.4.3.1.1,
+pp52–56; §7.4.3.3, p58; §8.2.1–3, p172. Selection thresholds, borrowing and
+information-fill prose were visually checked against the original PDF pp53–55;
+other cited prose was checked in the pinned extraction. The CM/CMTS selection
+algorithm and CM fill/shortening requirements retain their normative endpoint;
+no-transmission handling and bounded admission are explicit simulator policies.
+Actual MAC byte framing and UCD/MAP wire semantics require MULPI evidence and
+remain outside this synthetic-grant path. DOCSIS 4.0 mode extensions require
+separate applicability review; this section does not claim full FDD/FDX support.
 
 ### Channel Simulator: unity stub first
 

@@ -92,14 +92,14 @@ Windows/macOS execution remain unverified.
 
 ```mermaid
 flowchart LR
-    SOURCE[PRBS source] --> TX[CM-US-Tx]
+    SOURCE[PRBS source] --> TX[CM-US-TX]
     TX --> CHANNEL[Channel Simulator: unity first]
     CHANNEL --> RX[CMTS-RX]
     RX --> VERIFY[Independent PRBS-RX comparison]
     SOURCE -. expected stream only .-> VERIFY
 ```
 
-CM-US-Tx will own grant framing, upstream LDPC, PHY randomization, QAM mapping,
+CM-US-TX will own grant framing, upstream LDPC, PHY randomization, QAM mapping,
 pilots/interleaving, Pre-Eq, IFFT and burst sample assembly. CMTS-RX will recover
 the payload from received samples and accepted configuration, with pilot-derived
 channel correction. Original source bits stay in the independent verifier.
