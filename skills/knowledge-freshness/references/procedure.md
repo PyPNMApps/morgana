@@ -29,7 +29,7 @@ Stable algorithm/style principles do not require pointless daily rewriting.
    documentation review, local execution, hosted CI and native OS/account execution.
    Network or credential failure means unverified; never advance the verified date.
 6. Report remaining gaps and exact follow-up. Deprecations requiring application
-   migrations belong in Requirements → Architecture → Checklist before code changes.
+   migrations belong in Architecture → Requirements → Developer checklist before code changes.
 
 ## Automatic behavior and limits
 

@@ -18,11 +18,11 @@ are authorized; executing system installation is a separate action.
 Do not commit, push, tag, publish or install system packages without an explicit
 request to execute that operation. Tests may use disposable Git repositories.
 
-Read [requirements](docs/requirements.md), [architecture](docs/architecture.md),
+Read [architecture](docs/architecture.md), [requirements](docs/requirements.md),
 [checklist](docs/development/checklist.md),
 [feature design](docs/development/features/foundation/design.md) and
 [software facts](docs/sw-facts/README.md) before implementation. Follow
-Requirements → Architecture → Checklist → Implementation → Validation.
+Architecture → Requirements → Developer checklist → Implementation → Validation.
 When asked for a plan, stop after planning. When asked for `next`, choose the next
 unfinished prerequisite in the checklist only when implementation is authorized.
 The official checklist SHALL link every active task to exact requirement and

@@ -1,11 +1,18 @@
 ---
 name: development-workflow
-description: Plan new projects and existing-code features through requirements, architecture and implementation checklists.
+description: Define architecture and software layout, derive mandatory linked requirements, then build a developer checklist for new or existing projects.
 ---
 
 # Development Workflow
 
-Choose new or existing codebase explicitly. Write requirements first: observable behavior, IDs, acceptance criteria, scope and non-goals. Then architecture: owners, interfaces, lifecycle, failure handling and validation. Then a dependency-ordered checklist tracing requirement IDs to code and checks. Keep records proportional to the task; short sections are sufficient for small changes.
+Choose new or existing codebase explicitly. Start from the requested goal and
+constraints, then define architecture: owners, interfaces, lifecycle, failures,
+validation and the software layout with files to add, edit or reuse. Derive the
+requirements from that architecture using MUST, MUST NOT, SHALL or SHALL NOT;
+each requirement links its relevant architecture section. Then build the
+developer checklist: ordered tasks linked to requirements and, where relevant,
+architecture owners/file plans, with dependencies and acceptance evidence.
+Keep records proportional to the task; short sections are sufficient for small changes.
 
 For a new codebase, establish the smallest foundation satisfying the requirements. For existing code, read current architecture and software facts, verify the active checkout and follow [reuse-first changes](../reuse-first-changes/SKILL.md). Do not substitute a new architecture for understanding the current one.
 
@@ -33,11 +40,13 @@ placement explicitly. See the [file-layout procedure](references/procedure.md#co
 ## Requirements and checklist traceability
 
 Use the [traceability procedure](references/checklist-traceability.md) for the full
-Requirements → Architecture → Checklist → Implementation → Validation flow.
-Every active task MUST link its requirement and architecture, identify dependency
-IDs and acceptance evidence, and resolve code/test placement through its owner.
-Preserve stable IDs and incomplete status; cover every in-scope requirement or
-record an explicit deferred decision. Verify anchors and dependency cycles.
+Architecture → Requirements → Developer checklist → Implementation → Validation flow.
+Every active task MUST link its requirement, identify dependency IDs and
+acceptance evidence, and link architecture when design/ownership/layout applies.
+Resolve implementation/test placement through that architecture owner.
+Preserve stable IDs/history and keep status evidence-based; cover every in-scope
+requirement or record an explicit deferred decision. Declare the canonical status
+owner for each project/feature scope. Verify anchors and dependency cycles.
 
 ## Standalone procedure
 

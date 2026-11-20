@@ -8,7 +8,7 @@ commit, push, publication, provisioning or GUI implementation authorization.
 
 ## How to use this checklist
 
-Follow Requirements → Architecture → Checklist → Implementation → Validation.
+Follow Architecture → Requirements → Developer checklist → Implementation → Validation.
 Every active task links precise requirement anchors and canonical design owners;
 those architecture sections specify implementation/test files and dispositions.
 Dependencies are explicit task IDs, not every preceding item. Work on the first

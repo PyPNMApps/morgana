@@ -11,7 +11,7 @@ product's language, numeric budgets, supported OS list or one-time authorization
 
 ## Procedure
 
-1. Select the existing skill owner. Follow Requirements → Architecture → Checklist
+1. Select the existing skill owner. Follow Architecture → Requirements → Developer checklist
    before implementation. New and existing codebases remain separate workflows:
    new projects choose documented defaults; existing projects reuse current owners
    and preserve contracts with the smallest coherent changes.

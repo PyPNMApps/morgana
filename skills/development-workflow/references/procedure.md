@@ -1,30 +1,38 @@
-# Requirements through implementation
+# Architecture through implementation
 
 ## Inputs and first decision
 
-Read the target's instructions, current revision/status, existing architecture and
-active requirement records. Classify the task as new codebase or existing behavior.
-A new feature in an existing application uses the existing-code path. If the user
-requested only a plan, stop after the design/checklist; documents do not authorize code.
+Read the requested goal, constraints, current instructions/revision and existing
+architecture/requirements/status records. Classify the task as a new codebase or
+existing behavior. A feature in an existing application uses the existing-code
+path. A planning request stops after architecture, requirements and checklist;
+these documents do not authorize implementation or external actions.
 
 ## Procedure
 
-1. Write observable requirements with stable IDs, acceptance criteria, constraints
-   and non-goals. Separate unknowns from accepted behavior. Avoid implementation
-   choices disguised as requirements (for example, a class name).
-2. For existing code trace entrypoints, owners and tests, then write the behavioral
-   delta. For new code identify the minimal public operation and data model needed
-   to demonstrate the first requirement.
-3. Design responsibility/data/lifecycle/error boundaries. Record alternatives only
-   where they explain the decision. Name the existing extension point or justify a
-   new owner. Include a requirement-to-owner-to-test mapping.
-4. Create dependency-ordered checklist items small enough to verify independently.
-   Put prerequisites ahead of dependent UI or adapters. Mark blocked/partial items
-   honestly; a combined item stays unchecked until all acceptance checks pass.
-5. Implement a vertical slice, validate it, then continue. Update the design if the
-   actual contract changes; do not leave an abandoned plan described as implemented.
-6. At handoff reconcile requirements, architecture, checklist, user guidance and
-   software facts. Report actual commands/results and any unsupported environment.
+1. Define or update the architecture first. For existing code inspect owners,
+   callers, tests and build registration before proposing changes. Record the
+   design/data/lifecycle/error boundaries, reuse decisions and validation approach.
+2. Define the software layout in that architecture. Name concrete repository-relative
+   implementation/test/registration files and label add (planned), edit (existing)
+   or reuse (unchanged). Check existing paths before assigning their disposition.
+   Use the target project's naming conventions; this workflow assumes no language.
+3. Derive complete observable requirements from the architecture. Each stable ID
+   uses MUST, MUST NOT, SHALL or SHALL NOT, has acceptance criteria and links to
+   the relevant design section. Record constraints, exclusions and unresolved
+   decisions explicitly; an advisory proposal needs a mandatory/excluded/deferred
+   decision before baseline acceptance or dependent implementation.
+4. Build the developer checklist from those requirements and design owners.
+   Each task links its requirement, names dependencies and acceptance, and links
+   architecture whenever design, ownership or file placement applies. Document
+   why architecture does not apply for a task with no design impact. Put prerequisite
+   tasks before consumers; combined milestones stay pending until their parts pass.
+5. Implement and validate an authorized slice. If requirements expose a missing
+   design decision, revise the architecture, reconcile requirements and refresh
+   dependent tasks before code; do not implement against contradictory records.
+6. Reconcile architecture, requirements, checklist, actual validation and affected
+   user guidance. Preserve stable IDs/history while reopening invalidated acceptance.
+   Report commands, outcomes and unsupported environments accurately.
 
 ## Architecture navigation
 
@@ -72,13 +80,15 @@ existence; for proposed files, say create (planned). Use code formatting for pat
 that do not exist yet, and links only for existing targets. A planned file table
 does not authorize creating empty code or imply implemented behavior.
 
-A fictional project's transform section might contain:
+The following filename convention is language-independent. Angle-bracket
+segments are template placeholders; replace every segment with concrete target
+paths and dispositions before publishing the adopting architecture:
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `src/processing/transform.rs` | Create (planned) | Transform algorithm and validated domain inputs. |
-| `src/processing/mod.rs` | Extend (existing in the example project) | Register the focused module. |
-| `tests/transform.rs` | Create (planned) | Independent expected-output and invalid-input cases. |
+| `<source-root>/<component>/<operation>.<source-extension>` | Add (planned) | Operation and validated domain inputs. |
+| `<build-or-registration-file>` | Add or edit after inspection | Register the focused component when the project requires it. |
+| `<test-root>/<component>/<operation>.<test-extension>` | Add or edit after inspection | Independent expected-output and invalid-input cases. |
 
 Name a shared algorithm's same canonical path in each consuming stage and identify
 stage-specific adapters separately. Backfill previously written sections when the
@@ -91,16 +101,31 @@ paths resolve, planned files are not falsely linked or created, and sections agr
 on shared ownership. Verify one new section and one backfilled existing section.
 Missing filenames, two competing algorithm owners, stale paths and an existing
 file mislabeled as new are failures. Design-only sections with no code change
-should state that explicitly rather than inventing implementation files.
+MUST state that explicitly rather than inventing implementation files.
+
+## Filename conventions
+
+The generic workflow does not select a programming language or file extension.
+Use descriptive names for a component's responsibility and preserve the target
+repository's established capitalization, separators, extensions and directory
+structure. Record full repository-relative paths, not workstation paths.
+
+Architecture file tables MUST distinguish Add (new planned file), Edit (existing
+file to change) and Reuse (existing unchanged file). State the responsibility of
+each implementation, registration/build and test file. Verify existing files and
+resolve template placeholders to concrete filenames before implementation. Language
+or framework rules belong in their separate applicable skills, not this workflow.
 
 ## Worked example
 
-R1: cancelling an import leaves the previous accepted document usable.
-Architecture: importer creates a candidate; document owner replaces accepted state
-only after full validation. Cancellation invalidates the candidate generation.
-Checklist: add candidate owner → cancellation checks → controller integration →
-late-result regression → user help. Acceptance: cancel before parse, during parse
-and immediately before completion; accepted document identity/content remain equal.
+Architecture: a transformation owner builds a bounded candidate and validates it
+before atomic publication, with cancellation/stale-generation checks and named
+implementation/test files to add or edit.
+Requirement R1: a cancelled/failed transformation SHALL preserve the accepted
+result; success SHALL publish a validated result atomically. Link R1 to that owner.
+Checklist: establish the owner → implement cancellation/publication → independently
+validate success/failure/stale results → reconcile documentation. Each task links
+R1 and its applicable architecture section.
 
 ## Deliverables and failure cases
 

@@ -1,6 +1,8 @@
 # Feature requirements
 
 Status: proposed template; replace the example for the adopting project.
+Derive requirements from the [architecture and software layout](architecture.md);
+each requirement MUST link to its relevant architecture section.
 
 ## Purpose and scope
 
@@ -17,11 +19,12 @@ MUST be resolved before dependent implementation begins.
 
 ### R1
 
-Cancelling an import SHALL preserve the previously accepted document.
+A cancelled or failed transformation SHALL preserve the previously accepted
+result. Successful completion SHALL publish the validated result atomically.
 
-Acceptance: cancellation before/during/after parsing and a late completion leave
-accepted identity/content unchanged; valid completion adopts a fully validated
-candidate atomically. Delivery: [TASK-01 and TASK-02](checklist.md#ordered-work).
+Acceptance: failure or cancellation before/during/immediately before publication
+leaves accepted identity/content unchanged; a late cancelled generation cannot
+replace it. Successful completion atomically adopts the fully validated result. Delivery: [TASK-01 and TASK-02](checklist.md#ordered-work).
 Design: [STAGE-01](architecture.md#stage-01-transform).
 
 ## Constraints and open decisions

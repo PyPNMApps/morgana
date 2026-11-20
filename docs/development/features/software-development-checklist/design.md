@@ -64,3 +64,52 @@ hosted CI or publication evidence is claimed.
 PDE's whole-checkout guidance/portability checker and all 31 existing tests passed;
 its separate feature record captures the prior dirty-state preservation boundary.
 No index changes, staging, commits, pushes or system installation occurred.
+
+## Generic workflow review
+
+Review scope: the staged checklist/requirements guidance and reusable workflow
+templates, plus the corresponding PDE bundle. Project-specific scientific
+requirements stay in project documents; reusable rules have no such dependency.
+The existing staged index is preserved during review.
+
+Three issues were corrected in both bundles:
+
+- Requirement/checklist examples described an import while their architecture
+  target described a transform. All three now use one fictional transformation
+  with isolated candidate state, validated atomic publication and stale/cancelled
+  generation rejection.
+- Language-specific filenames could be mistaken for a required technology/layout.
+  The templates now use language-independent filename placeholders and require
+  concrete target-specific paths before implementation.
+- A single-checklist/status-preservation rule could be misread as forbidding
+  scoped feature checklists or reopening invalidated acceptance. Guidance now
+  declares one status owner per scope, permits indexed feature checklists and
+  requires evidence-based reopening with retained history.
+
+The requested canonical sequence is now Architecture → Requirements → Developer
+checklist → Implementation → Validation. Architecture defines responsibility and
+software layout with files to Add, Edit or Reuse; every requirement uses MUST,
+MUST NOT, SHALL or SHALL NOT and links its architecture owner. Developer tasks
+link requirements and applicable design, with dependencies and acceptance.
+The generic filename convention uses descriptive target-specific names and
+extensions; language-specific examples/rules are excluded from this workflow.
+Active skills, templates and entrypoints are reconciled to this sequence;
+previous feature records remain historical evidence rather than current policy.
+
+Review validation passed: the workflow skill, procedure and three templates are
+language-independent and consistent in both bundles. Both relocated three-template
+examples resolved all 40 relative links/fragments without another checkout.
+Focused checks retained all 97 IDs/statuses in the saved checklist checkpoint,
+58 active tasks, all 59 requirement mappings and ordered acyclic dependencies.
+Both skills passed metadata validation. `bash scripts/validate.sh` passed with
+20 skills, 829 local links, 23 Rust tests, 19 setup tests, 5 Git-helper tests,
+doctests, formatting and Clippy. PDE's maintained-guidance checks and 31 tests
+also passed. Generic naming rules impose no source language or extension.
+
+During review, the original staged checklist checkpoint became commit `52bccec`
+through an external action; direct ancestry and its unchanged index were verified.
+The remaining review corrections are unstaged and no Git mutation was executed
+by this work. Both existing indexes were preserved. PDE's 23 unrelated baseline
+files remain byte-identical; additional edits are limited to the authorized
+workflow-order guidance and templates. Historical validation paragraphs above
+describe their original task boundary, not the subsequent external commit.

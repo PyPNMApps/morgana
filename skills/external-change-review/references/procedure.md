@@ -41,7 +41,7 @@ Read the applicable skills, not every skill indiscriminately:
 
 | Changed area | Review focus |
 | --- | --- |
-| Existing behavior | Requirements → Architecture → Checklist; reuse current owners and preserve compatibility |
+| Existing behavior | Architecture → Requirements → Developer checklist; reuse current owners and preserve compatibility |
 | Source code | Formatting, public contracts/banners, constants, errors, bounded work and justified complexity |
 | APIs or persistence | Shared ownership, schema/migrations, producer/consumer compatibility, cancellation and accepted state |
 | UI | Layout, themes, accessibility, native behavior, presentation versus domain ownership |

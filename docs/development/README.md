@@ -1,8 +1,8 @@
 # Development
 
+- [Architecture](../architecture.md)
 - [Requirements baseline](../requirements.md) and
   [consolidation/validation record](features/requirements/design.md)
-- [Architecture](../architecture.md)
 - [Planned code layout](../architecture.md#planned-code-layout) and
   [per-section layout design/checklist](features/code-layout/design.md)
 - [Upstream signal path and QAM/SA architecture](../architecture.md#planned-upstream-signal-path-and-workbenches)
