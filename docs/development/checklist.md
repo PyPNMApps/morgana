@@ -17,6 +17,9 @@ See [architecture](../architecture.md) and [foundation design](features/foundati
 - [x] ARCH-TX-NAV: Link all TX overview/output labels to local stage sections,
   retain pending placeholder status and adopt the generic rule in local/PDE
   development-workflow skills and architecture templates.
+- [x] ARCH-PATH-01: Backfill each signal-path block/stage with planned code/test
+  filenames, explicit create/reuse/extend status and shared ownership; adopt the
+  rule in local/PDE skills and templates. See [layout design](features/code-layout/design.md).
 - [x] ARCH-TX-01: Expand grant framing/FEC selection, source/fill/shortening/pad
   accounting, bounded admission and stage acceptance. Documentation only.
 - [x] ARCH-TX-02: Define LDPC encoding/shortening, exact transmitted bit order,

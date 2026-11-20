@@ -1,6 +1,8 @@
 # Development
 
 - [Architecture](../architecture.md)
+- [Planned code layout](../architecture.md#planned-code-layout) and
+  [per-section layout design/checklist](features/code-layout/design.md)
 - [Upstream signal path and QAM/SA architecture](../architecture.md#planned-upstream-signal-path-and-workbenches)
   and [ARCH-01 design](features/upstream-signal-path/design.md)
 - [PRBS block architecture](../architecture.md#prbs-block-architecture)

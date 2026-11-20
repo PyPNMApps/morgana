@@ -59,6 +59,40 @@ start with the linked architecture template; in an existing project, add links t
 current owners without duplicating their design. Missing fragments, renamed
 headings, duplicate section IDs and placeholders marked complete are failures.
 
+## Code layout per section
+
+During architecture, inspect the current tree and name the concrete files each
+block/stage will create, reuse or extend. Put a compact path table in that section,
+covering implementation, module/build registration, adapters and meaningful tests
+where applicable. A directory-only owner or a global tree without per-section
+mapping does not show where the work will land.
+
+Use full repository-relative paths. For existing files, verify their role and
+existence; for proposed files, say create (planned). Use code formatting for paths
+that do not exist yet, and links only for existing targets. A planned file table
+does not authorize creating empty code or imply implemented behavior.
+
+A fictional project's transform section might contain:
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `src/processing/transform.rs` | Create (planned) | Transform algorithm and validated domain inputs. |
+| `src/processing/mod.rs` | Extend (existing in the example project) | Register the focused module. |
+| `tests/transform.rs` | Create (planned) | Independent expected-output and invalid-input cases. |
+
+Name a shared algorithm's same canonical path in each consuming stage and identify
+stage-specific adapters separately. Backfill previously written sections when the
+rule is introduced; keep a directory overview for scanning and reconcile it with
+the section tables when placement changes. If a placement is undecided, record the
+open decision and its owner rather than presenting a placeholder as settled.
+
+Acceptance: each block/stage has explicit file paths and dispositions, existing
+paths resolve, planned files are not falsely linked or created, and sections agree
+on shared ownership. Verify one new section and one backfilled existing section.
+Missing filenames, two competing algorithm owners, stale paths and an existing
+file mislabeled as new are failures. Design-only sections with no code change
+should state that explicitly rather than inventing implementation files.
+
 ## Worked example
 
 R1: cancelling an import leaves the previous accepted document usable.

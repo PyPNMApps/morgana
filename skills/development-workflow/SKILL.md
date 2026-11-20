@@ -22,6 +22,14 @@ a working link does not mean the design or implementation is complete.
 Use the [navigation procedure](references/procedure.md#architecture-navigation)
 when adding stages or renaming headings.
 
+## Code layout per section
+
+Every architecture block/stage section names its repository-relative directories,
+implementation files and validation files, with responsibilities and disposition:
+create (planned), reuse (existing) or extend (existing). Backfill earlier sections
+when adopting this rule. Keep shared algorithms at one named path; mark unresolved
+placement explicitly. See the [file-layout procedure](references/procedure.md#code-layout-per-section).
+
 ## Standalone procedure
 
 Read the [operational guide](references/procedure.md) for inputs, implementation

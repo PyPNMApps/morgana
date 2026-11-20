@@ -359,6 +359,28 @@
           "sha256": "02de19e12c618f400759c3bacc4bee4d3ba14ea1c3d548f84689a0b4c88d5207"
         }
       ]
+    },
+    {
+      "date": "2026-11-20",
+      "source_revision": "6f7197d17b0efc7a4be0d44a517d886b2f03009d",
+      "source_state": "user-authorized per-section code-layout guidance update; working-tree inputs pinned below",
+      "files": [
+        {
+          "source": "skills/development-workflow/SKILL.md",
+          "destination": "skills/development-workflow/SKILL.md",
+          "sha256": "b54b980f4cb781e0c1bf5af9ef06c50dd0dce3d7a5a72efc539355e6ac96e22c"
+        },
+        {
+          "source": "skills/development-workflow/references/procedure.md",
+          "destination": "skills/development-workflow/references/procedure.md",
+          "sha256": "344d428c64777ebb095ee70b336d64408fc529f1d38c8564444943c67bd0e84f"
+        },
+        {
+          "source": "templates/project/architecture.md",
+          "destination": "templates/project/architecture.md",
+          "sha256": "c98dff1dcec7dde1dbe67fdbfd60549ada7bf1db174d0076bcc56280d7a43688"
+        }
+      ]
     }
   ]
 }

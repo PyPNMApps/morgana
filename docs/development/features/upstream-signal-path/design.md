@@ -18,6 +18,10 @@ Task: ARCH-01. This request authorizes documentation, not scientific or Qt code.
 The canonical design is the new
 [staged signal path section](../../../architecture.md#planned-upstream-signal-path-and-workbenches).
 Use its stage/tap tables rather than maintaining a competing processing diagram.
+The [planned directory overview](../../../architecture.md#planned-code-layout)
+and section-level file tables now locate configuration/source, all TX/RX stages,
+unity channel, instruments, orchestration and future facade/adapter tests.
+Existing files are identified as reuse/extension; proposed files remain absent.
 Own PRBS generation, configuration, TX/channel/RX, instruments and orchestration
 in Rust; adapters present snapshots. A future neutral shared numerical crate is
 a candidate, not an approved migration of another repository.
@@ -42,6 +46,8 @@ checked in the pinned extraction, not its original PDF.
 - [x] Define unity channel, future impairment interfaces and reference planes.
 - [x] Define QAM/SA selectors, passive bounded taps and Rust calculation ownership.
 - [x] Reconcile architecture/checklist/design links and planned/implemented status.
+- [x] Backfill block/stage code and validation paths without completing future
+  stage contracts or creating source placeholders.
 - [ ] Implement and validate these processing/instrument contracts after approval.
 
 Documentation validation checks local links, stage/diagram consistency and Git

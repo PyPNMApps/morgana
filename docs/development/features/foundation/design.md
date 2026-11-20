@@ -128,6 +128,10 @@ morgana/
 Future crates/modules are design only: PHY configuration/resource mapping,
 TX, channel, receiver, capture adapter, simulation orchestration and optional
 `bindings/python`. Do not create empty algorithm placeholders.
+The [planned code layout](../../../architecture.md#planned-code-layout) expands
+these module roots into concrete per-block/stage implementation and test paths,
+including explicit existing reuse versus new files. It is the canonical future
+layout; this checkpoint's source tree and dependency registration are unchanged.
 
 First implemented API is explicitly FEC-only: validated `LdpcSettings`,
 `LdpcCodec::{new,encode,decode,valid_syndrome}` and

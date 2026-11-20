@@ -22,6 +22,11 @@ implementation, Python bindings or reference-project links are introduced.
 The canonical [PRBS block section](../../../architecture.md#prbs-block-architecture)
 contains the complete sequence, stage-interface, comparison, lifecycle and UI
 contracts. Keep those details there rather than maintaining a competing design.
+Its section-level path table names planned `crates/phy/src/source/prbs15.rs`,
+`crates/phy/src/source/verifier.rs`, shared `crates/phy/src/types/bits.rs`,
+the simulation ledger/comparison adapters and their acceptance test files.
+See the [directory overview](../../../architecture.md#planned-code-layout) for
+module registration and future facade/adapter placement. All remain planned.
 The future source module belongs to the proposed Rust PHY crate; the codec stays
 independent of source generation. Neither the seed nor expected bits enter the
 CMTS receiver. A grant/source ledger associates receiver grant/codeword output
@@ -49,6 +54,7 @@ adaptation must preserve original copyright/license and modification notices.
 
 - [x] ARCH-PRBS-01: Inspect reference contracts and define the complete local block.
 - [x] Reconcile canonical architecture, development navigation and official checklist.
+- [x] Backfill concrete source/verifier, association and validation file paths.
 - [ ] SOURCE-01a: Implement bounded PRBS generation and independent verifier with
   literal recurrence/period, rejected-call and overflow checks after plan approval.
 - [ ] SOURCE-01b: Integrate validated grant-driven payload requests, source ledger

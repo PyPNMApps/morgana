@@ -46,6 +46,14 @@ placeholder status, and renamed anchors require incoming-link checks. The source
 manifest retains the initial snapshot and separately pins the three updated PDE
 inputs by SHA-256. Local wording overrides and unrelated PDE work are preserved.
 
+A second scoped update on 2026-11-20 adds per-section code layout to the same
+three development-workflow resources. Each block/stage names concrete code/test
+filenames with planned creation, existing reuse or existing extension status;
+earlier sections are backfilled, shared algorithms have one canonical owner,
+and absent proposed files are formatted as text. The manifest separately records
+these updated source hashes while retaining the earlier adoption inputs. Local
+architecture sections apply the rule; no scientific modules are created here.
+
 Canonical skills are under `skills/`. Both `.agents/skills/` and `.claude/skills/`
 contain relative links to each canonical folder. Validate frontmatter, local links,
 resource closure, private-evidence exclusion and tool behavior with

@@ -73,6 +73,10 @@ multiline documentation covering arguments, results, errors and relevant ownersh
 Use multiline branches; the formatter is necessary but is not the whole style rule.
 Plans/validation live under `docs/development/features/<feature>/`, indexed from
 `docs/development/README.md`; maintained guides live under `docs/user/`.
+Each architecture block/stage section names planned implementation/test file
+paths and distinguishes new files from existing reuse or extensions. Keep the
+directory overview and earlier sections aligned; proposed files remain design
+only until implementation is authorized.
 Review architecture/checklist at completion and every commit-msg request. Keep
 partial or source-unverified work unchecked. Do not edit solely to log a review.
 

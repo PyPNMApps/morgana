@@ -11,6 +11,7 @@ checkout and no scientific, UI, CLI or binding implementation changes.
 | --- | --- | --- |
 | TX-ARCH-01 | Use CM-US-TX consistently and describe its eight internal stages. | Canonical architecture, README and development records; one ordered TX path. |
 | TX-NAV-01 | Link every TX overview/output label to its canonical local section. | Eight unique stage targets; future sections explicitly remain placeholders. |
+| TX-PATH-01 | Name code/test files in every TX stage section. | Planned adapters, shared numerical owners and existing codec reuse agree with the directory overview. |
 | TX-ARCH-02 | Distinguish bit, complex-cell/frequency-grid and time-sample boundaries. | Rust stage contracts; meaningful bit/QAM/SA instrumentation with bounded passive observations. |
 | TX-PLAN-01 | Derive coded capacity from accepted grant resources/loading, then choose the exact upstream codeword sequence. | Shared resource owner and Rust grant planner; independent capacity/threshold/order/borrowing cases. |
 | TX-PLAN-02 | Separate meaningful bytes, information-fill ones, shortening zeros, parity and zero grant padding. | Framing/codec boundary; conservation, byte-residue and source-consumption checks. |
@@ -36,6 +37,15 @@ this does not complete their design or create empty modules.
 The [TX-03 section](../../../architecture.md#tx-03-grant-seeded-phy-randomization)
 owns grant-seeded bit randomization and the paired RX soft inverse. Its primitive
 belongs in the proposed Rust PHY bit-processing owner, independently of the codec.
+Each stage section now includes a repository-relative path table with explicit
+planned creation versus existing reuse. The [directory overview](../../../architecture.md#planned-code-layout)
+defines module roots. TX-01 maps to shared resource/grant planning and
+`crates/phy/src/transmitter/framing.rs`; TX-02 adds
+`crates/phy/src/transmitter/ldpc.rs` around the existing codec; TX-03 uses
+`crates/phy/src/bit_processing/randomizer.rs` with separate transmitter/receiver
+adapters. TX-04..08 have proposed file locations while their detailed designs
+remain pending. Test filenames are recorded beside each owner in the canonical
+section rather than creating empty modules or duplicate algorithms.
 
 ## Reference and source boundaries
 
@@ -76,6 +86,8 @@ upstream bit stream; no implementation is copied or linked.
 
 - [x] ARCH-TX-NAV: Link all eight TX overview/output labels to unique local
   sections; mark TX-04..08 as pending placeholders and add overview backlinks.
+- [x] ARCH-TX-PATH: Name planned implementation/test files in every TX section
+  and distinguish existing codec reuse from new PHY adapters.
 - [x] ARCH-TX-00: Standardize CM-US-TX and document the ordered internal stages.
 - [x] ARCH-TX-01: Define grant capacity, selection, framing/bit roles, admission,
   inspection and independent acceptance checks.

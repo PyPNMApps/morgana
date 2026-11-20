@@ -61,7 +61,60 @@ the shared **QAM Analyzer** or **Spectrum Analyzer (SA)** for the selected tap.
 The direction changes to CM transmission and CMTS reception; upstream FEC,
 framing, pilot and interleaving rules determine the actual stage order.
 
+### Planned code layout
+
+All paths below are relative to the repository root. **Create (planned)** means
+that the file does not exist in this checkpoint; **reuse (existing)** and
+**extend (existing)** identify inspected files. These are placement decisions,
+not implemented modules. No empty files, Cargo members or adapters are added now.
+Each block/stage below gives its concrete implementation and test filenames.
+
+The dependency direction is CLI/future Python or UI adapters → public
+`crates/morgana` facade → proposed `crates/phy` → existing `crates/ldpc`.
+Keep the current facade's direct LDPC imports/re-exports compatible. Algorithms,
+validation and bounded orchestration stay Rust; adapters present owned results.
+
+| Path / directory entrypoint | Disposition | Responsibility |
+| --- | --- | --- |
+| `Cargo.toml` | Extend (existing) | Register the future PHY member/dependency when implemented; update `Cargo.lock` through Cargo. |
+| `crates/phy/Cargo.toml`, `crates/phy/src/lib.rs`, `crates/phy/src/error.rs` | Create (planned) | Rust PHY crate, module declarations/public domain surface and typed stage errors. |
+| `crates/phy/src/configuration/mod.rs` | Create (planned) | Accepted virtual-CMTS configuration, profiles and burst modes. |
+| `crates/phy/src/types/mod.rs` | Create (planned) | Register `bits.rs`, `iq.rs` and `samples.rs` in this directory for bit ranges, complex cells and indexed sample blocks. |
+| `crates/phy/src/source/mod.rs` | Create (planned) | PRBS source and independent verifier. |
+| `crates/phy/src/resources/mod.rs` | Create (planned) | Shared grant resource grids and cell permutations. |
+| `crates/phy/src/grant/mod.rs` | Create (planned) | Shared pure capacity/codeword planning. |
+| `crates/phy/src/bit_processing/mod.rs` | Create (planned) | Shared PHY randomizer primitive. |
+| `crates/phy/src/signal_processing/mod.rs` | Create (planned) | Shared QAM and transform algorithms. |
+| `crates/phy/src/transmitter/mod.rs` | Create (planned) | Compose the eight TX stage adapters. |
+| `crates/phy/src/channel/mod.rs` | Create (planned) | Unity sample transport and future ordered channel stages. |
+| `crates/phy/src/receiver/mod.rs` | Create (planned) | Compose the nine RX stage adapters without source truth. |
+| `crates/phy/src/instruments/mod.rs` | Create (planned) | Bounded passive observations and shared QAM/SA calculations. |
+| `crates/phy/src/simulation/mod.rs` | Create (planned) | Run lifecycle, source associations and independent comparisons. |
+| `crates/phy/tests/` | Create (planned) | Integration/acceptance files named in each block/stage below. |
+| `crates/morgana/src/lib.rs`, `crates/morgana/src/report.rs` | Extend (existing) | Preserve the FEC API while exposing reviewed experiment operations and versioned results. |
+| `crates/cli/src/args.rs`, `crates/cli/src/command.rs` | Extend (existing) | Expose accepted facade inputs/results after the Rust capability exists. |
+| `bindings/python/src/lib.rs`, `bindings/python/tests/test_experiment.py` | Create (planned; later API milestone) | Native adapter and Rust/Python contract-parity checks; no Python science. |
+
+Module directories above use their named `mod.rs`; their leaf files are specified
+in the corresponding sections below. The module roots and `crates/phy/src/lib.rs`
+register those leaves when implemented. Numerical dependency selection and actual
+Qt application file placement remain open decisions for their implementation/UI
+plans; this layout does not introduce a new numerical dependency or UI crate.
+
 ### Configuration and source
+
+**Planned code paths (repository-relative).**
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/configuration/profile.rs` | Create (planned) | Accepted numerology, loading, pilot pattern and PHY seed configuration. |
+| `crates/phy/src/configuration/grant.rs` | Create (planned) | Synthetic grant identity, resource assignment and configured clock epoch. |
+| `crates/phy/src/configuration/burst.rs` | Create (planned) | Scheduled-data mode admission and explicit unsupported-mode results. |
+| `crates/phy/src/types/bits.rs` | Create (planned) | Binary chunks, checked ranges and bit-role identities. |
+| `crates/phy/src/types/iq.rs` | Create (planned) | Complex-cell representation with explicit grid/reference metadata. |
+| `crates/phy/src/types/samples.rs` | Create (planned) | Complex samples, rates, indices, burst boundaries and validity. |
+| `crates/phy/tests/configuration.rs` | Create (planned) | Configuration bounds, atomic admission and matching endpoint validation. |
+
 
 An immutable Virtual CMTS configuration supplies the upstream channel/numerology,
 IUC-to-burst-profile mapping, per-minislot loading, pilot pattern, synthetic grant,
@@ -81,6 +134,19 @@ PRBS15 is the test payload. The separate upstream PHY randomizer is the
 grant-seeded 23-bit process required by PHY3.1 §7.4.4.
 
 ### PRBS block architecture
+
+**Planned code paths (repository-relative).**
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/source/prbs15.rs` | Create (planned) | Validated Prbs15Config/Prbs15, recurrence, bounded generation and position. |
+| `crates/phy/src/source/verifier.rs` | Create (planned) | Independently owned expected stream, comparison counters and coverage. |
+| `crates/phy/src/types/bits.rs` | Create (planned) | Shared SourceChunk and meaningful source-range representation. |
+| `crates/phy/src/simulation/source_ledger.rs` | Create (planned) | Bounded grant/codeword-to-source association outside receiver recovery. |
+| `crates/phy/src/simulation/comparison.rs` | Create (planned) | Validate recovered associations and invoke the independent verifier. |
+| `crates/phy/tests/prbs.rs` | Create (planned) | Independent sequence/period, continuity, bounds and verifier cases. |
+| `crates/phy/tests/source_association.rs` | Create (planned) | Missing/reordered/wrong-run ranges and incomplete comparison coverage. |
+
 
 Status: **designed, not implemented**. ARCH-PRBS-01 expands the first block in
 the signal path; SOURCE-01 remains the implementation milestone. The existing
@@ -260,6 +326,14 @@ maps these requirements to owners and planned checks:
 
 ### CM-US-TX block architecture
 
+**Planned code paths (repository-relative).**
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/transmitter/mod.rs` | Create (planned) | Register and sequence the eight focused stage adapters listed below. |
+| `crates/phy/tests/tx_pipeline.rs` | Create (planned) | Stage-boundary identities, chunk invariance and bounded partial emission. |
+
+
 Status: **planned**. ARCH-TX-00 defines the transmitter block; ARCH-TX-01 through
 ARCH-TX-03 expand its first three stages below. The isolated LDPC codec is a
 dependency; it does not make this transmitter implemented. CM-US-TX converts meaningful
@@ -350,6 +424,18 @@ architecture steps separately from implementation.
 
 #### Deferred burst modes and preambles
 
+**Planned code paths (repository-relative).**
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/configuration/burst.rs` | Create (planned) | Shared explicit mode selection; initial implementation accepts scheduled data only. |
+| `crates/phy/src/transmitter/burst_mode.rs` | Create (planned) | Dispatch before TX-01 and reject unsupported ranging/probing modes. |
+| `crates/phy/tests/burst_modes.rs` | Create (planned) | Unsupported-mode rejection without source consumption or waveform fallback. |
+
+Mode-specific ranging/probing algorithm files remain an open placement decision
+for ARCH-RANGING-01. The paths above reserve mode validation/dispatch only.
+
+
 ARCH-RANGING-00 reserves this extension now; detailed architecture and
 implementation follow the first verified scheduled-data TX → unity channel → RX
 closed loop. These are documented mode boundaries, not new source enums or
@@ -381,6 +467,17 @@ preambles and probing pilots were identified in the pinned extraction at PDF
 pp89–95 and pp98–99; their detailed construction is not specified by this placeholder.
 
 #### TX-01: Grant framing and FEC selection
+
+**Planned code paths (repository-relative).**
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/resources/grid.rs` | Create (planned) | Shared accepted data/complementary-data cell roles, loading and coded capacity. |
+| `crates/phy/src/grant/fec_selection.rs` | Create (planned) | Pure normative family/shortening/borrowing selection, used independently by TX and RX. |
+| `crates/phy/src/grant/plan.rs` | Create (planned) | TxGrantPlan/codeword descriptors, bit-role lengths and offsets. |
+| `crates/phy/src/transmitter/framing.rs` | Create (planned) | Admit the plan, request meaningful source bits and insert information fill. |
+| `crates/phy/tests/grant_plan.rs` | Create (planned) | Independent threshold, borrowing, capacity and byte-residue cases. |
+
 
 [Return to TX stage overview](#internal-stage-sequence).
 
@@ -529,6 +626,19 @@ separate applicability review; this section does not claim full FDD/FDX support.
 
 #### TX-02: LDPC encoding and shortening
 
+**Planned code paths (repository-relative).**
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/ldpc/src/definitions.rs` | Reuse (existing) | Existing upstream families, dimensions and matrix construction; source audit remains pending. |
+| `crates/ldpc/src/sparse_encoder.rs` | Reuse (existing) | Existing sparse systematic parity owner; preserve notices. |
+| `crates/ldpc/src/codec.rs` | Reuse (existing) | Existing append/encode/omit shortening and syndrome operations. |
+| `crates/ldpc/src/tests.rs` | Reuse (existing) | Existing family/shortening checks; these do not complete the source-table audit. |
+| `crates/ldpc/src/tests/oracle.rs` | Reuse (existing) | Existing independent arithmetic oracle; matrix data is still shared. |
+| `crates/phy/src/transmitter/ldpc.rs` | Create (planned) | Encode validated descriptors and assemble ordered words plus grant pad; no duplicated parity algorithm. |
+| `crates/phy/tests/tx_ldpc.rs` | Create (planned) | Grant-integrated codeword lengths/order, bit roles, chunking and failures. |
+
+
 [Return to TX stage overview](#internal-stage-sequence).
 
 Status: **architecture defined; transmitter integration remains planned**.
@@ -652,7 +762,7 @@ Use the existing local owners:
 | `crates/ldpc/src/definitions.rs` | Upstream family/dimensions and matrix construction; pending source review stays visible. |
 | `crates/ldpc/src/sparse_encoder.rs` | Sparse parity dependencies and encoding; preserve its existing copyright/adaptation notices. |
 | `crates/ldpc/src/codec.rs` | Reuse `LdpcCodec::encode` and `valid_syndrome`; the latter restores shortened zero coordinates internally. |
-| Proposed PHY transmitter adapter | Validate TX-01 descriptors, call the codec and assemble ordered output/pad; no matrix or parity arithmetic here. |
+| `crates/phy/src/transmitter/ldpc.rs` (planned) | Validate TX-01 descriptors, call the codec and assemble ordered output/pad; no matrix or parity arithmetic here. |
 
 Keep codec/context caches bounded by the job's admitted code/settings budget;
 do not accumulate every shortening length encountered during a continuous run.
@@ -698,6 +808,16 @@ Stage metadata, bounded streaming and pre-emission checks are engineering
 contracts around the normative CM encoding/shortening behavior.
 
 #### TX-03: Grant-seeded PHY randomization
+
+**Planned code paths (repository-relative).**
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/bit_processing/randomizer.rs` | Create (planned) | One validated seed/register/mask algorithm shared by independently owned TX and RX contexts. |
+| `crates/phy/src/transmitter/randomization.rs` | Create (planned) | Grant reset, ordered XOR, atomic chunk admission and retained snapshots. |
+| `crates/phy/src/receiver/derandomization.rs` | Create (planned) | Independent mask state, soft-sign inverse and grant-pad removal before LDPC. |
+| `crates/phy/tests/randomization.rs` | Create (planned) | Independent literal masks, coverage/reset rules, chunk/failure invariance and soft inverse. |
+
 
 [Return to TX stage overview](#internal-stage-sequence).
 
@@ -873,6 +993,15 @@ upstream algorithms. No reference implementation is copied or linked here.
 
 #### TX-04: Cell-word construction and QAM mapping
 
+**Planned code paths (repository-relative).**
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/signal_processing/qam.rs` | Create (planned) | Shared constellation/bit-label/normalization algorithms; exact mapping awaits this stage design. |
+| `crates/phy/src/transmitter/mapping.rs` | Create (planned) | Group ordered randomized bits by accepted cell loading and map cell words. |
+| `crates/phy/tests/qam_mapping.rs` | Create (planned) | Independent bit-label, normalization and varying-loading cases. |
+
+
 Status: **placeholder; detailed architecture and implementation remain planned**.
 Preserve randomized-bit order and accepted loading while constructing cell words
 and mapping their normalized constellation points.
@@ -880,6 +1009,16 @@ ARCH-TX-04 stays unchecked until its detailed contract and acceptance criteria
 are defined. [Return to TX stage overview](#internal-stage-sequence).
 
 #### TX-05: Pilots, OFDMA framing and interleaving
+
+**Planned code paths (repository-relative).**
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/resources/grid.rs` | Create (planned) | Shared physical/logical resource roles and accepted grid geometry. |
+| `crates/phy/src/resources/permutation.rs` | Create (planned) | One joint time/frequency address mapping with forward/inverse use. |
+| `crates/phy/src/transmitter/framer.rs` | Create (planned) | Known pilots, cell placement, exclusions and physical-grid assembly. |
+| `crates/phy/tests/ofdma_framing.rs` | Create (planned) | Independent pilot/resource/permutation cases and inverse coverage. |
+
 
 Status: **placeholder; detailed architecture and implementation remain planned**.
 Place data and pilots on the accepted resource grid and define the joint
@@ -889,6 +1028,14 @@ are defined. [Return to TX stage overview](#internal-stage-sequence).
 
 #### TX-06: CM Pre-Eq
 
+**Planned code paths (repository-relative).**
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/transmitter/pre_eq.rs` | Create (planned) | Validated carrier correction on the accepted reference plane. |
+| `crates/phy/tests/pre_eq.rs` | Create (planned) | Unity and known-complex coefficient cases with metadata conservation. |
+
+
 Status: **placeholder; detailed architecture and implementation remain planned**.
 Apply the accepted complex correction on its defined carrier/reference plane;
 the initial response is unity.
@@ -896,6 +1043,15 @@ ARCH-TX-06 stays unchecked until its detailed contract and acceptance criteria
 are defined. [Return to TX stage overview](#internal-stage-sequence).
 
 #### TX-07: IFFT
+
+**Planned code paths (repository-relative).**
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/signal_processing/transform.rs` | Create (planned) | Single shared Rust transform owner for IFFT/FFT and instrument reuse; dependency choice remains open. |
+| `crates/phy/src/transmitter/ifft.rs` | Create (planned) | TX geometry/bin-order/normalization adapter around the shared transform. |
+| `crates/phy/tests/transforms.rs` | Create (planned) | Independent impulse/tone, bin-order and normalization checks for both directions. |
+
 
 Status: **placeholder; detailed architecture and implementation remain planned**.
 Transform the complete frequency grid into useful complex samples with
@@ -905,6 +1061,14 @@ are defined. [Return to TX stage overview](#internal-stage-sequence).
 
 #### TX-08: Sample assembly
 
+**Planned code paths (repository-relative).**
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/transmitter/assembly.rs` | Create (planned) | CP/roll-off/window/overlap, guard samples and indexed burst emission. |
+| `crates/phy/tests/burst_assembly.rs` | Create (planned) | Independent extension/window boundaries and arbitrary-chunk equivalence. |
+
+
 Status: **placeholder; detailed architecture and implementation remain planned**.
 Define CP, roll-off, window/overlap, guard treatment and indexed burst output
 across processing chunks.
@@ -912,6 +1076,15 @@ ARCH-TX-08 stays unchecked until its detailed contract and acceptance criteria
 are defined. [Return to TX stage overview](#internal-stage-sequence).
 
 ### Channel Simulator: unity stub first
+
+**Planned code paths (repository-relative).**
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/channel/unity.rs` | Create (planned) | Exact bounded pass-through of sample blocks and metadata, with no random state. |
+| `crates/phy/src/channel/mod.rs` | Create (planned) | Channel boundary/dispatch; reject nonidentity configuration until supported. |
+| `crates/phy/tests/unity_channel.rs` | Create (planned) | Bit-exact sample/metadata transport, arbitrary chunking and rejection cases. |
+
 
 The Channel Simulator remains a visible stage with input/output test points even
 when it has no impairment controls. Its first future implementation is an exact
@@ -930,6 +1103,24 @@ must remain equivalent to the unity stub. Keep truth parameters in channel/metri
 ownership; never pass them to CMTS-RX for ordinary channel correction.
 
 ### CMTS-RX stages
+
+**Planned code paths (repository-relative).** All receiver adapter/test files
+below are **create (planned)**. The shared PHY files are also planned; the
+explicitly marked LDPC codec is existing reuse. `crates/phy/src/receiver/mod.rs`
+registers these stages. These paths locate work without completing RX design.
+
+| Stage | Planned adapter file | Shared algorithm owner | Planned acceptance file |
+| --- | --- | --- | --- |
+| RX-01 | `crates/phy/src/receiver/framing.rs` | Accepted configuration; no hidden TX acquisition state. | `crates/phy/tests/rx_framing.rs` |
+| RX-02 | `crates/phy/src/receiver/symbols.rs` | Accepted geometry and indexed sample types. | `crates/phy/tests/rx_symbols.rs` |
+| RX-03 | `crates/phy/src/receiver/fft.rs` | `crates/phy/src/signal_processing/transform.rs` shared with TX-07. | `crates/phy/tests/transforms.rs` |
+| RX-04 | `crates/phy/src/receiver/channel_estimation.rs` | Pilot-derived estimate/correction lives in this adapter; no injected response input. | `crates/phy/tests/channel_estimation.rs` |
+| RX-05 | `crates/phy/src/receiver/resources.rs` | `crates/phy/src/resources/grid.rs`, `crates/phy/src/resources/permutation.rs` shared with TX-01/05. | `crates/phy/tests/ofdma_framing.rs` |
+| RX-06 | `crates/phy/src/receiver/demapping.rs` | `crates/phy/src/signal_processing/qam.rs` shared with TX-04. | `crates/phy/tests/soft_demapping.rs` |
+| RX-07 | `crates/phy/src/receiver/derandomization.rs` | `crates/phy/src/bit_processing/randomizer.rs` shared with TX-03. | `crates/phy/tests/randomization.rs` |
+| RX-08 | `crates/phy/src/receiver/ldpc.rs` | `crates/ldpc/src/codec.rs` (reuse existing), with no BCH stage. | `crates/phy/tests/rx_ldpc.rs` |
+| RX-09 | `crates/phy/src/receiver/deframing.rs` | `crates/phy/src/grant/plan.rs`; source association remains outside RX. | `crates/phy/tests/deframing.rs` |
+
 
 ```mermaid
 flowchart LR
@@ -970,6 +1161,17 @@ accepted data capacity. Finite-file payload framing needs an explicit shared
 length/segmentation contract before it can promise recovered original bytes.
 
 ### Shared QAM Analyzer and Spectrum Analyzer
+
+**Planned code paths (repository-relative).**
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/instruments/observation.rs` | Create (planned) | Bounded typed taps, run/grant/reference identities and owned snapshots. |
+| `crates/phy/src/instruments/qam.rs` | Create (planned) | Matched QAM observations and diagnostic results; reuse shared constellation definitions. |
+| `crates/phy/src/instruments/spectrum.rs` | Create (planned) | Sample-based PSD/window/normalization and SA results. |
+| `crates/phy/src/signal_processing/transform.rs` | Create (planned) | Shared numerical transform; instrument settings remain independent of active TX/RX state. |
+| `crates/phy/tests/instruments.rs` | Create (planned) | Known spectra, reference-plane matching, bounded retention and observer neutrality. |
+
 
 Keep one reusable instrument implementation per instrument type, with tap
 selection rather than separate numerical implementations for TX/channel/RX.
@@ -1026,10 +1228,29 @@ pause/resume preserves source, randomizer, interleaver and receiver state.
 
 ### Ownership, results and acceptance
 
-Retain `crates/ldpc` as the waveform-independent codec. A proposed `crates/phy`
-would own focused `configuration`, `source`, `transmitter`, `channel`, `receiver`,
-`instruments` and `simulation` modules; these are planned module responsibilities,
-not empty files to create now. `crates/morgana` exposes their typed Rust facade
+**Planned code paths (repository-relative).**
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/simulation/job.rs` | Create (planned) | Accepted-run lifecycle, bounded pipeline work, pause/resume and partial cancellation. |
+| `crates/phy/src/simulation/source_ledger.rs` | Create (planned) | Source-range metadata owner, separate from normal receiver inputs. |
+| `crates/phy/src/simulation/comparison.rs` | Create (planned) | Independent source and matched-symbol metrics after receiver recovery. |
+| `crates/phy/tests/closed_loop.rs` | Create (planned) | Bounded unity runs with independent source comparison and lifecycle invariants. |
+| `crates/morgana/src/experiment.rs` | Create (planned) | Typed public Rust experiment operation delegating into PHY orchestration. |
+| `crates/morgana/src/lib.rs` | Extend (existing) | Expose reviewed operations and preserve existing FEC imports/methods. |
+| `crates/morgana/src/report.rs` | Extend (existing) | Add reviewed versioned experiment results while preserving schema-1 FEC behavior. |
+| `crates/morgana/tests/experiment.rs` | Create (planned) | Public configuration, errors, owned results and FEC compatibility. |
+| `crates/cli/src/args.rs` | Extend (existing) | Parse future experiment requests without numerical calculations. |
+| `crates/cli/src/command.rs` | Extend (existing) | Dispatch through the same facade and serialize returned results. |
+| `bindings/python/src/lib.rs` | Create (planned) | Later native Python adapter to the same public Rust operations. |
+| `bindings/python/tests/test_experiment.py` | Create (planned) | Later adapter contract tests; expected science comes from independent Rust fixtures. |
+
+
+Retain `crates/ldpc` as the waveform-independent codec. The
+[planned code layout](#planned-code-layout) defines the proposed `crates/phy`
+module roots; the per-stage tables above name their implementation/test files.
+These remain planned responsibilities, not empty files to create now.
+`crates/morgana` exposes their typed Rust facade
 and reports; the CLI and future Python wrapper consume it. Numerical reuse from
 the reference toolkit requires a reviewed shared-code plan and preserved licenses.
 Actual GPL Qt presentation reuse requires a separate compatible application
