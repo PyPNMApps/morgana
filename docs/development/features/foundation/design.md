@@ -151,7 +151,8 @@ scientific calculations. No waveform or Python method is claimed implemented.
 | PHY-01 | Typed virtual CMTS configuration and grant/codeword selector | Independent §7.4.3.1.1 boundary cases, UCD/IUC meaning verified |
 | WAVE-TX-01 | One upstream data burst | Verify randomizer/interleaver/map/pilot/preamble order and exact coordinates |
 | WAVE-RX-01 | Received-only noiseless receiver | Recover exact original bytes without TX truth in RX interfaces |
-| WAVE-CH-01 | Channel, Pre-Eq and deterministic noise | Reference-plane accounting; controlled RxMER/FEC effects |
+| WAVE-CH-01 | Exact unity channel boundary | Preserve actual samples, indices and metadata under arbitrary chunking |
+| WAVE-CH-02 | Later channel, measured Pre-Eq and deterministic noise | Reference-plane accounting; controlled RxMER/FEC effects |
 | API-01 | Full experiment reports/test points; Python adapter | Rust/Python validation, ownership and cancellation parity |
 
 Waveform gaps: §7.4.4 randomization, §7.4.5 joint interleaving, §7.4.6–7 mapping,
@@ -180,6 +181,9 @@ flowchart LR
 
 The diagram describes planned integration. The first executable covers only
 information bits → upstream LDPC encode → LLRs → decode → independent bit compare.
+The expanded [PRBS/TX/unity-channel/RX and QAM/SA architecture](../../../architecture.md#planned-upstream-signal-path-and-workbenches)
+is the current stage/observation plan. The first future full waveform path keeps
+the Channel Simulator as an exact unity stub; impairment integration is later.
 For future pilots, receiver estimates H_eff = C H from Y/X; injected H and C
 remain outside normal receiver inputs. Inverting measured Pre-Eq is an explicitly
 regularized estimate with gain/delay assumptions, never exact RF truth or noise.
