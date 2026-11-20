@@ -3067,11 +3067,12 @@ precede matching future Python/UI adapters; no channel implementation is added n
 
 ### CMTS-US-RX block architecture
 
-Status: **block overview defined; detailed stage contracts and implementation
-remain planned**. ARCH-RX-00 defines this block and its nine internal stages,
+Status: **block and RX-01..09 stage architecture defined for the declared
+initial scope; scientific implementation and source acceptance remain planned**.
+ARCH-RX-00 defines this block and its nine internal stages,
 matching the CM-US-TX presentation structure. The
 [receiver design/checklist](development/features/cmts-us-rx/design.md) tracks
-RX-01..09 separately; a section heading does not complete a stage's design.
+RX-01..09 separately; completed design does not imply executable receiver support.
 
 CMTS-US-RX converts received upstream complex samples into decoded information
 decisions and explicit recovery outcomes. Its first planned experiment uses
@@ -3112,20 +3113,30 @@ status. Orchestration associates source ranges afterward; PRBS-RX compares
 original/recovered bits without feeding expected values back into decoding.
 
 Configuration/readiness is idle. Start freezes the receiver view; pause/resume
-preserves framing, pilot history, inverse-resource progress, randomizer and
-decoder state where accepted. Configuration changes apply to a new generation.
+preserves framing, the current pilot frame, inverse-resource progress and
+randomizer state. The existing LDPC call is atomic; pause/cancel is between
+codewords, without unsupported mid-iteration checkpointing. Configuration changes
+apply to a new generation.
 Bound input/ready queues, retained samples/cells/LLRs, buffered symbols/codewords,
 iterations and run work before consumption. Do not buffer an entire arbitrary
 burst or fill unavailable input intervals with zeros. Cancellation/failure
 retains completed observations/decisions and explicit incomplete coverage.
-Detailed stage transactions and numeric budgets belong to RX-01..09 expansion.
-Future public Rust operations precede matching native Python/UI adapters.
+The stage contracts below define transactions and numeric budgets for this scope.
+The proposed aggregate working-state ceiling is 64 MiB per receiver job,
+including frame buffers, transform/codec scratch and ready queues; optional
+retained observations/results have separate finite budgets. Admission checks
+actual typed storage and run work before allocation, and rejects a plan that
+cannot fit rather than overflowing a per-stage maximum. These are application
+limits, not PHY requirements or measured performance claims.
+Future public Rust operations precede matching native Python/UI adapters; both
+share the same modes, errors, availability and owned outcomes. No callable
+experiment API or saved schema is introduced by this architecture.
 
 #### Receiver stage sequence
 
-Every overview/output label links to its local stage section. The sections below
-are explicit placeholders for detailed design, with proposed ownership already
-named. They preserve the existing nine-stage order.
+Every overview/output label links to its completed local stage contract. All nine
+stages have architecture within their explicitly declared initial modes; proposed
+files and scientific processing remain unimplemented. Preserve this stage order.
 
 ```mermaid
 flowchart LR
@@ -3190,14 +3201,17 @@ arbitrary decoded values as padding. Start with continuous PRBS filling the
 accepted data capacity. Finite-file payload framing needs an explicit shared
 length/segmentation contract before it can promise recovered original bytes.
 
-Detailed expansion starts with RX-01. Each placeholder below states its scope
-and planned files; none adds a module or completes scientific acceptance.
+The nine contracts below cover configured-timing scheduled data, frame-based
+received-pilot estimation and finite reference-confidence MaxLog demapping.
+Blind acquisition, fast within-frame response tracking, calibrated received-noise
+estimation, finite-file/MAC deframing and ranging/probe recovery remain explicit
+future modes. No new module or scientific acceptance is implied by these designs.
 
 #### RX-01: Burst framing and timing
 
 [Return to RX stage index](#receiver-stage-sequence).
 
-Status: **placeholder; detailed architecture and implementation planned**.
+Status: **architecture defined for the declared initial mode; implementation planned**.
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
@@ -3206,17 +3220,67 @@ Status: **placeholder; detailed architecture and implementation planned**.
 | `crates/phy/src/configuration/burst.rs` | Create (planned) | Shared scheduled-data origin/grant definition, with no channel-truth correction. |
 | `crates/phy/tests/rx_framing.rs` | Create (planned) | Independent origin/range, arbitrary chunk, gap and lifecycle cases. |
 
-Initially frame received samples using the receiver's accepted epoch and grant,
-assuming zero carrier/sample-clock offset. Preserve actual sample indices,
-unavailable ranges and incomplete bursts. Do not acquire a preamble, retime from
-channel delay settings or infer silence across gaps. Detailed buffering,
-completion, failure and acceptance contracts remain ARCH-RX-01 work.
+**Scope and input.** ConfiguredTiming is the initial scheduled-data mode. The
+receiver's accepted [US Configuration](#us-configuration) supplies its frame
+origin B, symbol count J, N, CP C, RP R, sample rate and grant/profile identity.
+Use B as the first prefix sample and stride `S=N+C`. Derive symbol j's prefix
+origin `B+j*S` and useful start `B+j*S+C` with checked integer arithmetic. Keep
+frame-local versus burst-global symbol indices explicit. No preamble detection,
+AGC, timing search, CFO or sample-clock recovery is hidden in this mode.
+
+Admit actual received complex samples, absolute first index, count, fs and
+stream/run/configuration identity. Timing comes from the receiver's accepted
+configuration, never TX snapshots, injected channel delay or Pre-EQ updates.
+A wrong configured origin is an experiment that may fail recovery. Do not move
+it until a separately designed received-signal acquisition mode exists.
+
+**Framed stream and gaps.** Retain absolute sample coordinates and availability.
+Accept a finite observation interval `[O0,O1)` and initialize the input cursor at
+O0. Scheduled windows before/after that interval get explicit missing coverage.
+Input events are either available sample blocks or explicit missing intervals;
+both must continue the previously accepted stream position. Reject unexplained
+gaps, overlaps, duplicate/reordered blocks, stale identities, wrong fs and index
+overflow. A missing interval advances only the declared timeline and yields
+missing coverage, never invented zero samples. Actual measured/modelled zero
+samples remain available data. Before/after-burst observations may be retained
+under the configured observation interval, but do not create extra data symbols.
+
+RX-01 emits bounded indexed blocks/gap descriptors plus receiver-derived symbol
+boundaries to RX-02. It does not concatenate disjoint intervals or copy the whole
+burst. A readable but incomplete burst remains inspectable. Nonfinite values
+are an invalid input call, not automatically converted into erasures.
+
+**State, bounds and completion.** Admit at most 65,536 samples in one external
+block; execute in quanta of at most 4096 with at most one ready quantum. Freeze
+finite observation extent, scheduled J and total sample/work/output budgets
+before consumption. Keep a next-input cursor and next-symbol/frame counters;
+raw history belongs only to the bounded downstream window/observation owners.
+Validate the complete offered block's identity/range/finite values first, then
+commit each admitted quantum and its consumed count atomically. Backpressure
+can leave an explicitly unconsumed suffix; retries do not emit it twice.
+
+Empty input is a no-op. Explicit finish closes the observation, records any
+scheduled windows absent at the edges and propagates finish once. Missing
+samples do not make a burst successful merely because a queue is empty. Extra
+filter/guard samples are observations, not inferred new grants. Pause preserves
+cursors; cancellation retains delivered intervals and reports scheduled/pending
+coverage. Inspection/SA never advances framing or fills gaps. A fresh burst
+needs an explicit new identity/reset; no stale sample enters its windows.
+
+**Planned acceptance and evidence.** Test literal B/S/C offsets, nonzero/large
+origins, arbitrary splits including prefix/useful boundaries, exact lengths,
+explicit versus unexplained gaps, actual zeros, overflow, stale/duplicate input,
+truncated start/end, finish idempotence, backpressure, pause/cancel/retry and
+observer neutrality. Test a deliberately wrong origin without truth-based
+repair. PHY I20 §7.4.11–7.4.11.1, PDF pp70–71, Figure 19 establishes CM
+prefix/frame and useful-symbol references; configured RX framing, gap events
+and budgets are engineering policies. Blind acquisition/ranging remain deferred.
 
 #### RX-02: Useful-symbol extraction
 
 [Return to RX stage index](#receiver-stage-sequence).
 
-Status: **placeholder; detailed architecture and implementation planned**.
+Status: **architecture defined for the declared initial mode; implementation planned**.
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
@@ -3225,16 +3289,60 @@ Status: **placeholder; detailed architecture and implementation planned**.
 | `crates/phy/src/types/samples.rs` | Create (planned) | Shared indexed time blocks; raw/useful intervals retain distinct references. |
 | `crates/phy/tests/rx_symbols.rs` | Create (planned) | Independent useful-window offsets, truncation and CP/overlap boundaries. |
 
-Extract the configured N-sample interval without inserting samples or dividing
-by the transmit window. Keep each useful interval independent for SA; stripping
-CP does not make adjacent useful windows contiguous in absolute time.
-ARCH-RX-02 will define exact interval admission and partial/error handling.
+**Window selection.** For physical symbol j, collect exactly the available
+received samples in the half-open interval `[U_j,U_j+N)`, where
+`U_j=B+j*(N+C)+C` is derived by RX-01. Return one owned useful window with the
+same run/grant/frame/symbol identity, absolute U_j, fs and transform convention.
+Retain raw-prefix/guard intervals as distinct observations when requested; they
+are not copied into the N-sample FFT input.
+
+The complete useful interval lies in TX-08's flat transmit-window region for
+the admitted `R<C` geometry in the unity experiment. Do not apply a receive
+Hann/taper, divide by the TX window, add overlapping tails, reverse samples or
+rescale energy. TX-08 has already assembled the actual transmitted overlap.
+Useful windows are N samples long and separated by C samples in absolute time;
+joining them into a packed array does not make a continuous waveform for SA.
+The final R-sample burst tail is not another useful window.
+
+For an aligned causal finite response, a sufficient circular-convolution
+condition is that the total nonzero response lag fits `C-R`; this is an
+engineering derivation from TX-08's flat cyclic extension, not a receiver
+promise for arbitrary echo/delay/CFO. The receiver does not inspect injected
+taps/delay to declare that condition satisfied. Insufficient guard or wrong
+timing can produce ISI/ICI and failed recovery, without changing extraction.
+
+**Availability and state.** Keep at most N<=4096 sample values and a bounded
+availability map for the current useful window, plus one ready window. Arbitrary
+transport chunks append by exact index; CP/guards need not be buffered. An
+explicit gap touching the useful interval makes that symbol unavailable for
+FFT. Return a typed missing-window outcome with actual coverage, not a zero-
+filled FFT array. A gap confined to discarded CP/guards does not by itself
+invalidate a complete useful interval. Never slide the window to find data.
+
+Validate prospective copy/count/identity before committing input progress and
+window state. Only a complete available window goes to RX-03. At the configured
+end of a missing/truncated window, emit its unavailable descriptor exactly once
+and advance the symbol coordinate; later stages preserve that position. Finish
+and cancellation report an incomplete current window rather than emitting its
+partial samples as a full symbol. Pause and arbitrary drain boundaries preserve
+sample order. Disable/full SA retention cannot alter extraction.
+
+**Planned acceptance and evidence.** Use an independent numbered-sample vector
+to assert exact first/last useful indices and discarded intervals, including
+B!=0, first/last symbols, R=0, maximal admitted CP/RP and splits at every window
+edge. Check CP-only gaps versus useful gaps, duplicate samples, truncation,
+no padding/window compensation and no accidental concatenated-SA timeline.
+A separate TX-08 unity experiment compares useful samples, without giving TX
+arrays to normal RX. PHY I20 §7.4.9–11, PDF pp65–71, especially Figure 18/p69
+and Figure 19/p71, supplies waveform/timing conventions. Original p69 was
+rendered and inspected for cyclic copies and the flat/taper support; extraction
+and missing-window policies are receiver engineering choices.
 
 #### RX-03: FFT
 
 [Return to RX stage index](#receiver-stage-sequence).
 
-Status: **placeholder; detailed architecture and implementation planned**.
+Status: **architecture defined for the declared initial mode; implementation planned**.
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
@@ -3242,16 +3350,55 @@ Status: **placeholder; detailed architecture and implementation planned**.
 | `crates/phy/src/signal_processing/transform.rs` | Create (planned) | Same centered unitary forward/inverse numerical owner as TX-07. |
 | `crates/phy/tests/transforms.rs` | Create (planned) | Independent forward convention, tone/impulse, energy and paired-transform checks. |
 
-Apply the matching forward transform to actual received useful samples, retaining
-full physical-bin order and raw I/Q before correction. Reuse TX-07's numerical
-convention with receiver-owned admission/state. ARCH-RX-03 expands metadata,
-failure/bounds and independent forward acceptance; a round trip alone is insufficient.
+**Forward operation.** Admit only a complete finite RX-02 N-sample useful
+window, with N=2048/4096, the corresponding 50/25 kHz geometry and
+fs=102.4 Msamples/s. Reuse [TX-07's shared transform](#tx-07-ifft), with separate
+receiver scratch and admission; do not introduce another FFT convention.
+For physical bin k in ascending frequency and local time i:
+
+```text
+Y[k] = (1/sqrt(N)) * sum_i r[i] * exp(-j*2*pi*i*(k-N/2)/N)
+```
+
+Implement the centered wrapper as multiplication of the received samples by
+`(-1)^i` before the conventional negative-root forward transform, then unitary
+scaling. This matches TX-07's declared baseband reference. Do not use a shifted
+raw-library storage index as physical k, conjugate I/Q, create a Hermitian
+mirror or add another occupied-carrier/pilot normalization.
+
+**Output and failures.** Return all N raw received bins with physical frequency
+origin/spacing, original useful start, frame/symbol identity, reference plane
+and transform/scale metadata. Resource roles come from the accepted receiver
+plan; excluded/inactive bins remain actual received observations and may contain
+noise/leakage. Do not force them to zero or mistake a zero-valued sample/bin
+for unavailable input. No equalization, pilot removal or decision slicing occurs
+here. A missing useful window propagates an unavailable-symbol descriptor and
+coordinates; it never invokes FFT on fabricated zeros.
+
+Bound input/output/scratch to O(N), with one in-flight transform and at most the
+two admitted immutable transform plans per owner. Check identity, shape, finite
+inputs and capacity before work, and finite outputs before publication. Numeric
+overflow rejects the candidate without consuming the window or publishing a
+partial transform. Pause/cancel are observed between bounded transforms; finish
+has no transform tail. Passive raw-QAM snapshots borrow/copy actual output under
+separate retention limits and cannot change the transform state.
+
+**Independent acceptance and evidence.** For an impulse of amplitude a at local
+index i0, expect `a/sqrt(N)*exp(-j*2*pi*i0*(k-N/2)/N)`. A constant input a lands
+at k=N/2 with amplitude `a*sqrt(N)`; the centered single tone
+`a*exp(+j*2*pi*i*(k0-N/2)/N)` lands at k0. Verify signed tones near both edges,
+complex impulses, energy preservation and physical-bin/frequency association
+against direct sums, not only IFFT/FFT round trips. Test wrong shapes, nonfinite
+and overflowing values, immutable inputs, repeated preview and missing windows.
+PHY I20 §7.4.9, PDF pp65–66 defines the upstream bin/time convention. Unitary
+analysis scaling and the safe Rust radix-2 plan are engineering contracts shared
+with TX-07; these tests do not establish a complete DOCSIS receiver.
 
 #### RX-04: Channel estimation and equalization
 
 [Return to RX stage index](#receiver-stage-sequence).
 
-Status: **placeholder; detailed architecture and implementation planned**.
+Status: **architecture defined for the declared initial policies; implementation planned**.
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
@@ -3262,36 +3409,170 @@ Status: **placeholder; detailed architecture and implementation planned**.
 | `crates/phy/src/bit_processing/pilot_sequence.rs` | Create (planned) | Shared known pilot sequence; receiver uses its own context. |
 | `crates/phy/tests/channel_estimation.rs` | Create (planned) | Independent pilot sign/gain, coverage, estimate/correction and truth-isolation cases. |
 
-Estimate effective C×H from received known pilots and locally generated
-expectations. Preserve raw observations, estimate, coverage/reliability and
-corrected cells separately. Never divide by injected H/C or relabel an input
-RxMER target as receiver noise. ARCH-RX-04 must define interpolation/history,
-pilot boosting, weak/null response and confidence before implementation.
+**Inputs and pilot reference.** Accept RX-03 raw bins/availability, the receiver's
+resource/pilot plan and an explicit estimation policy. Generate the known BPSK
+sign independently with TX-05's physical-bin-indexed 12-bit sequence. Its value
+is `p[j,k]=sign[k]*a_p[j,k]`, including the exact known-pilot role gain. Pilot
+power three means amplitude sqrt(3), not three; the complementary-cell exception
+remains in the shared role plan. Complementary data is unknown payload and must
+never be treated as a known pilot or fed back from a TX label.
+
+Estimate the effective response G=C×H, including any uncorrected receiver phase/
+timing effects, from received Y and known p. At a received pilot, the raw ratio
+is `Y/p`; retain Y, p, physical coordinates and this estimate. Normal inputs
+contain no injected H, TX C/update schedule, expected source data, target RxMER
+or channel noise seed. A Pre-EQ update is observable only through its effect on
+received samples. No supplied-truth equalizer is silently selected for unity.
+
+**Declared estimation policies.** Buffer one accepted OFDMA frame at a time.
+The following are engineering estimators, not PHY-prescribed CMTS algorithms:
+
+| Policy | Estimate and coverage |
+| --- | --- |
+| FrameFlatLs | Fit one complex G from all available known pilots in this frame: `G=sum(conj(p)*Y)/sum(abs(p)^2)`. At least one finite nonzero reference is needed. Apply it to the frame's scheduled cells under the explicit flat, frame-stationary assumption. This is the first unity-loop policy. |
+| FramePilotLinear | At each pilot-bearing physical carrier, use the same least-squares sum over its available pilots in this frame. Retain that carrier estimate as an anchor. Between two anchors in the same contiguous eligible carrier region, interpolate real and imaginary components linearly in physical k. Require an accepted maximum anchor separation. Exact anchor bins use their own estimate; unbracketed bins are unavailable. |
+
+FramePilotLinear never interpolates across excluded/unused/ungranted frequency
+holes, across frames/grants or beyond its configured gap limit. One anchor
+covers only its own bin, unlike the deliberately flat policy. Keep finite zero
+anchors visible; do not discard them and bridge across a notch. No phase-unwrapped
+interpolation, edge extrapolation, data-decision feedback or automatic policy
+fallback is implied. Record the contributing symbols/carriers and weights.
+
+Both policies assume the effective response is sufficiently stationary within
+one frame; they wait for that frame and may use its later pilots. This is bounded
+frame processing, not a causal online tracker. There is no cross-frame estimate
+history. A change of C during a frame can smear the fit and cause recovery errors;
+the receiver does not read update event times to repair that. General fast
+tracking/CFO/ISI correction needs a future estimator, not an advertised guarantee
+of the Pre-EQ replay input. Missing symbols remain explicitly missing even if
+other pilots permit a channel estimate at their coordinates.
+
+**Correction, validity and confidence.** For a supported finite estimate, use
+stable complex division `Z=Y/G`, equivalent to `Y*conj(G)/abs(G)^2`. Retain raw Y,
+G, observed/interpolated/flat provenance, coverage and corrected Z separately.
+Choose an explicit finite positive `response_power_floor` in receiver settings
+(proposed reference value 1e-12 in normalized response-power units). Estimates
+at or below the floor, absent brackets/pilots and missing Y produce unavailable
+corrected cells with typed reasons. Never invent unity, clamp an inverse or turn
+an unavailable value into measured zero. Nonfinite arithmetic is a rejected
+numeric transaction; a physical zero response is a valid observed failure.
+
+This is zero-forcing with validity rejection, not MMSE or calibrated noise
+estimation. Keep pilot/complementary boost in Z; RX-05 removes only the known
+payload role amplitude. Estimate fit residuals and anchor count are diagnostics,
+not a receiver noise variance or field RxMER. In-fit pilot equalization can
+produce an artificially zero residual; neither it nor a single pilot proves
+signal quality. The initial finite demapper confidence is explicitly configured
+in RX-06; later received-noise estimation requires independent/out-of-fit design.
+
+**State, bounds and failures.** Admit only the accepted frame geometry (at most
+36 symbols and N<=4096, conservatively 147,456 bin slots). Bound raw bins,
+availability and output with at most one frame in progress/ready; transfer
+ownership downstream before collecting another. Preflight combined RX-04/05
+storage/work and checked allocation counts, rather than allocating each stage's
+maximum independently. Frame completion includes descriptors for unavailable
+symbols. Publish estimates/corrected-frame outcomes only after candidate
+validation; reject stale/reordered frames and mismatched roles without changing
+previous output. Pause retains the frame; cancel preserves completed frames
+and reports the partial frame. Instruments query snapshots without updating fits.
+
+**Planned acceptance and evidence.** Use literal complex pilot/reference cases,
+including boosted p and common complex G, to verify LS estimates and correction.
+Test two-anchor interpolation with known weights, holes, edge coverage, weak/
+zero anchors, all-missing pilots, complex division extremes and atomic failure.
+Test a within-frame response step without oracle repair, frame boundaries,
+missing-window propagation and bounded buffering. Verify pilot references and
+boost exceptions independently of the estimator. PHY I20 §7.4.16/§7.4.16.3/6,
+PDF pp101–107 and §7.4.15.3.3, pp98–99 define the transmitted references;
+§7.4.17, pp106–108 establishes transmitter C. These receiver fits, interpolation,
+floors and validity rules are engineering choices. No full mask audit, adaptive
+tracking or measured-noise capability is claimed implemented.
 
 #### RX-05: Resource extraction and inverse interleaving
 
 [Return to RX stage index](#receiver-stage-sequence).
 
-Status: **placeholder; detailed architecture and implementation planned**.
+Status: **architecture defined for the declared initial policies; implementation planned**.
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
 | `crates/phy/src/receiver/resources.rs` | Create (planned) | Recover granted loaded cells and logical inverse-visit identities. |
+| `crates/phy/src/resources/pilots.rs` | Create (planned) | Shared physical role/amplitude rules; remove the known payload boost once. |
 | `crates/phy/src/resources/grid.rs` | Create (planned) | Same physical grid, roles/loading and coverage plan as TX-01/05. |
 | `crates/phy/src/resources/permutation.rs` | Create (planned) | Shared joint visit/address sequence, applied in the receiver's inverse direction. |
 | `crates/phy/src/resources/interleaving_blocks.rs` | Create (planned) | Same bounded block partition as TX-05. |
+| `crates/phy/tests/upstream_interleaving.rs` | Create (planned) | Independent inverse visits, partitions and conservation across blocks. |
 | `crates/phy/tests/ofdma_framing.rs` | Create (planned) | Independent physical/logical association, inverse ordering and conservation cases. |
 
-Gather granted data and data-bearing complementary cells with their exact
-loading. Known pilots, excluded carriers and unavailable resources do not become
-payload. ARCH-RX-05 defines the inverse mapping across blocks/frames and its
-relationship to soft demapping; do not substitute a generic cell-only shuffle.
+**Inverse visit and ordering.** Accept a corrected physical frame with validity,
+plus the same independently accepted grant/profile/role plan as TX-01/04/05.
+Reconstruct eligible minislots, physical holes and per-frame block partition
+with the shared resource owners. For each block in configured order, enumerate
+the exact TX-05 joint `(t,f)` visit sequence and read the received value at that
+physical coordinate. This traversal recovers original cell-word order; it is
+not a second generic bit permutation or a payload-only interleaver counter.
+
+The shared iterator still visits known-pilot coordinates, but they consume no
+payload bits. Gather ordinary data and data-bearing complementary cells using
+their actual loading `m`, including the complementary `max(m_data-4,1)` rule.
+Excluded/unused/ungranted and zero-valued minislots contribute no payload;
+missing or uncorrectable scheduled payload cells retain their original m-bit
+position with unavailable status. Never compact the available cells and shift
+later word/randomizer offsets. Coordinates, not the numerical I/Q value,
+determine whether a resource carries payload.
+
+Process all blocks of a frame in the configured block order, then the next
+frame of the same grant. Physical received symbols arrive column by column
+across all blocks; inverse visitation may need later columns before emitting
+an earlier logical cell. Reuse the bounded frame retained for RX-04/05 and
+release it only after every planned visit is emitted. At most one such frame
+is retained; the maximum block is 24 minislots, Q=8/16 rows per minislot and
+K_frame<=36. Do not buffer an arbitrary complete grant or emit all received
+symbols of one block as if that were their physical receive order.
+
+**Role scaling and output.** Each ordered payload-cell record carries physical
+frame/symbol/carrier, block/visit ordinal, role, m, accepted grant-bit offset,
+corrected I/Q or unavailable reason, estimate coverage and role amplitude a.
+Use the shared pilot/role gain owner. For available payload cells return the
+unit-reference QAM value `z=Z/a`, where a is one or the prescribed sqrt(3).
+Keep pre-removal Z and a in passive metadata if retained. Remove this known
+role gain exactly once, after response correction; do not normalize the actual
+constellation to its observed power, divide by C again or call a zero z missing.
+Known pilots are separate diagnostics and do not pass through payload demapping.
+
+Compute bit offsets cumulatively in visit order, not as cell_index times one
+fixed loading. Preserve spans where a cell crosses codeword/pad boundaries.
+At grant finish the sum of m over emitted available/unavailable payload cells
+must equal accepted coded capacity G. For every block, visits cover each of its
+K_frame*L physical positions exactly once; all blocks restore the original
+physical mapping. Wrong duplicate/absent coordinates are plan/input errors,
+not erasures to hide an interleaver defect.
+
+**State and acceptance.** Keep frame ownership, block/iterator state, next visit
+and grant-bit offset. Emit at most 16,384 cell records per call with bounded
+ready queue and checked output/work limits; RX-06 may request smaller batches.
+Validate the next output against candidate state; backpressure/rejection never
+advances the visit. Pause/cancel retain the unfinished traversal and previously
+emitted cells. Frame/block boundaries reset only their address counters; grant
+bit order and downstream PHY randomizer continue until the grant ends.
+
+Use independently transcribed small block visits, including power-of-two and
+non-power-of-two K/L, multiple blocks/frames, exclusion holes, edge/body masks,
+mixed QAM/complementary loading and zero-valued minislots. Check literal received-
+coordinate order and bit-capacity conservation, not just TX/RX round trips.
+Exercise unavailable positions, boosted complementary exceptions, split output,
+stale/duplicate input and cancellation. PHY I20 §7.4.5–7.4.5.1, PDF pp58–63,
+Figures 8–12 requires CMTS inverse de-interleaving; §7.4.6–7, pp64–65 and
+§7.4.16, pp101–107 control loading/roles. TX-05 remains the single source-indexed
+partition/permutation/mask contract; full independent mask/visit fixtures remain
+implementation-time prerequisites, not completed normative transcriptions.
 
 #### RX-06: Soft QAM demapping
 
 [Return to RX stage index](#receiver-stage-sequence).
 
-Status: **placeholder; detailed architecture and implementation planned**.
+Status: **architecture defined for the declared initial policies; implementation planned**.
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
@@ -3301,17 +3582,77 @@ Status: **placeholder; detailed architecture and implementation planned**.
 | `crates/phy/src/signal_processing/qam_tables.rs` | Create (planned) | Same source-indexed constellation labels/scales as TX-04. |
 | `crates/phy/tests/soft_demapping.rs` | Create (planned) | Independent labels, MSB positions, LLR sign/scale and finite/noiseless policy cases. |
 
-Produce natural-log P(0)/P(1) LLRs, positive for zero, in each cell's MSB-first
-order. Use the selected role/loading and explicit confidence policy; finite
-reference confidence is not a noise measurement. Hard decisions are diagnostics,
-not a replacement for soft decoding. ARCH-RX-06 defines metrics, clipping/error
-policy and supported mappings without importing channel noise truth.
+**Input and supported labels.** Admit RX-05 unit-reference payload cells in
+ordered grant-bit coordinates, with role, m, availability and reference scale.
+Use the same exact source-indexed constellation labels/scales as TX-04: QPSK
+through 4096-QAM, including 8/32-QAM and other admitted odd-bit mappings; BPSK
+is restricted to complementary payload here. Known pilots are not payload.
+CMTS mandatory versus optional 2048/4096-QAM support remains as recorded in
+TX-04; recognizing an order never enables unaudited labels or a full decoder.
+Reject an unsupported mapping instead of substituting a square/Gray default.
+
+**Metric and confidence contract.** The initial metric is MaxLog, with explicit
+finite ReferenceVariance v>0 in the unit-average-power constellation plane
+*after* RX-05 role-gain removal. This is an engineering confidence assumption,
+including for the noiseless loop, not measured noise or an input RxMER curve.
+Require a finite representable variance/reciprocal; do not infer zero variance
+from an impairment-free model. No channel settings object is accepted here.
+For bit position b, where b=0 is the cell's MSB, let S_b0/S_b1 be the accepted
+labeled constellation subsets. Compute:
+
+```text
+d0 = min(abs(z-s)^2 for s in S_b0)
+d1 = min(abs(z-s)^2 for s in S_b1)
+L_raw[b] = (d1-d0)/v
+L[b] = clamp(L_raw[b], -50, +50)
+```
+
+The sign convention is natural-log P(0)/P(1), positive for zero. MaxLog is an
+approximation to the log-sum likelihood, not an exact posterior or calibrated
+BER. v is complex error power E|e|^2 in the hypothetical circular-Gaussian
+reference, with real/I/Q variance v/2; do not add a second factor two. For
+unit BPSK {0:+1,1:-1}, the unclipped result is `4*Re(z)/v`.
+
+Emit m finite LLRs MSB first and preserve cell-bit/absolute grant coordinates.
+The ±50 ceiling matches the current codec's finite saturation; count clipped
+metrics and retain the declared confidence policy. Stable distance arithmetic
+must reject nonrepresentable candidate results; NaN/infinity is not rescued by
+clamping. An available cell exactly on a bit decision boundary may legitimately
+produce zero LLR. For unavailable cells emit exactly m zero LLR erasures with
+the original reason; zero confidence is not an observed zero-valued point.
+Hard decisions use L<0 for one, L>0 for zero, and a recorded deterministic zero
+bit on an exact tie. Ties/erasures remain distinguishable in diagnostics.
+
+Only reference-confidence demapping is designed here. Received-noise variance
+estimation, per-bin calibrated likelihoods and exact log-sum metrics are future
+explicit policies. A finite reference LLR does not reproduce field RxMER; any
+later variance transformation through G and role gain needs its own tests and
+reference-plane declaration. No TX labels or source truth calibrate decisions.
+
+**Bounds, state and tests.** Process whole cells with at most 16,384 output LLRs
+per call and a candidate-work ceiling of 1,048,576 constellation/bit-subset visits.
+Preflight the sum of `M*(m+1)` per cell for distance plus bit reductions; split
+batches before exceeding it. One 4096-QAM/12-bit cell fits, but an arbitrarily
+large batch does not. Keep only bounded reference tables/current-cell scratch,
+next cell/grant-bit offset and one ready batch. No point/LLR history grows with
+the run. Validate full cell availability/identity/loading before committing output;
+pause/retry/preview cannot change later metrics or consume RNG (none is needed).
+
+Independent acceptance covers literal Annex A labels and every enabled MSB bit
+partition, BPSK sign/scale, symmetric ties, mixed loading, exact erasure counts,
+role-gain removal once, clipping and finite extremes. Compare MaxLog metrics
+with independently enumerated subsets, not just the shared mapper. Verify
+noiseless source decisions separately from LLR calibration and decoder recovery.
+PHY I20 §7.4.6–7.4.7.2, PDF pp64–65, Figure 13 and Annex A pp197–206 define
+label/bit/scale conventions. The likelihood approximation, v and clipping are
+receiver engineering policies; full label audits and runtime acceptance remain
+pending even though this stage contract is defined.
 
 #### RX-07: PHY soft derandomization
 
 [Return to RX stage index](#receiver-stage-sequence).
 
-Status: **placeholder; detailed architecture and implementation planned**.
+Status: **architecture defined; implementation planned**.
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
@@ -3320,16 +3661,72 @@ Status: **placeholder; detailed architecture and implementation planned**.
 | `crates/phy/src/grant/plan.rs` | Create (planned) | Shared retained-word/shortening/grant-pad lengths and order. |
 | `crates/phy/tests/randomization.rs` | Create (planned) | Independent soft-sign inverse, reset/offset/pad and chunk-state cases. |
 
-Regenerate the accepted grant mask and reverse the corresponding LLR signs
-before LDPC. Preserve magnitudes and coded-bit identity, keeping grant padding
-outside codeword decode. Never use the PRBS15 source seed as the PHY mask.
-ARCH-RX-07 expands precise reset/clock/length and failure handling from TX-03.
+**Grant mask and inverse.** Accept ordered RX-06 finite LLRs, availability/reason
+metadata, exact grant-bit offsets and the independently derived grant/codeword
+plan. Use TX-03's shared 23-bit mask primitive with a separate RX register and
+the accepted PHY seed. Load at each actual grant start; compute the first mask
+from the loaded state before clocking. The PRBS15 source seed never enters this
+stage. For mask bit q at transmitted offset j:
+
+```text
+L_derandomized[j] = L_received[j]       if q=0
+                   -L_received[j]      if q=1
+```
+
+Magnitude is unchanged. A zero-confidence erasure remains zero (canonicalize
+signed zero for stable snapshots), with the same unavailable/tie metadata. The
+inverse operates on soft metrics before LDPC; hard slicing first would discard
+confidence. The grant register advances once for every transmitted position,
+including erasures and final randomized grant pad, and never for omitted
+shortening, known pilots or excluded/ungranted resources.
+
+Codeword, byte, QAM-cell, block/frame, transport-chunk and Pre-EQ update
+boundaries do not reset the register. A new grant reloads even if its seed equals
+the previous grant's seed. Reject missing/duplicate/reordered offsets instead of
+compacting them. A complete scheduled unavailable cell already supplies m erasure
+positions from RX-06. If an input segment has not been delivered at cancellation,
+report it as incomplete; do not clock it secretly and pretend its word arrived.
+
+**Word assembly and pad.** Partition the inverse stream using the shared plan's
+ordered transmitted lengths T, including both shortened words when borrowing
+requires them. A cell/LLR chunk may cross a word boundary. Preserve the complete
+order `[retained information, parity]` for each word and its shortening count;
+there are no transmitted slots for the shortened zeros. Emit one owned complete
+T-element word with code identity, grant offset, observed/erased counts and
+confidence policy. Send no grant-pad positions to RX-08. Optional pad sign/error
+inspection occurs after derandomization, separately from FEC/source statistics;
+never locate pad by scanning received or decoded zero runs.
+
+**State, bounds and failures.** Keep accepted grant identity/seed/G, next bit
+and codeword offset, the mask register and at most one assembling mother-word-
+sized buffer (T<=16200), plus one bounded ready word. Limit offered soft chunks
+to 16,384 finite LLRs and configured run/output budgets. Reserve space before
+masking/appending; candidate failure leaves register, cursor, partial word and
+prior output unchanged. Backpressure at a completed word stops the next input
+prefix and reports consumed counts. No unbounded whole-grant mask or LLR cache.
+
+Finish requires exactly G transmitted positions, all complete words accounted
+for and exactly the planned pad removed. A no-transmission grant emits no
+codewords. Premature finish/cancellation retains completed words and an explicit
+partial-word/pad remainder; it is not a smaller legitimate codeword. Pause keeps
+the register and partial word. Preview uses retained snapshots or independent
+state and never reloads the live grant.
+
+**Planned acceptance and evidence.** Use independent Figure 7 mask vectors and
+literal positive/negative/zero LLR cases to check signs and unchanged magnitudes.
+Cover every cell/word/chunk split, cross-frame continuation, erasure clocks,
+shortening non-clocks, same-seed new grants, pad-only suffix, borrowing with two
+shortened words, no-transmission, overflow and transactional rejection. Check
+soft inverse separately from source recovery. PHY I20 §7.4.4, PDF p58/Figure 7
+and §7.4.3.1, pp52–55 control the transmitted mask/order boundary. Original p58
+was rendered and inspected for taps, seed and first-bit convention. LLR sign
+reversal, erasure metadata and bounded word assembly are engineering inverses.
 
 #### RX-08: Shortening restoration and LDPC decoding
 
 [Return to RX stage index](#receiver-stage-sequence).
 
-Status: **placeholder; detailed architecture and integration planned**.
+Status: **architecture defined; source validation and integration planned**.
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
@@ -3338,17 +3735,85 @@ Status: **placeholder; detailed architecture and integration planned**.
 | `crates/phy/src/grant/plan.rs` | Create (planned) | Same family/length/shortening descriptors used independently by both endpoints. |
 | `crates/phy/tests/rx_ldpc.rs` | Create (planned) | Receiver/codec length/order/known-zero and separate outcome integration cases. |
 
-Use the selected upstream code and exact shortening positions, with no BCH or
-ordinary-data puncturing. Keep convergence, syndrome, known-zero consistency,
-decoded decisions and iterations distinct, including failure outcomes.
-ARCH-RX-08 and LDPC-01/02 remain unchecked; the documented matrix-source issue
-is unresolved and existing codec tests do not establish receiver acceptance.
+**Codec boundary and shortening.** Accept exactly one complete derandomized
+transmitted word from RX-07 and a validated shared descriptor. Use mother-code
+sizes `N_m,K_m`, parity `P=N_m-K_m`, retained information I and shortening
+`S_short=K_m-I`. The wire LLR count is `T=I+P=N_m-S_short`. Reject wrong family,
+length, stale grant/word identity, unsupported ordering or nonfinite input before
+codec mutation. Do not infer code selection from observed hard bits or a lone
+IUC; both endpoints derive it from the accepted grant/profile plan.
+
+Reuse existing `LdpcSettings`/`LdpcCodec` rather than implementing another
+restorer/decoder in PHY. The adapter passes the T retained LLRs to `decode`.
+That existing codec restores the logical mother coordinates as follows:
+
+```text
+mother[0:I]       = retained[0:I]
+mother[I:K_m]     = +50                 known omitted zeros
+mother[K_m:N_m]   = retained[I:T]       all parity positions
+```
+
+The codec clamps finite received inputs to ±50; this agrees with RX-06's ceiling.
+The +50 prior is a finite engineering approximation to known zero, not an
+infinite numeric value or an extra received observation. Restoration lives
+inside the codec; do not pad to N_m in the adapter and restore a second time.
+No parity puncturing, BCH outer code or ranging-code substitution is permitted
+in ordinary scheduled data. Information-fill ones were transmitted/encoded and
+are not shortened-zero coordinates or stronger decoder priors.
+
+**Owned outcomes.** Preserve the codec's actual I information decisions and full
+N_m mother decisions, including on nonconvergence. Return code/shortening/word
+coordinates, observed/erased counts, declared LLR policy, actual iterations,
+engine convergence, independently recomputed mother syndrome, shortened-zero
+consistency and hard-decision changes. Existing codec checks own those numerical
+results; the PHY adapter must not replace them with a single success flag.
+
+A word may converge with zero syndrome yet contain wrong payload, or violate
+restored zeros. Record each flag independently. All-erasure input can even
+converge to a valid arbitrary word; preserve zero observed coverage and do not
+call that verified recovery. Never replace failed decisions with expected bits,
+re-encode them to manufacture parity success or drop failures from result counts.
+Word transport completion, FEC check acceptance and independent source match are
+separate statuses. RX-09 receives actual decisions and their quality flags;
+original payload comparison happens only after the receiver.
+
+**Work, cancellation and lifetime.** Use the existing limit of 1..100 iterations
+per word and one active job-owned codec at a time. Its scratch resets per decode
+call. Reuse it only for the same admitted settings; changing family/I constructs
+an appropriately admitted codec at a word boundary, without an unbounded
+settings cache. Preflight matrix/scratch/output storage and cumulative word/
+iteration work from the shared plan. One decode is the bounded atomic work unit;
+this codec exposes no mid-iteration pause/cancel/resume API. Check cancellation
+before and after it, retain a just-completed outcome and pause between words.
+Do not promise cancellation latency shorter than one admitted decode call.
+
+Codec-construction/input errors produce typed stage failures with earlier words
+retained; nonconvergence is an ordinary completed decode outcome. Reserve output
+capacity before decoding, publish once and do not rerun a completed word after
+backpressure/resume. Incomplete words remain not-decoded coverage, without fake
+iterations/parity flags. Optional full-mother/LLR snapshots obey independent
+retention budgets; their absence does not change codec decisions.
+
+**Planned acceptance and source gate.** Test all three families, full/shortened
+lengths and exact restored positions using independent expected mother layouts.
+Exercise borrowed consecutive shortened words, erasures, finite saturation,
+invalid lengths/numerics, known-zero inconsistency, actual iterations, bounded
+nonconvergence, valid-but-wrong-codeword source comparison and cancellation at
+word boundaries. Assert no aliasing/mutation of caller LLRs and owned outcomes
+survive the next decode. Existing codec unit tests are reuse evidence only.
+
+PHY I20 §7.4.3–7.4.3.3, PDF pp52–58, Table 8 and the source matrices control
+the code/shortening boundary. LDPC-01/02 remain unresolved: the long matrix's
+fifth row, zero-based column 20 is currently -1 while PDF p57 shows 12. No
+scientific code is corrected by this architecture task; source transcription
+and independent regression remain prerequisites for validated receiver claims.
+Internal round trips that share these tables do not resolve the issue.
 
 #### RX-09: Information deframing
 
 [Return to RX stage index](#receiver-stage-sequence).
 
-Status: **placeholder; detailed architecture and implementation planned**.
+Status: **architecture defined; implementation planned**.
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
@@ -3357,11 +3822,71 @@ Status: **placeholder; detailed architecture and implementation planned**.
 | `crates/phy/src/receiver/result.rs` | Create (planned) | Shared owned recovery outcome/coverage model for orchestration and adapters. |
 | `crates/phy/tests/deframing.rs` | Create (planned) | Independent fill/length accounting, failed/missing words and no truth-based trimming. |
 
-Return information decisions in grant/codeword coordinates, removing only fill
-identified by receiver-known framing. Do not strip runs of decoded ones/zeros
-or infer original-file length from source truth. Preserve missing/failed coverage;
-source-range association, BER and PRBS comparison belong outside this block.
-ARCH-RX-09 defines the precise framing/result contract before implementation.
+**Information coordinates and known fill.** Admit RX-08 actual I-bit information
+decisions/outcomes or an explicit not-decoded descriptor in the shared ordered
+grant plan. Mother parity and omitted shortened zeros are already outside those
+I decisions. Concatenate the *logical coordinates* of retained information across
+words in plan order, without compacting missing words or resetting byte position
+at each codeword. RX-07 has removed grant pad; never remove it again here.
+
+For the initial continuous-PRBS framing, let `I_total=sum(I_word)` and
+`r=I_total mod 8`. TX-01 fills all complete information bytes, so the first
+`I_total-r` positions are meaningful payload and only the final r positions are
+receiver-known information-fill ones. Identify that tail from the accepted
+plan, not the decoded values. Remove only those known positions from payload;
+record their actual decisions and a separate match/mismatch/unavailable fill
+check. Do not correct a mismatch or change codec flags because a fill bit failed.
+When r=0 there is no residual-bit fill. A byte may straddle two codewords.
+
+Future finite-file framing can also have unused whole 0xFF information bytes,
+but those are indistinguishable from legitimate payload without an explicit
+receiver-known length/segmentation contract. That contract remains deferred.
+Never strip trailing runs of ones/zeros, consult the PRBS seed/source ledger or
+use original-file length as a hidden deframing input. The stage does not parse
+MAC packets, verify a nonexistent CRC or promise recovered original files.
+
+**Output, quality and partial recovery.** Return owned information/payload chunks
+with run/configuration/grant/word identities, logical information/payload offsets,
+actual bit decisions and explicit coverage/quality. Keep available decisions
+from nonconverged/parity-failed/known-zero-failed words, marked with their actual
+outcomes. Undecoded words remain unavailable ranges; do not manufacture zero
+bits or align later words by dropping a gap. Decoded erasures still have actual
+decisions but carry their observed/erased coverage and FEC flags. These are
+separate from missing decisions due to an unattempted/incomplete word.
+
+Optional bytes use MSB-first packing as in TX-01 and exist only when all eight
+bit decisions are present; preserve the byte offset, per-word quality and gaps.
+Do not join the two available halves around a missing word into a new byte.
+A completed burst may have failed checks; cancellation may leave useful completed
+word results. Stage/run completion, decision availability, FEC quality and later
+source verification are independent dimensions, not one green success flag.
+
+Orchestration associates returned grant/word/payload coordinates with its bounded
+source ledger after RX. The independent PRBS verifier compares all available
+meaningful decisions, including FEC-failed decisions, with separate strata and
+an explicit compared/missing denominator. Information fill, grant pad, omitted
+shortening and unavailable ranges never count as error-free source bits. No
+association metadata gives source content back to RX-01..09.
+
+**State, bounds and acceptance.** Keep the next word/information/payload cursor
+and at most seven bits for an incomplete packed byte, with explicit availability/
+quality. Emit bounded chunks of at most 16,384 information decisions and one
+ready chunk; preflight total retained-result/coverage-record budgets. Transfer
+completed results instead of retaining the whole source/burst. Reject duplicate/
+stale/out-of-order word IDs and inconsistent I/descriptor/decision values against
+candidate state before advancing offsets. Backpressure, pause and cancellation
+preserve completed output and the current byte coordinate; finish reports missing
+words/fill checks without declaring them decoded. Observer retention failure
+cannot change decisions or deframing counts.
+
+Test independent I totals with every residue r=0..7, bytes spanning words,
+full/shortened/borrowed layouts, legitimate 0xFF/zero payload, failed-but-available
+words, completely undecoded words, erasure coverage and cancellation. Verify
+that only plan-known fill is removed, no unavailable bits are invented and
+source comparison remains outside RX. PHY I20 §7.4.3–7.4.3.1.1, PDF pp52–56
+and TX-01 establish byte/order/information-fill boundaries; §7.4.3.3, p58
+separates shortening. Owned coverage/quality and partial-byte output are local
+engineering contracts, not an implemented MAC deframer or interoperability claim.
 
 ### Shared QAM Analyzer and Spectrum Analyzer
 

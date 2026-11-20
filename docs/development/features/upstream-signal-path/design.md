@@ -45,8 +45,12 @@ Pre-EQ feeds TX-06, and neither C nor model targets become normal RX truth.
 
 The [CMTS-US-RX design](../cmts-us-rx/design.md) defines the receiver block,
 chart, nine linked stage sections, output inspections and per-stage file paths.
-RX-01..09 remain explicit detailed-design placeholders, starting with configured
-burst timing; receiver implementation and source-matrix acceptance remain pending.
+RX-01..09 now have complete contracts for configured burst timing, exact useful
+windows/FFT, frame-based received-pilot estimation, inverse visits, finite-confidence
+MaxLog metrics, soft mask reversal, existing-codec adaptation and information
+deframing. Receiver implementation and source-matrix acceptance remain pending.
+Fast within-frame response tracking and calibrated received-noise confidence
+remain explicit future policies; no hidden C/update/H truth repairs recovery.
 
 Read-only reference inspection: MERLIN architecture, source/PRBS implementation,
 waveform spectrum estimator and QAM/SA instrument adapters at revision

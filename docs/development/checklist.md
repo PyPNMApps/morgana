@@ -74,15 +74,18 @@ See [architecture](../architecture.md) and [foundation design](features/foundati
   chart, lifecycle and inspection overview; see [receiver design](features/cmts-us-rx/design.md).
 - [x] ARCH-RX-NAV/PATH: Link all RX overview/output labels to stage sections,
   with backlinks, planned code/test paths and explicit existing codec reuse.
-- [ ] ARCH-RX-01: Expand burst framing/timing and bounded indexed-sample admission.
-- [ ] ARCH-RX-02: Expand useful-window selection, CP/overlap and validity.
-- [ ] ARCH-RX-03: Expand forward transform admission, metadata and independent vectors.
-- [ ] ARCH-RX-04: Expand pilot estimate/correction, coverage, reliability and nulls.
-- [ ] ARCH-RX-05: Expand exact resource extraction and inverse joint visits.
-- [ ] ARCH-RX-06: Expand MSB-first LLR metrics, labels/scales and confidence policy.
-- [ ] ARCH-RX-07: Expand soft grant mask reversal, word ordering and pad separation.
-- [ ] ARCH-RX-08: Expand shortening/codec integration and separate decode outcomes.
-- [ ] ARCH-RX-09: Expand receiver-known deframing and partial information results.
+- [x] ARCH-RX-01: Expand burst framing/timing and bounded indexed-sample admission.
+- [x] ARCH-RX-02: Expand useful-window selection, CP/overlap and validity.
+- [x] ARCH-RX-03: Expand forward transform admission, metadata and independent vectors.
+- [x] ARCH-RX-04: Expand pilot estimate/correction, coverage, reliability and nulls.
+- [x] ARCH-RX-05: Expand exact resource extraction and inverse joint visits.
+- [x] ARCH-RX-06: Expand MSB-first LLR metrics, labels/scales and confidence policy.
+- [x] ARCH-RX-07: Expand soft grant mask reversal, word ordering and pad separation.
+- [x] ARCH-RX-08: Expand shortening/codec integration and separate decode outcomes.
+- [x] ARCH-RX-09: Expand receiver-known deframing and partial information results.
+- [ ] RX-EXT-01: Design received-signal acquisition/clock recovery, fast response
+  tracking, calibrated noise confidence and finite-file framing before claiming
+  support; initial RX-01..09 architecture is complete only for its declared scope.
 - [ ] CH-EXT-02: Detail captured-H reconstruction, fractional timing/clock error,
   stochastic phase noise and broader RxMER/response/Pre-EQ-update composition
   before support.
@@ -106,8 +109,8 @@ See [architecture](../architecture.md) and [foundation design](features/foundati
   23 unit tests pass, including Gaussian-reference comparison, controlled/AWGN
   LLRs, nonconvergence and shortening. They share source table constants, so they
   do not resolve LDPC-01. External vectors are unavailable; no external claim.
-- [ ] PHY-01: Implement and validate grant/codeword selection and virtual CMTS
-  configuration against [TX-01](../architecture.md#tx-01-grant-framing-and-fec-selection),
+- [ ] PHY-01: Implement and validate grant/codeword selection and US
+  Configuration against [TX-01](../architecture.md#tx-01-grant-framing-and-fec-selection),
   including byte-residue ones, zero grant padding and shortened-codeword borrowing.
 - [ ] SOURCE-01: Implement the explicit continuous PRBS15 source and independent
   verifier against the [PRBS block contract](../architecture.md#prbs-block-architecture),

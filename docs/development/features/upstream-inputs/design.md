@@ -52,7 +52,8 @@ does not implement CMTS coefficient estimation, live probing or MAC control.
 - [ ] Verify upstream configuration/profile, RxMER and Pre-EQ input formats.
 - [ ] Implement and validate typed configuration/PNM operations after approval
   and the reference waveform prerequisites; import/UI/Python adapters follow.
-- [ ] Design broader measured RxMER/nonunity-C composition and RX-04 tracking.
+- [ ] Design broader measured RxMER/nonunity-C composition and fast within-frame
+  response tracking. RX-04 now defines frame-based estimation only.
 
 ## Validation
 
