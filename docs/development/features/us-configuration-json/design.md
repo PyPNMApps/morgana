@@ -1,5 +1,10 @@
 # Generic OFDMA JSON and CMTS configuration
 
+Current execution status: bounded synthetic stage science, generic source JSON
+and native APIs are recorded in the [backend validation](../backend-stages/validation.md).
+The design history below is retained; capture/import, broader PHY and presentation
+items do not gain runtime acceptance from completed design checkboxes.
+
 Status: architecture/delivery plan recorded; coverage audit, schema, JSON
 examples, Rust implementation and adapter/runtime validation remain planned.
 This feature belongs to US Configuration, documented as a CMTS control

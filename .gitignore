@@ -5,3 +5,6 @@
 *.tar.gz
 __pycache__/
 .venv/
+/bindings/python/target/
+
+/bindings/python/python/wheel-notices/

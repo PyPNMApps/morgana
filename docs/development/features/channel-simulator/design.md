@@ -1,5 +1,10 @@
 # Channel Simulator stages and RxMER input
 
+Current execution status: bounded synthetic stage science, generic source JSON
+and native APIs are recorded in the [backend validation](../backend-stages/validation.md).
+The design history below is retained; capture/import, broader PHY and presentation
+items do not gain runtime acceptance from completed design checkboxes.
+
 Status: all six channel stages and RxMER input have architecture for their
 declared initial modes; scientific implementation and capture adapters remain planned.
 Scope is architecture documentation extending the existing signal-path design.

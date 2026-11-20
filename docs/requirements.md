@@ -1,7 +1,8 @@
 # MORGANA requirements
 
-Status: architecture-derived requirements baseline; implementation and acceptance
-remain incomplete. This document consolidates the existing
+Status: architecture-derived requirements baseline. Bounded synthetic stages,
+source JSON and native APIs are implemented; capture/platform/extension acceptance
+remains incomplete. This document consolidates the existing
 [architecture](architecture.md), [feature plans](development/README.md) and
 [official checklist](development/checklist.md). It does not authorize scientific
 implementation or establish specification compliance.
@@ -76,12 +77,12 @@ Compact delivery notation such as `WAVE-TX/CH/RX-01` refers to the separate
 
 | Area | Current evidence / delivery boundary |
 | --- | --- |
-| Standalone LDPC, FEC facade and CLI | All-family source audit and standalone codec acceptance pass locally; waveform integration remains separate. |
+| Standalone LDPC, FEC facade and CLI | All-family source audit and standalone codec acceptance pass locally; waveform integration passes its separate stage/closed-loop cases. |
 | Development setup and save tooling | Implemented; mock/read-only checks exist; fresh provisioning and hosted/platform evidence remain incomplete. |
-| PRBS, TX-01..08, CH-01..06, RX-01..09 | Architecture defined; integrated waveform implementation and scientific acceptance planned. |
-| US Configuration JSON and PNM inputs | Architecture defined; exhaustive configuration audit, schemas, upstream capture formats and runtime support pending. |
-| High-level Rust session and native Python wrapper | Paired design stubs defined; source modules, actual type stubs and native runtime/parity pending. |
-| QAM/SA and desktop workbenches | Architecture only; no GUI or instrument runtime claim. |
+| PRBS, TX-01..08, CH-01..06, RX-01..09 | Implemented/local source-stage and bounded synthetic closed-loop acceptance; configured timing/frame-pilot policies. |
+| US Configuration JSON and PNM inputs | Applicable source-field audit/schema/parser/projections and synthetic playback implemented. Binary PNM formats/import/association remain pending. |
+| High-level Rust session and native Python wrapper | Actual typed/JSON run, controls, native conversion/runtime/type declarations and independent parity pass locally; wider capture/API aggregate remains pending. |
+| QAM/SA and desktop workbenches | Bounded actual QAM/SA and independent matched-data MER implemented; GUI/expanded inspectors remain planned. |
 
 Requirements below apply when their capability is delivered. Extension sections
 do not expand the first unity-loop milestone. Deferred features require their

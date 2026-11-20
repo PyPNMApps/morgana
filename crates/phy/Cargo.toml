@@ -1,0 +1,20 @@
+# Copyright 2026 MORGANA contributors
+# SPDX-License-Identifier: Apache-2.0
+[package]
+name = "morgana-phy"
+description = "Safe bounded DOCSIS upstream OFDMA stages"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+morgana-ldpc.workspace = true
+serde.workspace = true
+rand.workspace = true
+rand_chacha.workspace = true
+rand_distr.workspace = true
+
+[lints]
+workspace = true

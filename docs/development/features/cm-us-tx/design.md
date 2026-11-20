@@ -1,5 +1,10 @@
 # CM-US-TX block and stage design
 
+Current execution status: bounded synthetic stage science, generic source JSON
+and native APIs are recorded in the [backend validation](../backend-stages/validation.md).
+The design history below is retained; capture/import, broader PHY and presentation
+items do not gain runtime acceptance from completed design checkboxes.
+
 Status: transmitter overview and TX-01 through TX-08 architecture defined;
 scientific implementation and integration remain planned.
 Scope is documentation in this repository, with no links to another source

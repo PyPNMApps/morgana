@@ -6,6 +6,7 @@
 #![forbid(unsafe_code)]
 mod args;
 mod command;
+mod json_io;
 
 fn main() -> std::process::ExitCode {
     match command::run(std::env::args().skip(1).collect()) {

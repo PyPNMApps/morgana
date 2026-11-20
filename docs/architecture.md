@@ -1,7 +1,12 @@
 # MORGANA architecture
 
-Status: backend implementation authorized; all-family standalone LDPC source audit
-and codec acceptance complete. Waveform integration remains planned.
+Status: the bounded scheduled-data backend is implemented and locally accepted.
+PRBS → all eight CM-US-TX stages → supported CH-SIM → all nine CMTS-US-RX stages
+→ independent comparison executes through Rust and optional native Python.
+Source-valid generic configuration JSON, synthetic RxMER/Pre-EQ replay,
+pause/resume/cancellation and actual QAM/SA reports are implemented.
+Binary PNM capture import, GUI and broader receiver/MAC modes remain pending.
+See [current validation and limits](development/features/backend-stages/validation.md).
 The [foundation design](development/features/foundation/design.md)
 contains requirements, reuse assessments, evidence, API proposal and milestones.
 The consolidated [requirements baseline](requirements.md) defines stable behavior
@@ -31,53 +36,43 @@ and preserves completed design records separately from scientific completion.
 
 | Current owner | Responsibility | Status |
 | --- | --- | --- |
-| `crates/ldpc` | Upstream QC matrices, sparse systematic encoder, shortening, bounded layered soft decoder | Source-audited and locally accepted for all three families; waveform integration planned |
-| `crates/morgana` | Configure/run/report facade for one noiseless FEC trial; schema-1 owned results | Implemented; broader API planned |
-| `crates/cli` | Arguments, deterministic fixture source and JSON stdout | Implemented; no waveform processing |
-| `skills/` | Canonical engineering/PHY guidance and operational references | Adopted for this checkpoint |
-| `scripts/` and `tools/git/` | Local validation and guarded local save | Checkpoint tooling |
-| `install.sh` and `scripts/bootstrap/` | Explicit development dispatcher, host/package admission, pinned local Rust and locked source setup | Inspection/mock validation; clean provisioning unverified |
-
-The current executable path is information bits → upstream LDPC encode →
-noiseless LLRs → soft decode → separate syndrome/source comparison. Decoder
-convergence does not prove original-bit recovery. The encoder uses an Apache
-adaptation of the existing sparse substitution helper; no runtime dependency on
-another source checkout exists. Maximum iterations are application-bounded to 100.
-
-Planned top-level path (expanded in the workbench section below):
+| `crates/ldpc` | Independent upstream QC codec, shortening and bounded decoding | All-family source/codec acceptance |
+| `crates/phy` | Shared configuration/resources, PRBS, TX/channel/RX science, lifecycle and instruments | Bounded synthetic scheduled data implemented |
+| `crates/morgana` | Preserved FEC facade, high-level session, generic source document and owned reports | Rust typed/JSON configure/preview/run implemented |
+| `crates/cli` | Bounded JSON files or standalone FEC request; JSON stdout | Actual upstream and existing LDPC commands |
+| `bindings/python` | Optional native conversions/dispatch and matching type declarations | Actual local Linux/Python 3.10 import/parity; no published wheel |
+| `skills/`, `scripts/`, `tools/git/` | Guidance, validation and guarded save | Local gates; no commit/push implied |
+| `install.sh`, `scripts/bootstrap/` | Explicit development setup | Existing inspection/mock checks; fresh provisioning unverified |
 
 ```mermaid
 flowchart LR
-    PRBS[PRBS source] --> TX[CM-US-TX]
-    TX --> CH[CH-SIM: unity first]
-    MER[RxMER: single or multiple captures] -. accepted residual model, later .-> CH
-    PRE[US-Pre-EQ: banks and multiple updates] -. accepted coefficient plan, later .-> TX
-    CH --> RX[CMTS-US-RX]
-    JSON[US Configuration JSON: planned] -. load and validate .-> CFG[CMTS configuration plan]
-    CFG -. accepted TX settings .-> TX
-    CFG -. accepted RX settings .-> RX
-    PRBS -. expected stream only .-> TRUTH[Independent PRBS-RX comparison]
-    RX --> TRUTH
-    TRUTH --> REPORT
-    RX --> REPORT[Versioned report]
+    PRBS[Continuous PRBS15] --> TX[CM-US-TX: TX-01..08]
+    CFG[US Configuration: typed or generic JSON] -. accepted views .-> TX
+    CFG -. received-only configuration .-> RX
+    PRE[Synthetic Pre-EQ bank/update plan] -. C only .-> TX
+    TX --> CH[CH-SIM: unity or admitted model]
+    MER[Synthetic RxMER power playback] -. restricted residual .-> CH
+    CH --> RX[CMTS-US-RX: RX-01..09]
+    RX --> VERIFY[Independent source comparison and data MER]
+    PRBS -. expected stream only .-> VERIFY
+    VERIFY --> REPORT[Owned complete/partial reports]
 ```
+
+The standalone LDPC facade/CLI remains compatible with its schema-1 FEC results.
+The full experiment uses its own format/schema and does not claim external
+interoperability, RF calibration or MAC certification. The source/configuration
+schemas, application version and optional extension version remain separate.
 
 Receiver inputs must contain received signals and explicit configuration, never
 hidden injected H or original bits. Normal receiver estimation observes C×H.
 Simulator truth is available only to independent diagnostic comparisons.
 
-US Configuration, grant/codeword selection, UCD/IUC mapping, randomization,
-interleaving, pilot/preamble placement, waveform generation/acquisition, Pre-Eq
-capture import, impairment pipeline, RxMER and full experiment reports are planned.
-Python is a future native wrapper of the same public Rust API; all calculations
-and validation remain Rust. No saved-workbench format or stable C ABI exists.
-The separate [API architecture](#high-level-rust-and-python-apis) defines paired
-interface stubs, placement, lifecycle and delivery gates; it adds no PHY stage.
-
-See the [official checklist](development/checklist.md) for remaining work and the
-[LDPC audit](development/features/ldpc-source-audit/validation.md) for completed
-source/codec acceptance. Independent page-derived fingerprints and frozen parity
-supplement shared-data round trips; neither is external interoperability evidence.
+All scheduled-data stage science and bounded orchestration are implemented in
+safe Rust with no other project checkout/runtime dependency. Generic UCD/MAP/
+probe configuration is represented and validated; selected ranging, probe,
+profile-testing or raw MAP execution is explicitly unsupported. Binary capture
+admission/association remains separate from typed synthetic measurements.
+No GUI, desktop saved-workbench format or stable C ABI is delivered.
 
 ## Accepted backend delivery decisions
 
@@ -86,7 +81,7 @@ implementation scope/order. The user subsequently authorized starting this plan;
 completion remains tied to each task's evidence in the official checklist.
 See the [decision/validation record](development/features/backend-delivery/design.md)
 and [developer checklist](development/checklist.md). Existing stage contracts
-remain the detailed design; all corresponding runtime gates remain pending.
+remain the detailed design; the current gate evidence is linked above.
 
 | Decision | Accepted contract | Architecture / delivery |
 | --- | --- | --- |
@@ -99,44 +94,42 @@ remain the detailed design; all corresponding runtime gates remain pending.
 
 The first milestone is the typed, Rust-driven PRBS → CM-US-TX → exact unity
 CH-SIM → configured-timing CMTS-US-RX → independent comparison loop, with finite
-work limits and cancellation/partial results. Unsupported pause controls,
-configuration/capture loaders and native Python remain unavailable until their
-later acceptance gates pass. Full later requirements are retained.
-Per-stage pause/resume descriptions remain the later continuity contract; their
-pause-specific acceptance belongs to DEV-PAUSE-01. Initial stage gates cover the
-declared bounded/cancellable reference scope, without claiming paused execution.
+work limits and cancellation/partial results. That first milestone passed before
+the later accepted pause, JSON, synthetic measurement and native Python extensions.
+Binary capture loaders and broader modes remain unavailable; their requirements
+are retained. The [backend record](development/features/backend-stages/validation.md)
+separates stage science, format admission and platform/publication evidence.
 
-**File ownership for these decisions.** No source files are added here. Detailed
+**File ownership for these decisions.** Detailed
 stage/API tables remain authoritative for all leaf files and tests.
 
 | Path | Disposition at implementation | Responsibility |
 | --- | --- | --- |
 | `crates/ldpc/src/definitions.rs`, `crates/ldpc/src/codec.rs`, `crates/ldpc/src/tests.rs`, `crates/ldpc/src/tests/oracle.rs` | Edit/reuse existing after audit | Source-verified matrices, codec behavior and independent acceptance. |
-| `crates/phy/src/signal_processing/mod.rs` | Add (already planned) | Focused local numerical owners; inspect each reuse candidate and its upstream applicability. |
-| `crates/phy/src/simulation/job.rs` | Add (already planned) | Bounded cancellation/partial results first; later verified pause/resume state. |
-| `crates/morgana/src/api/simulation.rs` | Add (already planned) | Rust session integration developed with the backend and exercised by reference acceptance. |
-| `bindings/python/src/simulation.rs` | Add (already planned; later milestone) | Native adapter after the accepted Rust unity loop. |
+| `crates/phy/src/signal_processing/mod.rs` | Add (implemented) | Focused local numerical owners; inspect each reuse candidate and its upstream applicability. |
+| `crates/phy/src/simulation/run.rs` | Add (implemented) | Bounded cancellation, owned partial results and verified pause/resume state. |
+| `crates/morgana/src/api/session.rs` | Add (implemented) | Rust session integration developed with the backend and exercised by reference acceptance. |
+| `bindings/python/src/simulation.rs` | Add (implemented) | Native adapter after the accepted Rust unity loop. |
 
-Concrete cumulative job budgets, per-primitive reuse/dependency choices, exact
-schema fields and capture formats still require their implementation-time
-review. Borrowing code does not establish compatibility by itself. Existing
+Concrete job budgets and implemented schema fields are recorded below and in the
+user guide. Capture-format admission still requires its separate source/fixture review. Borrowing code does not establish compatibility by itself. Existing
 independent pinned Rust dependencies remain valid; this decision selects no new
 external numerical library or shared cross-project crate. MERLIN inspection
 remains read-only. Preserve every actual copied/adapted notice and modification.
 
 ## Planned upstream signal path and workbenches
 
-ARCH-01 defines the target organization. This section is planned architecture;
-the existing executable still runs isolated LDPC trials. No PRBS waveform,
-channel object, CMTS receiver, instrument or GUI is claimed implemented here.
+ARCH-01 defines the processing organization. The backend path and passive
+instruments are implemented. Workbench/editor actions remain a future presentation
+adapter and do not imply GUI implementation.
 
 Use the same left-to-right organization as the reference workbench:
 **PRBS → CM-US-TX → Channel Simulator → CMTS-US-RX → PRBS-RX/results**.
 CM-US-TX and CMTS-US-RX open their own stage workbenches. Test-point actions open
 the shared **QAM Analyzer** or **Spectrum Analyzer (SA)** for the selected tap.
 The **PNM Files** inputs sit beside the main path. The [RxMER input](#rxmer-input)
-accepts single or multiple captures and feeds
-the future residual-power planner in [CH-SIM](#channel-simulator-unity-stub-first).
+reserves single/multiple capture admission; implemented synthetic inputs feed
+the residual-power planner in [CH-SIM](#channel-simulator-unity-stub-first).
 The separate [US-Pre-EQ input](#us-pre-eq-input) accepts corrective banks and
 multiple update records for [TX-06](#tx-06-cm-pre-eq). Accepting either input does
 not enable its model or start processing. [US Configuration](#us-configuration)
@@ -152,39 +145,41 @@ framing, pilot and interleaving rules determine the actual stage order.
 
 ### Planned code layout
 
-All paths below are relative to the repository root. **Create (planned)** means
-that the file does not exist in this checkpoint; **reuse (existing)** and
-**extend (existing)** identify inspected files. These are placement decisions,
-not implemented modules. No empty files, Cargo members or adapters are added now.
-Each block/stage below gives its concrete implementation and test filenames.
+All paths are repository-relative. **Add (implemented)** and **Edit/Reuse** name
+actual owners. **Create (planned)** is reserved for explicitly pending capture/
+presentation extensions. No empty adapter files stand in for scientific behavior.
+Each stage below names its implementation and independent acceptance files.
 
-The dependency direction is CLI/future Python or UI adapters → public
-`crates/morgana` facade → proposed `crates/phy` → existing `crates/ldpc`.
+The dependency direction is CLI/optional native Python/future UI → public
+`crates/morgana` facade → `crates/phy` → `crates/ldpc`.
 Keep the current facade's direct LDPC imports/re-exports compatible. Algorithms,
 validation and bounded orchestration stay Rust; adapters present owned results.
 
-| Path / directory entrypoint | Disposition | Responsibility |
+| Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `Cargo.toml` | Extend (existing) | Register the future PHY member/dependency when implemented; update `Cargo.lock` through Cargo. |
-| `crates/phy/Cargo.toml`, `crates/phy/src/lib.rs`, `crates/phy/src/error.rs` | Create (planned) | Rust PHY crate, module declarations/public domain surface and typed stage errors. |
-| `crates/phy/src/configuration/mod.rs` | Create (planned) | Accepted US Configuration/profile/waveform/burst/Pre-Eq configuration and separate channel/RxMER/receiver policies. |
-| `crates/phy/src/types/mod.rs` | Create (planned) | Register `bits.rs`, `iq.rs` and `samples.rs` in this directory for bit ranges, complex cells and indexed sample blocks. |
-| `crates/phy/src/source/mod.rs` | Create (planned) | PRBS source and independent verifier. |
-| `crates/phy/src/resources/mod.rs` | Create (planned) | Shared grant grids, pilot roles/patterns, block partitioning and cell permutations. |
-| `crates/phy/src/grant/mod.rs` | Create (planned) | Shared pure capacity/codeword planning. |
-| `crates/phy/src/bit_processing/mod.rs` | Create (planned) | Shared payload randomizer and independent known-pilot sequence. |
-| `crates/phy/src/signal_processing/mod.rs` | Create (planned) | Shared QAM/transform/coefficient-bank arithmetic, waveform/channel primitives and received-pilot/correction/soft-demapping numerics. |
-| `crates/phy/src/transmitter/mod.rs` | Create (planned) | Compose the eight TX stage adapters. |
-| `crates/phy/src/channel/mod.rs` | Create (planned) | Unity sample transport and future ordered channel stages. |
-| `crates/phy/src/measurements/mod.rs` | Create (planned) | Register separate upstream RxMER observations and US-Pre-EQ bank/update records with original provenance. |
-| `crates/phy/src/receiver/mod.rs` | Create (planned) | Compose the nine RX stage adapters without source truth. |
-| `crates/phy/src/instruments/mod.rs` | Create (planned) | Bounded passive observations and shared QAM/SA calculations. |
-| `crates/phy/src/simulation/mod.rs` | Create (planned) | Run lifecycle, source associations and independent comparisons. |
-| `crates/phy/tests/` | Create (planned) | Integration/acceptance files named in each block/stage below. |
-| `crates/morgana/src/lib.rs`, `crates/morgana/src/report.rs` | Extend (existing) | Preserve the FEC API while exposing reviewed experiment operations and versioned results. |
-| `crates/morgana/src/api/mod.rs` | Create (planned) | High-level typed session surface; leaf modules and paired stubs are defined in the [API architecture](#high-level-rust-and-python-apis). |
-| `crates/cli/src/args.rs`, `crates/cli/src/command.rs` | Extend (existing) | Expose accepted facade inputs/results after the Rust capability exists. |
-| `bindings/python/src/lib.rs`, `bindings/python/tests/test_experiment.py` | Create (planned; later API milestone) | Native adapter and Rust/Python contract-parity checks; no Python science. |
+| `Cargo.toml` | Edit/Reuse (existing) | Register the independent PHY member and exact local dependency. |
+| `crates/phy/src/lib.rs` | Add (implemented) | Safe Rust module roots, types and structured errors. |
+| `crates/phy/src/configuration/mod.rs` | Add (implemented) | Immutable typed admission, waveform, grants and source UCD models. |
+| `crates/phy/src/types/mod.rs` | Add (implemented) | bits.rs, iq.rs and samples.rs: shared checked domain buffers. |
+| `crates/phy/src/source/mod.rs` | Add (implemented) | Continuous PRBS15 and independent chronological verifier. |
+| `crates/phy/src/grant/mod.rs` | Add (implemented) | Pure FEC selection and exact capacity/fill/pad accounting. |
+| `crates/phy/src/resources/mod.rs` | Add (implemented) | Physical roles, balanced blocks, pilots and joint addresses. |
+| `crates/phy/src/bit_processing/mod.rs` | Add (implemented) | Grant mask and known pilot sequence with separate clocks. |
+| `crates/phy/src/signal_processing/mod.rs` | Add (implemented) | Single shared numerical owners for QAM/FFT/Pre-EQ/assembly/estimation. |
+| `crates/phy/src/transmitter/mod.rs` | Add (implemented) | framing.rs bit/FEC assembly; framer.rs TX composition; assembly.rs WOLA. |
+| `crates/phy/src/channel/mod.rs` | Add (implemented) | stream.rs exact unity/FIR/sample AWGN/timing; residual.rs restricted RxMER. |
+| `crates/phy/src/measurements/mod.rs` | Add (implemented) | Explicit synthetic RxMER and Pre-EQ/probe/event lineage. |
+| `crates/phy/src/receiver/mod.rs` | Add (implemented) | framing.rs composes all nine received-only stages and gap handling. |
+| `crates/phy/src/instruments/mod.rs` | Add (implemented) | observer.rs, spectrum.rs and metrics.rs: bounded actual observations. |
+| `crates/phy/src/simulation/mod.rs` | Add (implemented) | request.rs, control.rs, run.rs and report.rs: admission/lifecycle/science. |
+| `crates/morgana/src/api/mod.rs` | Add (implemented) | session.rs/errors/reports and canonical public domain re-exports. |
+| `crates/morgana/src/inputs/mod.rs` | Add (implemented) | us_configuration.rs and synthetic.rs versioned source loader/materialization. |
+| `bindings/python/src/lib.rs` | Add (implemented) | Optional native configuration/document/measurement/session/report modules. |
+| `crates/phy/tests` | Add (implemented) | Independent stage/source cases, not only TX/RX round trips. |
+| `crates/morgana/tests` | Add (implemented) | Actual reference API, controls, documents, failures and ownership. |
+| `bindings/python/tests/test_experiment.py` | Add (implemented) | Actual native execution, parity, signals, Busy and signature checks. |
+| `crates/morgana/src/inputs/rxmer.rs` | Create (planned) | Verified upstream binary capture adapter, distinct from synthetic inputs. |
+| `crates/morgana/src/inputs/pre_eq.rs` | Create (planned) | Verified corrective capture/update adapter and explicit associations. |
 
 Module directories above use their named `mod.rs`; their leaf files are specified
 in the corresponding sections below. The module roots and `crates/phy/src/lib.rs`
@@ -194,13 +189,41 @@ and dependency still needs source/license/upstream review before adoption. Actua
 Qt file placement remains for its separate UI plan. No numerical dependency or
 UI crate is introduced by this layout.
 
+### Implemented buffering and lifecycle boundaries
+
+The synchronous backend retains one finite encoded/randomized grant (<=1,048,576
+transmitted bit positions), one bounded physical frame (N*K<=73,728 bins), one
+emitted frame plus explicit guards, receiver frame/one-word scratch and bounded
+reports. It does not allocate a full-run waveform or unbounded queue.
+`BurstAssembler::push` transactionally transfers one owned stride to its caller;
+`framer.rs` composes a finite frame. `simulation/run.rs` owns the drain cursor by
+splitting that frame into admitted sample quanta and finishing delivery before
+requesting the next frame. A caller applies backpressure by retaining an owned
+output and not requesting more work; there is no hidden background producer.
+Fine-grained asynchronous per-symbol drain handles remain a future adapter choice.
+This concrete ownership replaces the earlier proposed empty stage-wrapper files.
+
+Pause checkpoints retain the actual worker stack before frame/chunk work and
+inside receiver cell/codec boundaries. One bounded TX frame or indivisible codec
+may complete before acknowledgement. Resume preserves source/mask/pilot indices,
+Pre-EQ event selection, RNG, FIR/delay and overlap state. Pause time is excluded;
+cancel wakes a paused worker. Cancellation never performs a successful implicit
+normal drain. Reports retain planned/emitted/received/pending samples, completed/
+unprocessed words and generated/compared/unverified source positions.
+
+Application limits are recorded in
+[the maintained guide](user/upstream-experiments.md#application-bounds). Fixed
+sample rate/units come from the accepted immutable waveform, not user-supplied
+per-block metadata that could contradict it. Synthetic grids are normalized
+baseband and bind exact waveform/exclusions. Measured CM/channel/frequency/time
+association is a separate pending capture-admission contract.
+
 ### US Configuration
 
 [CM-US-TX](#cm-us-tx-block-architecture) ·
 [CMTS-US-RX](#cmts-us-rx-block-architecture).
 
-Status: **configuration-input architecture defined; editor, import and full
-waveform configuration remain planned**. This is the upstream counterpart to
+Status: **typed and generic JSON configuration/projections implemented; GUI editor and binary capture import pending**. This is the upstream counterpart to
 the reference modulation-profile input/editor concept. Use the name **US
 Configuration**, including diagram labels; it supplies accepted common channel,
 profile and grant settings to both endpoints. It does not implement a CMTS MAC.
@@ -209,23 +232,14 @@ owns the versioned generic JSON plan, MULPI coverage requirement, acceptance flo
 and endpoint-specific projections. Keep numerical configuration validation in
 the shared Rust configuration owners below, independent of receiver algorithms.
 
-**Planned code paths (repository-relative).**
+**Implemented code paths (repository-relative).**
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/configuration/mod.rs` | Create (planned) | Compose and atomically validate the immutable US Configuration snapshot/generation. |
-| `crates/phy/src/configuration/profile.rs` | Create (planned) | Accepted loading, pilot pattern and PHY seed configuration, composing the shared waveform geometry. |
-| `crates/phy/src/configuration/waveform.rs` | Create (planned) | Accepted upstream N/clock/CP/RP geometry and checked lengths, shared by TX/RX; detailed in TX-08. |
-| `crates/phy/src/configuration/grant.rs` | Create (planned) | Synthetic grant identity, resource assignment and configured clock epoch. |
-| `crates/phy/src/configuration/burst.rs` | Create (planned) | Scheduled-data mode admission and explicit unsupported-mode results. |
-| `crates/phy/src/types/bits.rs` | Create (planned) | Binary chunks, checked ranges and bit-role identities. |
-| `crates/phy/src/types/iq.rs` | Create (planned) | Complex-cell representation with explicit grid/reference metadata. |
-| `crates/phy/src/types/samples.rs` | Create (planned) | Complex samples, rates, indices, burst boundaries and validity. |
-| `crates/phy/tests/configuration.rs` | Create (planned) | Configuration bounds, atomic admission and matching endpoint validation. |
-| `crates/morgana/src/inputs/us_configuration.rs` | Create (planned) | Manual/typed or future verified decoded input, retained profile inventory and selected-profile queries. |
-| `crates/morgana/src/inputs/mod.rs` | Create (planned) | Register configuration separately from PNM measurement importers. |
-| `crates/morgana/src/lib.rs` | Extend (existing) | Expose Rust admission/inventory/preview before matching future Python/UI adapters. |
-| `crates/morgana/tests/us_configuration.rs` | Create (planned) | Inventory selection, malformed import, shared validation and original-input preservation. |
+| `crates/phy/src/configuration/mod.rs` | Add (implemented) | Immutable typed common settings and legitimate endpoint admission. |
+| `crates/phy/src/configuration/ucd/mod.rs` | Add (implemented) | Source UCD, conditional profiles and inspection controls. |
+| `crates/morgana/src/inputs/us_configuration.rs` | Add (implemented) | Bounded generic source document, inventory and selection. |
+| `crates/morgana/tests/configuration_json.rs` | Add (implemented) | Independent fields/enums, actual typed projection and atomic load. |
 
 
 An immutable US Configuration supplies the upstream channel/numerology,
@@ -253,14 +267,14 @@ separate from edited/derived settings. A manually entered configuration is
 labeled synthetic. A future captured upstream descriptor/profile importer needs
 its own pinned type/version/units and OSSI/MULPI fixtures; downstream DPD file
 types, PLC/NCP fields and downstream timing/interleaving are not inherited.
-The planned standalone configuration JSON has its own format/version contract;
-its schema and parser are not implemented. It is not a raw UCD/P-MAP wire format
+The standalone configuration JSON has its own format/version contract;
+its schema/parser and source-valid synthetic projections are implemented. It is not a raw UCD/P-MAP wire format
 or an existing saved-workbench schema.
 
 **Single-profile and multiple-profile selection.** Retain a bounded inventory
 with unique IDs and explicit IUC associations. Single-shot selects exactly one
 valid scheduled-data profile/grant configuration. Multiple retained profiles
-remain discoverable/queryable through Rust and future Python/UI, with explicit
+remain discoverable/queryable through Rust/native Python and future UI, with explicit
 selection; never merge their loading or infer a profile from QAM order alone.
 The first run still uses one selected profile. A future sequential profile sweep
 needs separately accepted per-profile requests, bounded work and distinct
@@ -305,22 +319,21 @@ grant-seeded 23-bit process required by PHY3.1 §7.4.4.
 
 ### PRBS block architecture
 
-**Planned code paths (repository-relative).**
+**Implemented code paths (repository-relative).**
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/source/prbs15.rs` | Create (planned) | Validated Prbs15Config/Prbs15, recurrence, bounded generation and position. |
-| `crates/phy/src/source/verifier.rs` | Create (planned) | Independently owned expected stream, comparison counters and coverage. |
-| `crates/phy/src/types/bits.rs` | Create (planned) | Shared SourceChunk and meaningful source-range representation. |
-| `crates/phy/src/simulation/source_ledger.rs` | Create (planned) | Bounded grant/codeword-to-source association outside receiver recovery. |
-| `crates/phy/src/simulation/comparison.rs` | Create (planned) | Validate recovered associations and invoke the independent verifier. |
-| `crates/phy/tests/prbs.rs` | Create (planned) | Independent sequence/period, continuity, bounds and verifier cases. |
-| `crates/phy/tests/source_association.rs` | Create (planned) | Missing/reordered/wrong-run ranges and incomplete comparison coverage. |
+| `crates/phy/src/source/prbs15.rs` | Add (implemented) | Validated Prbs15Config/Prbs15, recurrence, bounded generation and position. |
+| `crates/phy/src/source/verifier.rs` | Add (implemented) | Independently owned expected stream, comparison counters and coverage. |
+| `crates/phy/src/types/bits.rs` | Add (implemented) | Shared SourceChunk and meaningful source-range representation. |
+| `crates/phy/src/simulation/run.rs` | Add (implemented) | Bounded grant/source association and independent comparison outside receiver recovery. |
+| `crates/phy/tests/prbs.rs` | Add (implemented) | Independent sequence/period, continuity, bounds and verifier cases. |
+| `crates/morgana/tests/experiment.rs` | Add (implemented) | Complete/partial/cancelled source comparison coverage and owned reports. |
 
 
-Status: **designed, not implemented**. ARCH-PRBS-01 expands the first block in
-the signal path; SOURCE-01 remains the implementation milestone. The existing
-CLI still generates a seeded ChaCha8 fixture. Selecting that fixture is not
+Status: **implemented and source-independently verified**. ARCH-PRBS-01 owns
+the continuous source and independent verifier. The standalone LDPC
+CLI retains its separate seeded ChaCha8 fixture. Selecting that fixture is not
 selecting PRBS15. The design below is complete within this repository and has
 no dependency on reference-project documentation or source checkouts.
 
@@ -355,13 +368,13 @@ polynomial names alone do not settle reciprocal or hardware shift conventions.
 | Property | Contract |
 | --- | --- |
 | Kind | Continuous PRBS15; other polynomials are unsupported in this stage. |
-| Seed | Nonzero 15-bit integer, 1–32767 inclusive; proposed initial draft value 32767 (`0x7fff`). Explicit Apply/run acceptance is still required. |
+| Seed | Nonzero 15-bit integer, 1–32767 inclusive; explicit caller seed; examples use 1 and literal tests include `0x7fff`. |
 | Initial bits | Seed bits 0 through 14 are `s[0]` through `s[14]`, least-significant bit first. |
 | Register step | Emit old bit 0; shift right; insert old bit 14 XOR old bit 0 into bit 14. |
 | Period | 32767 bits for every allowed seed; the absolute source position continues across periods. |
 | Position | Checked `u64` absolute index of the next bit; a fresh run begins at zero. |
 | Bit storage | One binary `u8` value per bit in transmission order; no implicit byte packing or QAM bit reordering. |
-| Per-operation bound | At most 1,048,576 generated or compared bits. This is a proposed application work/allocation limit, not a DOCSIS requirement. Larger streams use repeated bounded calls. |
+| Per-operation bound | At most 1,048,576 generated or compared bits. This is an application work/allocation limit, not a DOCSIS requirement. Larger streams use repeated bounded calls. |
 
 For seed `0x7fff`, the first 32 emitted bits are:
 
@@ -378,7 +391,7 @@ downstream randomizer reset intervals do not belong in this block.
 
 #### Rust owners and stage interfaces
 
-The proposed `crates/phy` source owner contains focused generator, verifier and
+The implemented `crates/phy` source owner contains focused generator, verifier and
 source-range types. Orchestration owns acceptance, the grant/source ledger and
 job lifecycle. TX grant framing requests exactly the meaningful information-bit
 count from a validated upstream grant/codeword plan. It adds coding fill,
@@ -496,17 +509,20 @@ maps these requirements to owners and planned checks:
 
 ### CM-US-TX block architecture
 
-**Planned code paths (repository-relative).**
+**Implemented code paths (repository-relative).**
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/transmitter/mod.rs` | Create (planned) | Register and sequence the eight focused stage adapters listed below. |
-| `crates/phy/tests/tx_pipeline.rs` | Create (planned) | Stage-boundary identities, chunk invariance and bounded partial emission. |
+| `crates/phy/src/transmitter/framer.rs` | Add (implemented) | All eight TX stages composed through shared numerical owners. |
+| `crates/phy/src/transmitter/framing.rs` | Add (implemented) | Exact codec layout, fill and transmitted grant assembly. |
+| `crates/phy/src/transmitter/assembly.rs` | Add (implemented) | Cyclic/taper/overlap lifecycle and tail. |
+| `crates/phy/tests/waveform_loop.rs` | Add (implemented) | All patterns/QAM orders and end-to-end actual waveform cases. |
 
 
-Status: **planned**. ARCH-TX-00 defines the transmitter block; ARCH-TX-01 through
-ARCH-TX-08 expand all eight stages below. The isolated LDPC codec is a
-dependency; it does not make this transmitter implemented. CM-US-TX converts meaningful
+Status: **all eight stages implemented and locally accepted for bounded scheduled data**.
+ARCH-TX-00 defines the transmitter block; ARCH-TX-01 through ARCH-TX-08 expand
+its stages below. The isolated LDPC codec remains an independent dependency.
+CM-US-TX converts meaningful
 PRBS source bits and an accepted upstream grant into complex baseband samples
 delivered to the Channel Simulator.
 
@@ -587,29 +603,29 @@ run and invalidates older observations by generation. Explicit cancellation
 retains completed work and reports partial emission rather than treating
 generated codewords as proof that their waveform was delivered.
 
-Detailed contracts below cover TX-01 through TX-08. Scientific implementation
-and integrated transmitter acceptance remain planned. The local
+Detailed contracts below cover the implemented and independently tested TX-01
+through TX-08 scheduled-data stages. The local
 [CM-US-TX feature record](development/features/cm-us-tx/design.md) tracks those
 architecture steps separately from implementation.
 
 #### Deferred burst modes and preambles
 
-**Planned code paths (repository-relative).**
+**Implemented admission paths (repository-relative).**
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/configuration/burst.rs` | Create (planned) | Shared explicit mode selection; initial implementation accepts scheduled data only. |
-| `crates/phy/src/transmitter/burst_mode.rs` | Create (planned) | Dispatch before TX-01 and reject unsupported ranging/probing modes. |
-| `crates/phy/tests/burst_modes.rs` | Create (planned) | Unsupported-mode rejection without source consumption or waveform fallback. |
+| `crates/phy/src/configuration/burst.rs` | Add (implemented) | Shared explicit mode selection; initial implementation accepts scheduled data only. |
+| `crates/morgana/src/inputs/us_configuration.rs` | Add (implemented) | Reject unsupported ranging/probing execution during projection before TX/source work. |
+| `crates/morgana/tests/configuration_json.rs` | Add (implemented) | Represented controls remain inspectable; unsupported execution rejects atomically. |
 
 Mode-specific ranging/probing algorithm files remain an open placement decision
-for ARCH-RANGING-01. The paths above reserve mode validation/dispatch only.
+for ARCH-RANGING-01. The paths above implement admission/rejection only.
 
 
 ARCH-RANGING-00 reserves this extension now; detailed architecture and
 implementation follow the first verified scheduled-data TX → unity channel → RX
 closed loop. These are documented mode boundaries, not new source enums or
-empty algorithm modules. All full-waveform modes remain unimplemented today.
+empty algorithm modules. Scheduled data is implemented; the other modes remain unsupported.
 
 | Proposed burst mode | Architecture status |
 | --- | --- |
@@ -638,15 +654,14 @@ pp89–95 and pp98–99; their detailed construction is not specified by this pl
 
 #### TX-01: Grant framing and FEC selection
 
-**Planned code paths (repository-relative).**
+**Implemented code paths (repository-relative).**
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/resources/grid.rs` | Create (planned) | Shared accepted data/complementary-data cell roles, loading and coded capacity. |
-| `crates/phy/src/grant/fec_selection.rs` | Create (planned) | Pure normative family/shortening/borrowing selection, used independently by TX and RX. |
-| `crates/phy/src/grant/plan.rs` | Create (planned) | TxGrantPlan/codeword descriptors, bit-role lengths and offsets. |
-| `crates/phy/src/transmitter/framing.rs` | Create (planned) | Admit the plan, request meaningful source bits and insert information fill. |
-| `crates/phy/tests/grant_plan.rs` | Create (planned) | Independent threshold, borrowing, capacity and byte-residue cases. |
+| `crates/phy/src/grant/fec_selection.rs` | Add (implemented) | Exact thresholds, family selection and shortened-tail borrowing. |
+| `crates/phy/src/grant/plan.rs` | Add (implemented) | Explicit meaningful/fill/shortening/parity/pad layout. |
+| `crates/phy/src/resources/grid.rs` | Add (implemented) | Actual pilot-role resource capacity. |
+| `crates/phy/tests/grant_plan.rs` | Add (implemented) | Literal thresholds and capacity conservation sweep. |
 
 
 [Return to TX stage overview](#internal-stage-sequence).
@@ -763,8 +778,8 @@ Rust owns planning and all totals. The future Rust facade exposes typed plans,
 errors and owned snapshots; future Python uses the same planner, validates
 integers before narrowing, and maps typed errors/absent values consistently.
 Neither Qt nor Python reconstructs selection, capacity or fill arithmetic.
-These public operations and exported report fields remain proposed and require
-versioned API work before they become callable or persisted contracts.
+The implemented API and independent result/source schema contracts are listed
+in the high-level API section and maintained user guide.
 
 **Stage view and acceptance.** The future TX-01 view shows the accepted grant,
 IUC/profile identity, coded-bit capacity, ordered codewords, transmitted and
@@ -796,27 +811,18 @@ separate applicability review; this section does not claim full FDD/FDX support.
 
 #### TX-02: LDPC encoding and shortening
 
-**Planned code paths (repository-relative).**
+**Implemented code paths (repository-relative).**
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/ldpc/src/definitions.rs` | Edit/reuse (existing) | Source-audited upstream families/dimensions and matrix construction; corrected long row 5 and medium rows 4/5. |
-| `crates/ldpc/src/sparse_encoder.rs` | Reuse (existing) | Existing sparse systematic parity owner; preserve notices. |
-| `crates/ldpc/src/codec.rs` | Reuse (existing) | Existing append/encode/omit shortening and syndrome operations. |
-| `crates/ldpc/src/tests.rs` | Edit/reuse (existing) | Family/shortening/noise/failure/invalid-state checks; source acceptance is in the focused audit module. |
-| `crates/ldpc/src/tests/oracle.rs` | Reuse (existing) | Existing independent arithmetic oracle; matrix data is still shared. |
-| `crates/ldpc/src/tests/source_audit.rs` | Added/implemented | Check independent source fingerprints, every lifted edge, frozen impulse parity and decoder boundaries for each family. |
-| `crates/ldpc/src/tests/source_fixtures.rs` | Added/implemented | Compact source-derived row/edge fingerprints and impulse parity expectations; no production-data generation. |
-| `tools/validation/ldpc_source_reference.rs` | Added/implemented | Development-only Rust reference deriving compact fixtures from a separately reviewed local transcription. No runtime dependency or specification corpus is shipped. |
-| `crates/ldpc/Cargo.toml` | Edit (existing) | Register the source-reference tool as a compile/Clippy-checked example. |
-| `crates/morgana/src/report.rs` | Edit (existing) | All-family report tests preserve separate payload, parity and shortened-zero outcomes without changing schema 1. |
-| `crates/phy/src/transmitter/ldpc.rs` | Create (planned) | Encode validated descriptors and assemble ordered words plus grant pad; no duplicated parity algorithm. |
-| `crates/phy/tests/tx_ldpc.rs` | Create (planned) | Grant-integrated codeword lengths/order, bit roles, chunking and failures. |
+| `crates/phy/src/transmitter/framing.rs` | Add (implemented) | Ordered standalone LDPC use and retained-bit assembly. |
+| `crates/ldpc/src/codec.rs` | Edit/Reuse (existing) | Existing audited shortening/encoding owner. |
+| `crates/phy/tests/waveform_loop.rs` | Add (implemented) | Integrated ordered source/codec/recovery cases. |
 
 
 [Return to TX stage overview](#internal-stage-sequence).
 
-Status: **architecture defined; transmitter integration remains planned**.
+Status: **implemented; all-family source audit and transmitter integration accepted**.
 ARCH-TX-02 uses the existing standalone codec as the numerical owner.
 LDPC-01/02 are complete for the isolated codec; this does not complete TX-02 grant
 integration or claim that a complete transmitter already exists.
@@ -938,7 +944,7 @@ Use the existing local owners:
 | `crates/ldpc/src/definitions.rs` | Source-audited upstream family/dimensions and matrix construction; retain independent source regression fixtures. |
 | `crates/ldpc/src/sparse_encoder.rs` | Sparse parity dependencies and encoding; preserve its existing copyright/adaptation notices. |
 | `crates/ldpc/src/codec.rs` | Reuse `LdpcCodec::encode` and `valid_syndrome`; the latter restores shortened zero coordinates internally. |
-| `crates/phy/src/transmitter/ldpc.rs` (planned) | Validate TX-01 descriptors, call the codec and assemble ordered output/pad; no matrix or parity arithmetic here. |
+| `crates/phy/src/transmitter/framing.rs` (implemented) | Validate TX-01 descriptors, call the codec and assemble ordered output/pad; no matrix or parity arithmetic here. |
 
 Keep codec/context caches bounded by the job's admitted code/settings budget;
 do not accumulate every shortening length encountered during a continuous run.
@@ -985,19 +991,18 @@ contracts around the normative CM encoding/shortening behavior.
 
 #### TX-03: Grant-seeded PHY randomization
 
-**Planned code paths (repository-relative).**
+**Implemented code paths (repository-relative).**
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/bit_processing/randomizer.rs` | Create (planned) | One validated seed/register/mask algorithm shared by independently owned TX and RX contexts. |
-| `crates/phy/src/transmitter/randomization.rs` | Create (planned) | Grant reset, ordered XOR, atomic chunk admission and retained snapshots. |
-| `crates/phy/src/receiver/derandomization.rs` | Create (planned) | Independent mask state, soft-sign inverse and grant-pad removal before LDPC. |
-| `crates/phy/tests/randomization.rs` | Create (planned) | Independent literal masks, coverage/reset rules, chunk/failure invariance and soft inverse. |
+| `crates/phy/src/bit_processing/randomizer.rs` | Add (implemented) | Figure7 seed/reset/mask and independent soft sign inverse. |
+| `crates/phy/src/transmitter/framer.rs` | Add (implemented) | Apply grant mask to exactly transmitted positions. |
+| `crates/phy/tests/randomization.rs` | Add (implemented) | Literal first mask, chunk/reset and soft-inverse cases. |
 
 
 [Return to TX stage overview](#internal-stage-sequence).
 
-Status: **architecture defined; implementation remains planned**. ARCH-TX-03
+Status: **implemented for bounded scheduled data; independent stage cases pass**. ARCH-TX-03
 defines the upstream data randomizer and its matching receiver inverse. It is
 separate from the PRBS15 payload source, pilot generation and channel noise.
 
@@ -1171,24 +1176,19 @@ upstream algorithms. No reference implementation is copied or linked here.
 
 [Return to TX stage overview](#internal-stage-sequence).
 
-Status: **architecture defined; implementation remains planned**. ARCH-TX-04
+Status: **implemented for bounded scheduled data; independent stage cases pass**. ARCH-TX-04
 converts TX-03's ordered randomized bits into normalized, labeled complex cells.
 It does not complete the shared resource permutation, receiver or waveform.
 
-**Planned code paths (repository-relative).** All files below are **create
-(planned)**; module registration uses the roots in the
-[planned code layout](#planned-code-layout). No code/data files are created now.
+**Implemented code paths (repository-relative).** The actual module registration uses the roots in the
+[planned code layout](#planned-code-layout). The implemented local resources preserve their original attribution and hashes.
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/configuration/modulation.rs` | Create (planned) | Checked constellation/role/loading models, endpoint requirements and separate implementation availability. |
-| `crates/phy/src/signal_processing/qam_tables.rs` | Create (planned) | Immutable label-indexed integer coordinates, Table 54 energy constants and source identifiers. |
-| `crates/phy/src/signal_processing/qam.rs` | Create (planned) | Shared checked lookup and normalization used by TX, future RX and instruments. |
-| `crates/phy/src/resources/grid.rs` | Create (planned) | Accepted cell roles/loading and the shared grant-cell descriptor contract. |
-| `crates/phy/src/resources/permutation.rs` | Create (planned) | Single address/visit-order owner shared with TX-05 and RX-05; its detailed algorithm remains ARCH-TX-05 work. |
-| `crates/phy/src/transmitter/mapping.rs` | Create (planned) | Stateful cell-word assembly, bit-range association, bounded normalized output and partial status. |
-| `crates/phy/tests/qam_mapping.rs` | Create (planned) | Independently transcribed label/energy/shape and invalid-lookup cases. |
-| `crates/phy/tests/tx_mapping.rs` | Create (planned) | Mixed cell loading, split words, plan/bit conservation, failures and observer neutrality. |
+| `crates/phy/src/signal_processing/qam.rs` | Add (implemented) | MSB label construction, exact coordinate mapping and normalization. |
+| `crates/phy/src/signal_processing/qam_tables.rs` | Add (implemented) | Source-transcribed odd orders and embedded attributed tables. |
+| `crates/phy/build.rs` | Add (implemented) | Checked table extraction with preserved origin. |
+| `crates/phy/tests/qam_mapping.rs` | Add (implemented) | Independent labels, full-order energy/uniqueness and soft distance cases. |
 
 **Placement and shared address plan.** TX-04 and TX-05 are functional boundaries
 inside one upstream operation. The mapper needs the next destination cell's role
@@ -1231,7 +1231,8 @@ PHY3.1 §7.4.7.1 requires the CM modulator to support the listed upstream format
 The CMTS demodulator MUST support the listed formats through 1024-QAM and SHOULD
 support 2048-QAM and 4096-QAM. Preserve those endpoint distinctions in capability
 metadata. MORGANA's actual mapping, demapping and grant-integrated coding support
-are separate implementation states; every mapping here is currently planned.
+are separate implementation states; mapping/demapping through 4096-QAM and
+their scheduled-grant integration are implemented and independently tested.
 An accepted run requires all of its data/complementary orders to be implemented
 at the required endpoints. A known order never permits a substitute constellation.
 
@@ -1354,7 +1355,8 @@ The future public Rust facade owns loading/role/label validation and returned
 snapshots. Future Python/Qt adapters reuse those checks and finite numeric values;
 Python integers are range-checked before conversion, errors map to domain
 exceptions, and unavailable observations remain absent rather than fabricated.
-No callable API, export schema or saved-setting change is introduced here.
+The implemented high-level API composes these scientific owners; no desktop
+saved-workbench format is introduced.
 
 The `tx.qam.mapped` tap shows actual normalized loaded cells before physical-grid
 assembly/Pre-Eq, selected by role, order and grant/range. Overlay the corresponding
@@ -1390,29 +1392,23 @@ copied, and no external source checkout is linked or required by this design.
 
 [Return to TX stage overview](#internal-stage-sequence).
 
-Status: **architecture defined; implementation remains planned**. ARCH-TX-05
+Status: **implemented for bounded scheduled data; independent stage cases pass**. ARCH-TX-05
 owns the shared resource/visit plan and assembles TX-04 cells plus known pilots
 into complete physical frequency grids for TX-06. The pure planning operation
 runs before source consumption; waveform assembly uses that accepted plan.
 
-**Planned code paths (repository-relative).** Every file below is **create
-(planned)**. Register the leaves through the existing
-[planned module roots](#planned-code-layout); no source placeholders are added.
+**Implemented code paths (repository-relative).** The leaves are registered
+through the [module roots](#planned-code-layout).
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/configuration/profile.rs` | Create (planned) | Frame size, channel bandwidth and per-minislot pattern/loading configuration, composing the shared waveform geometry. |
-| `crates/phy/src/resources/grid.rs` | Create (planned) | Physical/compact row association, immutable cell roles/loading, coverage and coded capacity. |
-| `crates/phy/src/resources/pilot_patterns.rs` | Create (planned) | Source-indexed scheduled-data pilot/complementary masks and admitted frame-length variants. |
-| `crates/phy/src/resources/pilots.rs` | Create (planned) | Edge/body selection, pattern-family validation and shared role/power expectations. |
-| `crates/phy/src/resources/interleaving_blocks.rs` | Create (planned) | Per-frame eligible-minislot ordering and Figure 8 block partitioning. |
-| `crates/phy/src/resources/permutation.rs` | Create (planned) | Figure 11/12 joint address iterator and matching inverse association; one owner for TX and RX. |
-| `crates/phy/src/bit_processing/pilot_sequence.rs` | Create (planned) | Independent fixed-seed 12-bit pilot sequence indexed by every physical FFT bin. |
-| `crates/phy/src/transmitter/framer.rs` | Create (planned) | Validate mapped-cell identity/order, write grid cells, insert/scale pilots and emit complete physical symbol grids. |
-| `crates/phy/src/receiver/resources.rs` | Create (planned) | Later RX-05 adapter gathers the same configured visits without TX labels or state. |
-| `crates/phy/tests/ofdma_framing.rs` | Create (planned) | Independent physical-grid placement, coverage, ordering and bounded-lifecycle checks. |
-| `crates/phy/tests/upstream_interleaving.rs` | Create (planned) | Independent partition/address literals, exhaustive bounded bijection and inverse cases. |
-| `crates/phy/tests/upstream_pilots.rs` | Create (planned) | Audited masks, physical-bin sequence vectors and boost/exception expectations. |
+| `crates/phy/src/resources/grid.rs` | Add (implemented) | One canonical physical role/visit/capacity plan. |
+| `crates/phy/src/resources/pilot_patterns.rs` | Add (implemented) | All14 masks, edge/body and boost exceptions. |
+| `crates/phy/src/resources/interleaving_blocks.rs` | Add (implemented) | Source balanced partition sizes. |
+| `crates/phy/src/resources/permutation.rs` | Add (implemented) | Strict powers and unreversed diagonal assignment. |
+| `crates/phy/src/bit_processing/pilot_sequence.rs` | Add (implemented) | Physical-bin PN12 signs. |
+| `crates/phy/tests/upstream_interleaving.rs` | Add (implemented) | Independent permutations/partition expected cases. |
+| `crates/phy/tests/upstream_pilots.rs` | Add (implemented) | Literal masks, counts and PN cases. |
 
 **Geometry and identities.** Accepted synthetic configuration supplies the grant,
 frame epochs, profile/loading, pattern per minislot, exclusion map and numerology.
@@ -1625,7 +1621,7 @@ normal receiver inputs. Pilot-derived effective C×H estimation remains RX work.
 Rust owns role/geometry validation, sequence, partition/permutation, gains and
 complete-grid snapshots. The future facade and native Python/Qt adapters share
 those checks, range/finite-value semantics, typed errors and missing observations.
-No new callable API or persisted schema is introduced by this architecture.
+Actual API/results are listed in the high-level section; desktop persistence remains separate.
 
 The existing `tx.grid.iq` tap represents actual role-scaled physical cells before
 Pre-Eq, unlike `tx.qam.mapped`'s unit-reference loaded cells. Show role, pattern,
@@ -1666,25 +1662,22 @@ and no other checkout is linked or required by the design.
 
 [Return to TX stage overview](#internal-stage-sequence).
 
-Status: **architecture defined; implementation remains planned**. ARCH-TX-06
+Status: **implemented for bounded scheduled data; independent stage cases pass**. ARCH-TX-06
 applies an accepted corrective frequency response to TX-05's complete physical
 symbol grids. The first scheduled-data reference run uses unity on all
 non-excluded carriers and zero coefficients on excluded carriers. A configured
 correction is not an injected physical-channel response or a receiver estimate.
 
-**Planned code paths (repository-relative).** Every file below is **create
-(planned)**. Module registration follows the
-[planned code layout](#planned-code-layout); no numerical code is introduced here.
+**Implemented code paths (repository-relative).** Numerical ownership and
+module registration follow the [code layout](#planned-code-layout).
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/configuration/pre_eq.rs` | Create (planned) | Typed coefficient-bank/source identity, geometry/reset metadata and atomic candidate admission. |
-| `crates/phy/src/signal_processing/pre_eq.rs` | Create (planned) | Single Rust owner for stable bank normalization, complex replacement/adjustment arithmetic and carrier multiplication. |
-| `crates/phy/src/transmitter/pre_eq.rs` | Create (planned) | Validate complete grid/bank identities and apply the bank selected by the immutable static/replay plan without altering roles or upstream state. |
-| `crates/phy/src/resources/grid.rs` | Create (planned) | Shared channel-wide exclusion mask, physical carrier coordinates and symbol-role metadata. |
-| `crates/phy/src/types/iq.rs` | Create (planned) | Shared complex-cell representation and declared observation reference plane. |
-| `crates/phy/tests/pre_eq.rs` | Create (planned) | Independent complex/normalization/default/update/reset reference cases. |
-| `crates/phy/tests/tx_pre_eq.rs` | Create (planned) | Grid streaming, coefficient generations, failure atomicity and matched passive observations. |
+| `crates/phy/src/signal_processing/pre_eq.rs` | Add (implemented) | Complete-bank normalization, identity/reset admission and application. |
+| `crates/phy/src/measurements/pre_eq.rs` | Add (implemented) | Explicit synthetic complete banks, probes, adjustments and symbol playback. |
+| `crates/phy/src/transmitter/framer.rs` | Add (implemented) | Select one complete bank before each useful transform. |
+| `crates/phy/tests/pre_eq.rs` | Add (implemented) | Independent raw/normalized/default/exclusion/phase cases. |
+| `crates/phy/tests/measurement_playback.rs` | Add (implemented) | Explicit older probe base, replacement and activation cases. |
 
 **Operation and reference plane.** Let `X[t,k]` be the actual TX-05 physical
 frequency cell, including its prescribed pilot/complementary power gain. Let
@@ -1790,7 +1783,7 @@ boundary without introducing a MAC exchange or adaptive equalization loop.
 | New calculated/initialized/adjusted candidate | Validate and normalize transactionally, then publish a new generation when allowed by the mode's configuration timing. |
 
 Static mode freezes one bank and exclusion mask for the accepted run, including
-pause/resume. The separately planned [US-Pre-EQ replay](#us-pre-eq-input) freezes
+pause/resume. The implemented synthetic [US-Pre-EQ replay](#us-pre-eq-input) freezes
 an entire bank/update schedule before Start and activates banks at declared
 complete-symbol boundaries. Its synthetic event timing is an engineering policy,
 not an RNG-RSP timing claim. Both modes exclude live exclusion transitions,
@@ -1866,7 +1859,7 @@ Unknown grid coverage, coefficient direction or normalization is an admission ga
 not permission to interpolate, conjugate, invert or fill missing values with one.
 
 The [US-Pre-EQ side input](#us-pre-eq-input) defines capture/update admission and
-scheduled replay; its parsers and runtime remain unimplemented. No inferred-channel
+scheduled replay; typed synthetic replay is implemented, while binary parsers remain pending. No inferred-channel
 mode is introduced. A later
 channel hypothesis from `1/C` needs an explicit gain/delay reference, treatment of
 zeros/missing carriers, regularization and a separate validation/acceptance plan.
@@ -1875,11 +1868,10 @@ closure reproduces field RxMER. Real probe-derived CMTS adaptation and the
 calibrated CMTS performance procedure on pp107–108 remain outside this baseline.
 
 **API and instruments.** Rust owns bank admission/normalization, reset identities,
-complex operations and snapshots. The future public facade and native Python/Qt
-adapters reuse those checks and error semantics. Python indices/counts are checked
+complex operations and snapshots. The implemented facade/native Python and future
+UI adapters reuse those checks and error semantics. Python indices/counts are checked
 before narrowing; complex components must be finite and optional unavailable
-results remain absent. No new callable API, persisted schema or report field is
-implemented by this section.
+results remain absent. The implemented API/source/result contracts use the same owner.
 
 `tx.pre_eq.iq` shows actual corrected carrier cells after C and before IFFT,
 with coefficient generation, magnitude/phase, role gain and physical index visible.
@@ -1922,28 +1914,22 @@ or linked into this transmitter design.
 
 [Return to TX stage overview](#internal-stage-sequence).
 
-Status: **architecture defined; implementation remains planned**. ARCH-TX-07
+Status: **implemented for bounded scheduled data; independent stage cases pass**. ARCH-TX-07
 converts each complete corrected frequency grid from
 [TX-06](#tx-06-cm-pre-eq) into one useful complex time symbol. It fixes physical
 bin order, transform sign, normalization and upstream sample geometry. It leaves
 cyclic extension, roll-off/windowing, overlap, guards and final stream timing to
 [TX-08](#tx-08-sample-assembly).
 
-**Planned code paths (repository-relative).**
+**Implemented code paths (repository-relative).**
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/configuration/profile.rs` | Create (planned) | Shared accepted upstream numerology/clock; already proposed by earlier stages, with no separate transform configuration owner. |
-| `crates/phy/src/configuration/waveform.rs` | Create (planned) | Shared geometry composed by the profile; TX-07 reads N/spacing/fs and TX-08 validates CP/RP and derived lengths. |
-| `crates/phy/src/types/samples.rs` | Create (planned) | Shared useful-symbol samples, local indices, rate, identity and timing/validity metadata; extend the existing plan for indexed sample blocks. |
-| `crates/phy/src/signal_processing/transform.rs` | Create (planned) | Single safe Rust radix-2 numerical owner, reusable immutable plans and unitary centered synthesis/analysis wrappers. |
-| `crates/phy/src/transmitter/ifft.rs` | Create (planned) | Admit one full corrected grid and return one owned useful symbol with accepted geometry and generation. |
-| `crates/phy/src/receiver/fft.rs` | Create (planned) | Paired RX-03 adapter using the same transform convention on independently selected receive windows. |
-| `crates/phy/tests/transforms.rs` | Create (planned) | Independent complex-sum, impulse/tone, bin-order and energy checks in both directions. |
-| `crates/phy/tests/tx_ifft.rs` | Create (planned) | Full-grid admission, identity/timing, bounded output, observer, failure and cancellation checks. |
+| `crates/phy/src/signal_processing/transform.rs` | Add (implemented) | Safe centered/unitary2K/4K inverse and forward transform. |
+| `crates/phy/src/transmitter/framer.rs` | Add (implemented) | Complete physical-symbol synthesis and useful metadata. |
+| `crates/phy/tests/transforms.rs` | Add (implemented) | Independent direct-sum/tone/impulse/energy cases. |
 
-All paths remain proposed creations; references to shared owners extend their
-design, not existing files. The transform kernel is independent of grant/FEC,
+These are actual shared owners; their independent numerical cases are retained. The transform kernel is independent of grant/FEC,
 pilot roles, Pre-Eq banks, channel responses and presentation. TX/RX adapters own
 stage admission. Instruments reuse numerical operations with separate settings
 and scratch storage; they do not consume or alter a transmitter/receiver context.
@@ -2091,8 +2077,8 @@ cannot change synthesis results, input ownership or processing order.
 Rust owns geometry, transform arithmetic, observations and errors. Future Rust
 public operations and native Python bindings must share these semantics and
 owned sample ordering; Python supplies no FFT/scaling/reindexing implementation.
-Any eventual persisted model needs the public API compatibility review. This
-section introduces no public function, saved schema, Python binding or UI.
+Any eventual persisted model needs the public API compatibility review. The implemented public/native operations share this numerical owner; no GUI or
+saved-workbench format is implied.
 
 **Independent acceptance before implementation completion.**
 
@@ -2133,36 +2119,27 @@ resolve the earlier LDPC/source acceptance gaps.
 
 [Return to TX stage overview](#internal-stage-sequence).
 
-Status: **architecture defined; implementation remains planned**. ARCH-TX-08
+Status: **implemented for bounded scheduled data; independent stage cases pass**. ARCH-TX-08
 turns the useful complex symbols from [TX-07](#tx-07-ifft) into the actual
 indexed stream delivered to the [Channel Simulator](#channel-simulator-unity-stub-first).
 It owns cyclic extension, the transmit taper, overlap history, isolated burst
 edges and output cursors. The initial mode remains scheduled data; ranging,
 probing and their different extension/preamble rules remain explicitly deferred.
 
-**Planned code paths (repository-relative).**
+**Implemented code paths (repository-relative).**
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/configuration/waveform.rs` | Create (planned) | Single accepted upstream N/clock/CP/RP geometry with checked stride/extension lengths, composed by the already planned profile owner. |
-| `crates/phy/src/configuration/burst.rs` | Create (planned) | Extend the earlier plan with scheduled-data burst origin, ordered symbol count and explicit optional guard intervals. |
-| `crates/phy/src/types/samples.rs` | Create (planned) | Shared sample ranges, prefix/useful origins, burst support/drain/guard validity and completion metadata. |
-| `crates/phy/src/signal_processing/cyclic_extension.rs` | Create (planned) | Pure trailing-prefix/leading-suffix copy with no transmitter state or RX acquisition. |
-| `crates/phy/src/signal_processing/transmit_window.rs` | Create (planned) | Immutable half-sample taper coefficients and finite complex multiplication; separate from SA analysis windows. |
-| `crates/phy/src/signal_processing/overlap_add.rs` | Create (planned) | Bounded complex tail addition and explicit normal finish/reset, independent of source/FEC. |
-| `crates/phy/src/transmitter/assembly.rs` | Create (planned) | Stage identity/admission, numerical-owner composition, output cursor, guards and transactional burst lifecycle. |
-| `crates/phy/src/receiver/symbols.rs` | Create (planned) | Existing proposed RX-02 owner: independently select useful receive windows from accepted timing/geometry. |
-| `crates/phy/tests/transmit_window.rs` | Create (planned) | Independent extension/taper/overlap vectors and upstream geometry boundaries. |
-| `crates/phy/tests/burst_assembly.rs` | Create (planned) | Exact timeline, burst edges/drain, arbitrary output chunks, failure and lifecycle acceptance. |
+| `crates/phy/src/signal_processing/cyclic_extension.rs` | Add (implemented) | Exact trailing prefix and leading suffix. |
+| `crates/phy/src/signal_processing/transmit_window.rs` | Add (implemented) | Half-sample complementary taper. |
+| `crates/phy/src/transmitter/assembly.rs` | Add (implemented) | Transactional overlap, physical cadence and exact final tail. |
+| `crates/phy/src/configuration/guards.rs` | Add (implemented) | Explicit bounded observation silence outside complete burst. |
+| `crates/phy/src/transmitter/framer.rs` | Add (implemented) | Finite frame buffering, guard emission and actual useful origin. |
+| `crates/phy/tests/transmit_window.rs` | Add (implemented) | Independent labeled extensions, coefficients, overlaps and tail lifecycle. |
+| `crates/morgana/tests/experiment.rs` | Add (implemented) | Actual guard/timing, chunks, pause and partial-result acceptance. |
 
-All are proposed creations. Shared paths extend their earlier design; none
-exists in the current checkpoint. The planned configuration/signal-processing
-module roots register these focused leaves. `transmitter/assembly.rs` orchestrates
-the primitives rather than hiding all DSP and timing in one adapter. Adapt the
-reviewed pure-prefix, immutable-window and retained-tail organization, with
-upstream parameters and the local contracts below. Preserve notices/provenance
-if code is later adapted; no reference code, timing UI or capture data is copied
-by this documentation change.
+The focused numerical owners are composed by the transmitter; no empty leaf
+adapters duplicate their behavior.
 
 **Accepted parameters and extension.**
 
@@ -2338,7 +2315,8 @@ An error similarly retains completed output; a fresh burst requires explicit
 reset with new accepted identities/origin and empty overlap state. Observers
 cannot advance cursors, finish a burst or consume source/RNG state. Rust owns
 future public operations and Python parity; wrappers do no extension, window,
-overlap or sample-index arithmetic independently. No API/schema is added now.
+overlap or sample-index arithmetic independently. The implemented API uses the
+shared synchronous ownership described above.
 
 **Inspection and acceptance before implementation completion.**
 
@@ -2389,32 +2367,26 @@ closed loop remain unfinished and require the existing approval/prerequisites.
 [Return to CM-US-TX](#cm-us-tx-block-architecture) ·
 [TX-06 application](#tx-06-cm-pre-eq) · [RxMER side input](#rxmer-input).
 
-Status: **single-shot and multi-input architecture defined; formats, import and
-update replay remain planned**. This side input supplies corrective coefficients
+Status: **typed synthetic single-shot/multi-bank/update replay implemented; binary format admission remains pending**. This side input supplies corrective coefficients
 C to TX-06. It supplies neither a physical channel H to CH-SIM nor a known
 correction to normal CMTS-US-RX. The initial reference experiment still uses
 the explicit unity default and needs no capture.
 
-**Planned code paths (repository-relative).**
+**Implemented code paths (repository-relative).**
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/measurements/pre_eq.rs` | Create (planned) | Original corrective-bank/update records, source IDs, exact grid and provenance. |
-| `crates/phy/src/configuration/pre_eq.rs` | Create (planned) | Shared TX-06 bank admission, mode, reset identity, base/probe associations and accepted event plan. |
-| `crates/phy/src/signal_processing/pre_eq.rs` | Create (planned) | Same TX-06 normalization/replacement/adjustment arithmetic; no separate importer math. |
-| `crates/phy/src/transmitter/pre_eq_playback.rs` | Create (planned) | Pure symbol-to-bank queries and bounded event selection for TX-06. |
-| `crates/phy/src/transmitter/pre_eq.rs` | Create (planned) | Apply the selected complete bank once to each actual TX-05 symbol. |
-| `crates/morgana/src/inputs/pre_eq.rs` | Create (planned) | Bounded file/batch decoding, original byte retention and typed Rust admission. |
-| `crates/morgana/src/inputs/mod.rs` | Create (planned) | Register separate RxMER and Pre-EQ import entrypoints. |
-| `crates/morgana/src/lib.rs` | Extend (existing) | Expose shared Rust input/preview operations before future native Python/UI adapters. |
-| `crates/phy/tests/pre_eq_input.rs` | Create (planned) | Original values, identity/coverage, source-kind and atomic batch admission. |
-| `crates/phy/tests/pre_eq_playback.rs` | Create (planned) | Independent update chains, event boundaries, restart/pause and schedule budgets. |
-| `crates/phy/tests/tx_pre_eq.rs` | Create (planned) | Actual changed waveform, unchanged upstream clocks and observer neutrality. |
-| `crates/morgana/tests/pre_eq_import.rs` | Create (planned) | Verified format fixtures, unsupported types and bounded malformed batches. |
+| `crates/phy/src/measurements/pre_eq.rs` | Add (implemented) | Explicit synthetic immutable bank/probe/base/event lineage and pure playback. |
+| `crates/phy/src/signal_processing/pre_eq.rs` | Add (implemented) | Single whole-bank normalization/application owner. |
+| `crates/phy/src/transmitter/framer.rs` | Add (implemented) | Atomic per-symbol bank selection before IFFT, no clock reset. |
+| `crates/morgana/src/inputs/synthetic.rs` | Add (implemented) | Explicit synthetic JSON values and lineage materialization. |
+| `crates/phy/tests/measurement_playback.rs` | Add (implemented) | Older probe bases, complete replacements, updates and boundaries. |
+| `crates/morgana/tests/experiment.rs` | Add (implemented) | Actual changed waveform/received-pilot recovery and joint preflight. |
+| `crates/morgana/src/inputs/pre_eq.rs` | Create (planned) | Original-preserving verified binary corrective capture/update admission. |
 
 Register these leaves under the existing planned measurement/configuration/
-transmitter/facade module roots. No source placeholders or callable API are
-created by this design. Rust owns decoding admission, numerical operations and
+transmitter/facade module roots. No empty source placeholders represent readiness; actual synthetic operations
+are exposed through the high-level APIs. Rust owns decoding admission, numerical operations and
 immutable previews; Python/UI later use identical validation and domain errors.
 
 **Single-shot and multi-input modes.** Input count and replay policy are explicit;
@@ -2490,7 +2462,8 @@ original files to 16 MiB each and 64 MiB per batch. Bound aggregate raw update
 values to 1,048,576 as well; check allocation/work arithmetic before decoding or
 deriving banks. Store bounded event references, not a new N-element bank per
 emitted symbol or an unbounded generation cache. These are engineering limits,
-not DOCSIS requirements; fixtures and runtime budgets remain implementation work.
+not DOCSIS requirements; synthetic fixtures/budgets are implemented, while capture
+byte/association admission remains separate work.
 
 **Relationship to multi-RxMER.** Both inputs can be inspected and accepted
 independently. Optional capture/probe pairing requires explicit identities and
@@ -2519,35 +2492,33 @@ grids, preserved originals and rejected-call atomicity. Exercise both sides of
 every activation boundary, hold-last, malformed dependencies, budgets, chunk/
 pause/retry invariance, unchanged random streams, passive observers, actual TX
 sample changes and preflight rejection of a later nonunity C in RxMER mode.
-No parser, replay engine or hardware/control behavior is claimed implemented.
+Synthetic replay is implemented; no binary parser or hardware/control behavior is claimed.
 
 ### Channel Simulator: unity stub first
 
-Status: **staged architecture defined; implementation remains planned**.
+Status: **all six stage science contracts implemented for the admitted synthetic modes**.
 The Channel Simulator consumes the actual indexed
 [TX-08 output](#tx-08-sample-assembly) and delivers received samples to CMTS-US-RX.
 Its initial mode is exact unity, independent of whether an RxMER file is open.
 The [channel design/checklist](development/features/channel-simulator/design.md)
-tracks all six stage contracts, declared model scope and pending implementation.
+tracks all six stage contracts, accepted synthetic models and remaining capture work.
 
-**Planned code paths (repository-relative).**
+**Implemented code paths (repository-relative).**
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/configuration/channel.rs` | Create (planned) | Accepted mode, enabled stage order, budgets and support-state validation. |
-| `crates/phy/src/channel/mod.rs` | Create (planned) | Register focused channel owners; dispatch unity or explicitly supported future models. |
-| `crates/phy/src/channel/pipeline.rs` | Create (planned) | Input identity/cursor validation, transactional stage execution and bounded output lifecycle. |
-| `crates/phy/src/channel/unity.rs` | Create (planned) | Exact finite sample/metadata transfer, with no RNG or numerical rewriting. |
-| `crates/phy/src/types/samples.rs` | Create (planned) | Same indexed blocks and burst/tail/guard/partial validity as TX-08 and RX input. |
-| `crates/phy/tests/channel_pipeline.rs` | Create (planned) | Admission/order/budget/backpressure and lifecycle acceptance. |
-| `crates/phy/tests/unity_channel.rs` | Create (planned) | Bit-identical I/Q/metadata, chunk invariance and observer neutrality. |
+| `crates/phy/src/channel/stream.rs` | Add (implemented) | Single canonical exact unity/FIR/sample AWGN/timing owner. |
+| `crates/phy/src/channel/residual.rs` | Add (implemented) | Restricted synthetic RxMER actual waveform synthesis. |
+| `crates/phy/src/simulation/request.rs` | Add (implemented) | Whole-model/schedule/aggregate preflight. |
+| `crates/phy/tests/channel_models.rs` | Add (implemented) | Literal model and sample/noise invariance cases. |
+| `crates/phy/tests/rxmer_channel.rs` | Add (implemented) | Independent physical-bin draws and actual residual useful samples. |
 
 #### Channel stage sequence
 
 The table is the linked stage index for the diagram. All six stages have
-architecture for the initial modes below; all channel-stage scientific code
-remains unimplemented. Enabling a designed mode still requires implementation
-and its independent acceptance, with unity remaining the first milestone.
+architecture and implementation for the admitted synthetic modes below.
+Unity passed before the impairment extensions. Capture-based admission and broader
+composition remain separately pending.
 
 | Stage | Responsibility / output | Architecture and initial mode |
 | --- | --- | --- |
@@ -2619,7 +2590,7 @@ errors, partial status and sample ordering after the public Rust operations exis
 
 [Return to channel stages](#channel-stage-sequence).
 
-Status: **input architecture defined; import, playback and UI remain planned**.
+Status: **typed synthetic input/power playback implemented; binary capture import and UI remain pending**.
 Use the reference workbench's separate RxMER input concept: select one or more
 local inputs, inspect original/combined values, choose policy, then Apply an
 accepted immutable draft. A future focused editor/viewer opens from this input;
@@ -2643,19 +2614,16 @@ expose the same collection and failures. [US-Pre-EQ](#us-pre-eq-input) is an
 independent collection, with optional explicit capture/probe association only;
 file order or similar timestamps never pair the two inputs automatically.
 
-**Planned code paths (repository-relative; all create, planned).**
+**Code paths and pending adapters (repository-relative).**
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/measurements/rxmer.rs` | Create (planned) | Typed original upstream observations, provenance, reference and exact grid/coverage validation. |
-| `crates/phy/src/configuration/rxmer.rs` | Create (planned) | Accepted source selection, association/time tolerance and explicit playback policy. |
-| `crates/phy/src/signal_processing/residual_power.rs` | Create (planned) | Single Rust owner of dB-to-error-power conversion, power combination and equivalent-dB preview. |
-| `crates/phy/src/channel/measurement_playback.rs` | Create (planned) | Immutable symbol-scheduled power queries with source IDs/weights and no RNG. |
-| `crates/morgana/src/inputs/mod.rs` | Create (planned) | Register bounded format adapters around the shared typed Rust models. |
-| `crates/morgana/src/inputs/rxmer.rs` | Create (planned) | Preserve original capture bytes; identify/decode only verified upstream formats and versioned decoded inputs. |
-| `crates/phy/tests/rxmer_input.rs` | Create (planned) | Reference/identity/grid/null/range and atomic-admission cases. |
-| `crates/phy/tests/measurement_playback.rs` | Create (planned) | Independent power-average/schedule/interpolation, bounds and immutable-query cases. |
-| `crates/morgana/tests/rxmer_import.rs` | Create (planned) | Source-format fixtures, exact provenance and malformed/unsupported/bounded import cases. |
+| `crates/phy/src/measurements/rxmer.rs` | Add (implemented) | Explicit synthetic original dB, nulls, exact grid and power playback. |
+| `crates/phy/src/channel/residual.rs` | Add (implemented) | One independent actual residual stream; no target truth to RX. |
+| `crates/morgana/src/inputs/synthetic.rs` | Add (implemented) | Versioned synthetic target JSON materialization. |
+| `crates/phy/tests/measurement_playback.rs` | Add (implemented) | Independent power/weights/offsets/null/duplicate/budget cases. |
+| `crates/phy/tests/rxmer_channel.rs` | Add (implemented) | Physical-bin draw-order, actual useful outputs and chunk invariance. |
+| `crates/morgana/src/inputs/rxmer.rs` | Create (planned) | Original-preserving verified upstream binary capture admission and association. |
 
 The existing planned measurement/configuration/signal-processing/channel roots
 register the PHY leaves. Future facade registration extends
@@ -2778,14 +2746,13 @@ behavior are promoted to upstream requirements.
 
 [Return to channel stages](#channel-stage-sequence).
 
-Status: **architecture defined; implementation planned**.
+Status: **implemented for the declared bounded synthetic mode; independent acceptance passes**.
 
-| Planned path | Disposition | Responsibility |
+| Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/configuration/channel.rs` | Create (planned) | Freeze mode, sample/work limits and enabled stage order. |
-| `crates/phy/src/channel/pipeline.rs` | Create (planned) | Validate input metadata/cursor before any state or RNG changes. |
-| `crates/phy/src/types/samples.rs` | Create (planned) | Preserve shared sample/timing/validity types. |
-| `crates/phy/tests/channel_pipeline.rs` | Create (planned) | Invalid identity/grid/range/budget and unchanged-state cases. |
+| `crates/phy/src/channel/stream.rs` | Add (implemented) | Transactional identity/continuity/finite/work admission. |
+| `crates/phy/src/simulation/request.rs` | Add (implemented) | Whole prospective model/schedule/budget preflight. |
+| `crates/phy/tests/channel_models.rs` | Add (implemented) | Literal inputs, chunk and parameter cases. |
 
 Accept finite complex blocks, fs, absolute first index, exact length, burst/run/
 configuration identity and TX-08 useful/tail/guard/partial metadata. Empty blocks
@@ -2813,12 +2780,12 @@ the accepted configuration when a proposed replacement fails.
 
 [Return to channel stages](#channel-stage-sequence).
 
-Status: **architecture defined; implementation planned**.
+Status: **implemented for the declared bounded synthetic mode; independent acceptance passes**.
 
-| Planned path | Disposition | Responsibility |
+| Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/channel/unity.rs` | Create (planned) | Identity transport of validated finite samples/metadata. |
-| `crates/phy/tests/unity_channel.rs` | Create (planned) | Bit-pattern equality, metadata preservation and chunk invariance. |
+| `crates/phy/src/channel/stream.rs` | Add (implemented) | Single exact-unity bypass owner, signed zeros preserved. |
+| `crates/phy/tests/channel_models.rs` | Add (implemented) | Bit-preserving zero settings and chunk invariance. |
 
 The initial channel is `y[n] = x[n]`: unit gain, zero delay, no added/removed
 samples and no random state. Preserve sample bit patterns, including finite
@@ -2841,14 +2808,12 @@ one-sample versus maximum-size chunks and paused/disabled/full observers.
 
 [Return to channel stages](#channel-stage-sequence).
 
-Status: **architecture defined for causal FIR; implementation planned**.
+Status: **implemented for the declared bounded synthetic mode; independent acceptance passes**.
 
-| Planned path | Disposition | Responsibility |
+| Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/configuration/channel.rs` | Create (planned) | Admit original synthetic tap/path settings and immutable response budgets. |
-| `crates/phy/src/channel/response.rs` | Create (planned) | Indexed FIR stream, state checkpoint and explicit terminal drain adapter. |
-| `crates/phy/src/signal_processing/channel_response.rs` | Create (planned) | Pure complex convolution and full-grid realized-response calculation. |
-| `crates/phy/tests/channel_response.rs` | Create (planned) | Independent response/delay/history and unity-limit acceptance. |
+| `crates/phy/src/channel/stream.rs` | Add (implemented) | Bounded causal FIR, retained history and L-1 normal drain. |
+| `crates/phy/tests/channel_models.rs` | Add (implemented) | Literal [1,2]*[1,2,3], complex rotation and continuity. |
 
 **Model and reference.** Select identity or an explicitly supplied synthetic
 causal complex FIR h with L coefficients, `1 <= L <= 1025`. A convenience list
@@ -2910,20 +2875,15 @@ unity bypass. Statistical source recovery is a later integration assertion.
 
 [Return to channel stages](#channel-stage-sequence).
 
-Status: **architecture defined for sample AWGN and restricted RxMER synthesis;
-implementation planned**.
+Status: **implemented for the declared bounded synthetic mode; independent acceptance passes**.
 
-| Planned path | Disposition | Responsibility |
+| Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/channel/residual.rs` | Create (planned) | Future sample-stream residual synthesis/composition adapter. |
-| `crates/phy/src/channel/measurement_playback.rs` | Create (planned) | Shared RxMER-derived power query owner defined above. |
-| `crates/phy/src/signal_processing/residual_power.rs` | Create (planned) | Shared conversion/combination arithmetic; no duplicate adapter math. |
-| `crates/phy/src/signal_processing/noise.rs` | Create (planned) | Pinned noise-only ChaCha8/StandardNormal draws and explicit I/Q ordering. |
-| `crates/phy/src/signal_processing/transform.rs` | Create (planned) | Same unitary upstream numerical transform owner as TX-07. |
-| `crates/phy/src/signal_processing/cyclic_extension.rs` | Create (planned) | Same pure cyclic-copy owner as TX-08. |
-| `crates/phy/src/signal_processing/transmit_window.rs` | Create (planned) | Same immutable upstream taper owner as TX-08. |
-| `crates/phy/src/signal_processing/overlap_add.rs` | Create (planned) | Same overlap primitive as TX-08 with independent residual-stream state. |
-| `crates/phy/tests/channel_residual.rs` | Create (planned) | Independent power/reference, seeded reproducibility and stream acceptance. |
+| `crates/phy/src/channel/stream.rs` | Add (implemented) | Sample AWGN with independent pinned 32-byte-seeded RNG. |
+| `crates/phy/src/channel/residual.rs` | Add (implemented) | Restricted physical-bin RxMER synthesis through actual IFFT/WOLA. |
+| `crates/phy/src/measurements/rxmer.rs` | Add (implemented) | Original synthetic dB and pure power combination/playback. |
+| `crates/phy/tests/rxmer_channel.rs` | Add (implemented) | Independent draw-order, active masks, useful spectra and rejected retry/chunks. |
+| `crates/phy/tests/measurement_playback.rs` | Add (implemented) | Literal10/20dB mean0.055 and temporal policy cases. |
 
 **Exclusive modes and reference power.** Select Off, ControlledSampleAwgn or
 RxmerResidual. No mode adds a hidden system/thermal floor. Off and explicit
@@ -3017,21 +2977,20 @@ support. Freeze seed-stream fixtures independently of the adapter; test missing
 coverage, forbidden C/H/timing combinations, numeric extremes, schedule endpoints,
 guard policy, tail finish, repeated finish, arbitrary drains and pause/retry.
 Disabled/full observers and failed quantum retries must not change subsequent
-draws. These are planned tests, not evidence from existing codec tests.
+draws. Actual stage/model tests are linked in the backend validation record;
+standalone codec tests alone were never channel evidence.
 
 #### CH-05: Timing and phase
 
 [Return to channel stages](#channel-stage-sequence).
 
-Status: **architecture defined for integer delay, constant phase and CFO;
-implementation planned**.
+Status: **implemented for the declared bounded synthetic mode; independent acceptance passes**.
 
-| Planned path | Disposition | Responsibility |
+| Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/configuration/channel.rs` | Create (planned) | Accepted delay/phase/frequency units, combination and output budgets. |
-| `crates/phy/src/channel/timing_phase.rs` | Create (planned) | Indexed delay FIFO and emitted-sample phase state; stage admission/drain. |
-| `crates/phy/src/signal_processing/timing_phase.rs` | Create (planned) | Pure complex rotation and phase-step arithmetic with no scheduler/receiver truth. |
-| `crates/phy/tests/channel_timing_phase.rs` | Create (planned) | Independent phase/timing vectors, absolute-clock and pause/chunk cases. |
+| `crates/phy/src/channel/stream.rs` | Add (implemented) | Integer FIFO delay and continuous positive phase/CFO; exact drain. |
+| `crates/phy/tests/channel_models.rs` | Add (implemented) | Literal impulse/delay/rotation/tone and zero bypass. |
+| `crates/morgana/tests/experiment.rs` | Add (implemented) | Noisy FIR pause/resume preserves actual decisions and support. |
 
 Select Off or integer delay D plus constant initial phase phi0 and carrier
 frequency offset delta_f. Proposed bounds are D=0..4096 samples,
@@ -3086,14 +3045,13 @@ these tests as fractional-clock/phase-noise support or RF acquisition validation
 
 [Return to channel stages](#channel-stage-sequence).
 
-Status: **architecture defined; implementation planned**.
+Status: **implemented for the declared bounded synthetic mode; independent acceptance passes**.
 
-| Planned path | Disposition | Responsibility |
+| Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/channel/pipeline.rs` | Create (planned) | Commit valid output and preserve bounded delivery/pause/cancel state. |
-| `crates/phy/src/instruments/observation.rs` | Create (planned) | Shared passive input/output tap and bounded retention owner. |
-| `crates/phy/tests/channel_pipeline.rs` | Create (planned) | Atomic delivery, backpressure, partial results and failure behavior. |
-| `crates/phy/tests/unity_channel.rs` | Create (planned) | Matching input/output/SA intervals and observer neutrality. |
+| `crates/phy/src/simulation/run.rs` | Add (implemented) | Deliver actual indexed outputs and complete/partial support accounting. |
+| `crates/phy/src/instruments/observer.rs` | Add (implemented) | Bounded passive actual sample/cell history, no science side effects. |
+| `crates/morgana/tests/experiment.rs` | Add (implemented) | Tap equality, disabled/full history and partial/lifetime cases. |
 
 Commit only complete valid blocks to the output queue, with at most one bounded
 ready block and delivery cursor. Return owned immutable snapshots or explicit
@@ -3140,19 +3098,18 @@ Channel plan/seed/H/RxMER truth remains in simulation and independent metrics.
 CMTS-US-RX accepts received samples and its configured grant/timing, never an
 injected target or hidden H/C. Tests cover pause/cancel at different drain
 positions, failed observers and unchanged truth separation. Core Rust operations
-precede matching future Python/UI adapters; no channel implementation is added now.
+are shared by native Python; future UI remains a separate adapter.
 
 ### CMTS-US-RX block architecture
 
-Status: **block and RX-01..09 stage architecture defined for the declared
-initial scope; scientific implementation and source acceptance remain planned**.
+Status: **all nine stages implemented and locally accepted for configured-timing scheduled data**.
 ARCH-RX-00 defines this block and its nine internal stages,
 matching the CM-US-TX presentation structure. The
 [receiver design/checklist](development/features/cmts-us-rx/design.md) tracks
 RX-01..09 separately; completed design does not imply executable receiver support.
 
 CMTS-US-RX converts received upstream complex samples into decoded information
-decisions and explicit recovery outcomes. Its first planned experiment uses
+decisions and explicit recovery outcomes. Its accepted reference experiment uses
 scheduled data, independently accepted grant/timing configuration and the unity
 channel. It does not acquire a generic preamble, process ranging/probing or
 implement a downstream PLC/NCP/BCH chain.
@@ -3160,14 +3117,16 @@ Its [CMTS configuration subsection](#cmts-configuration-us-configuration-json)
 contains the generic OFDMA JSON/control plan. It supplies accepted endpoint
 settings before RX-01 and also configures CM-US-TX through a separate view.
 
-**Planned code paths (repository-relative).**
+**Implemented code paths (repository-relative).**
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/receiver/mod.rs` | Create (planned) | Compose/register the nine stage adapters and their separate processing contexts. |
-| `crates/phy/src/receiver/result.rs` | Create (planned) | Owned decoded decisions, coordinates, validity and separate stage/codeword outcomes. |
-| `crates/phy/src/configuration/receiver.rs` | Create (planned) | Receiver-specific timing/confidence/iteration/retention policies and limits, composing accepted shared configuration. |
-| `crates/phy/tests/rx_pipeline.rs` | Create (planned) | Stage-order/identity, chunk/lifecycle and receiver-truth-boundary acceptance. |
+| `crates/phy/src/receiver/framing.rs` | Add (implemented) | All nine stages, configured timing, explicit gaps and actual decisions. |
+| `crates/phy/src/signal_processing/estimation.rs` | Add (implemented) | Received-only pilot LS/interpolation and valid ZF. |
+| `crates/phy/src/signal_processing/demapping.rs` | Add (implemented) | Finite reference-variance MSB MaxLog. |
+| `crates/phy/tests/rx_framing.rs` | Add (implemented) | Literal gap/window and partial-codeword control cases. |
+| `crates/phy/tests/rx_estimation.rs` | Add (implemented) | Independent anchors, complex responses, brackets and nulls. |
+| `crates/phy/tests/waveform_loop.rs` | Add (implemented) | Actual source recovery across admitted patterns/orders/geometries. |
 
 **Inputs and ownership.** Normal recovery accepts actual channel-output samples
 with their sample rate, absolute indices, stream/configuration identity and
@@ -3218,36 +3177,33 @@ experiment API or saved schema is introduced by this architecture.
 [US Configuration input](#us-configuration) ·
 [RX stage index](#receiver-stage-sequence).
 
-Status: **architecture/JSON delivery plan recorded; full MULPI field audit,
-schema, example JSON files, parser and execution integration remain planned**.
+Status: **applicable pinned-field audit, strict source schema/examples, Rust parser/projections and native parity implemented**.
 This subsection places configuration ownership with the simulated CMTS, beside
 its receiver. It is a control boundary, not a tenth RX stage or a full MAC/
 service-group scheduler. The common US Configuration remains usable by Rust
 and future CLI/Python/UI consumers without depending on receiver processing.
 
-**Planned code and artifact paths (repository-relative).**
+**Implemented code and artifact paths (repository-relative).**
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/configuration/mod.rs` | Create (planned) | Shared typed US Configuration, atomic admission and immutable accepted generation. |
-| `crates/phy/src/configuration/profile.rs`, `crates/phy/src/configuration/waveform.rs`, `crates/phy/src/configuration/burst.rs` | Create (planned) | Existing planned owners for profile/IUC/loading/pilots, geometry and burst-mode validation. |
-| `crates/phy/src/configuration/grant.rs`, `crates/phy/src/configuration/receiver.rs` | Create (planned) | Separate synthetic grant and receiver policy views; no channel/source truth projection. |
-| `crates/phy/src/configuration/cmts.rs` | Create (planned) | Compose CMTS configuration/preset selection and derive distinct accepted TX/RX projections; reuse the shared validators. |
-| `crates/phy/src/configuration/probing.rs` | Create (planned) | Typed future probe-control options and explicit representation/validation/execution support states. |
-| `crates/morgana/src/inputs/us_configuration.rs` | Create (planned) | Bounded JSON/batch decoding, source preservation, generic preset inventory and shared Rust admission. |
-| `crates/morgana/src/inputs/mod.rs` | Create (planned) | Register configuration import independently of PNM measurement inputs. |
-| `crates/morgana/src/lib.rs` | Extend (existing) | Expose the future typed configuration/inventory/preview through the public Rust facade before Python/UI bindings. |
-| `schemas/us-configuration-v1.schema.json` | Create (planned) | Versioned configuration-document structure and source-backed conditional constraints. |
-| `examples/cli/us-configuration/README.md`, `examples/cli/us-configuration/reference-25khz.json`, `examples/cli/us-configuration/reference-50khz.json`, `examples/cli/us-configuration/mixed-loading.json`, `examples/cli/us-configuration/zero-valued-minislots.json`, `examples/cli/us-configuration/ranging-probing.json` | Create (planned) | Explained generic presets and optional-mode documents with honest execution support. |
-| `crates/phy/tests/cmts_configuration.rs`, `crates/phy/tests/configuration.rs` | Create (planned) | Cross-field/domain admission, TX/RX projections and failure atomicity. |
-| `crates/morgana/tests/us_configuration_json.rs` | Create (planned) | Schema/version, bounded import, source preservation, round trips and malformed/unsupported inputs. |
-| `docs/user/us-configuration.md` | Create (planned) | Maintained format, preset-selection and support-state guide after schema delivery. |
+| `crates/phy/src/configuration/ucd/channel.rs` | Add (implemented) | All applicable channel fields, exact bands and physical slot derivation. |
+| `crates/phy/src/configuration/ucd/profiles.rs` | Add (implemented) | Conditional burst fields and exact group expansion. |
+| `crates/phy/src/configuration/ucd/controls.rs` | Add (implemented) | MAP/probe and CM assignment inspection/domain rules. |
+| `crates/phy/src/configuration/serde_limits.rs` | Add (implemented) | Bounded typed sequences before growth. |
+| `crates/morgana/src/inputs/us_configuration.rs` | Add (implemented) | Strict versioned generic inventory/selection and actual shared projection. |
+| `crates/morgana/src/inputs/synthetic.rs` | Add (implemented) | Explicit synthetic bank/update/RxMER JSON materialization in Rust. |
+| `schemas/us-configuration-v1.schema.json` | Add (implemented) | Strict structural schema; Rust owns source/cross-field execution rules. |
+| `examples/configuration/us-50khz.json` | Add (implemented) | Generic2K scheduled-data producer fixture. |
+| `examples/configuration/us-25khz.json` | Add (implemented) | Generic4K mixed/zero-loading producer fixture. |
+| `examples/configuration/us-controls-inspection.json` | Add (implemented) | Ranging/probe/MAP controls, source-valid but selected execution unsupported. |
+| `crates/morgana/tests/configuration_json.rs` | Add (implemented) | Independent fields/enums/conditional/bounds/roundtrip and actual projection runs. |
 
-Register the additional leaves through the planned configuration/facade module
-roots. The [JSON feature record](development/features/us-configuration-json/design.md)
+The additional leaves are registered through the configuration/facade roots. The [JSON feature record](development/features/us-configuration-json/design.md)
 tracks delivery; its [coverage plan](development/features/us-configuration-json/coverage.md)
-must be completed before claiming all applicable MULPI options are covered.
-No empty Rust modules, schema or example JSON artifacts are created by this update.
+records each applicable, reserved and inapplicable field disposition and fixtures.
+The implemented source schema/examples and parser are listed below; unsupported
+source modes remain inspectable and reject selected execution.
 
 **Generic document structure.** Propose the format marker
 `morgana.us-configuration` with its own `schema_version`, distinct from existing
@@ -3271,7 +3227,7 @@ vendor/template reference is metadata, not a normative profile ID or IUC.
 | `simulation` | MORGANA-only synthetic grant/timing/selection/work limits, clearly outside the MULPI-defined field namespace. No hidden H/C, source bits or target noise is projected to normal RX. |
 
 The final field names/defaults/enums require the field-level coverage review;
-these group names specify architecture, not a complete working schema. Use
+the current exact schema uses the field names in the coverage matrix. Use
 explicit unit-bearing fields and exact integer admission, not vendor CLI text.
 Distinguish omitted optional settings, explicit zero, unavailable measurements
 and inapplicable options. JSON does not encode arbitrary nonfinite numbers.
@@ -3306,7 +3262,7 @@ representation validity, domain validity and execution support. A valid document
 using an unimplemented mode remains inspectable with explicit readiness reasons;
 Start rejects unsupported execution rather than ignoring its settings.
 
-Proposed format policy rejects unknown versions and unknown typed fields, with
+Implemented format policy rejects unknown versions and unknown typed fields, with
 only explicitly schema-defined bounded extension metadata permitted. Unsupported
 reserved/legacy values cannot become executable through that extension path.
 Future migrations preserve meaning/provenance or return structured rejection.
@@ -3359,19 +3315,19 @@ boundaries, duplicates/holes/overlaps, reserved choices, optional/default meanin
 multiple presets/IUCs, byte/provenance retention, schema round trips/migrations,
 stale generations, atomic failures, work limits and truth-isolated projections.
 Every applicable source entry needs a JSON mapping and fixture before the
-coverage milestone is checked. This task records the plan and updates flows;
-it does not create JSON/schema code or enable a deferred waveform mode.
+coverage milestone is checked. Current source-schema examples, parser and paired
+load/run checks pass; this does not enable deferred waveform modes.
 
 #### Receiver stage sequence
 
 Every overview/output label links to its completed local stage contract. All nine
-stages have architecture within their explicitly declared initial modes; proposed
-files and scientific processing remain unimplemented. Preserve this stage order.
+stages are implemented within the declared configured-timing scheduled-data modes.
+Preserve this stage order and its received-only ownership boundary.
 
 ```mermaid
 flowchart LR
     C[Channel output samples] --> R1
-    DOC[US Configuration JSON: planned] -. decode and validate .-> CMTS[CMTS configuration owner]
+    DOC[US Configuration JSON] -. decode and validate .-> CMTS[CMTS configuration owner]
     CMTS -. accepted TX settings .-> TX[CM-US-TX]
     CMTS -. accepted RX settings .-> R1
     subgraph RECEIVER[CMTS-US-RX]
@@ -3437,20 +3393,19 @@ The nine contracts below cover configured-timing scheduled data, frame-based
 received-pilot estimation and finite reference-confidence MaxLog demapping.
 Blind acquisition, fast within-frame response tracking, calibrated received-noise
 estimation, finite-file/MAC deframing and ranging/probe recovery remain explicit
-future modes. No new module or scientific acceptance is implied by these designs.
+future modes. Current scientific acceptance is limited to the implemented modes
+and cases in the backend validation record.
 
 #### RX-01: Burst framing and timing
 
 [Return to RX stage index](#receiver-stage-sequence).
 
-Status: **architecture defined for the declared initial mode; implementation planned**.
+Status: **implemented for the declared bounded synthetic mode; independent acceptance passes**.
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/receiver/framing.rs` | Create (planned) | Indexed input admission, configured burst framing and bounded buffering. |
-| `crates/phy/src/configuration/receiver.rs` | Create (planned) | Receiver-owned timing/limits and explicit configured-timing mode. |
-| `crates/phy/src/configuration/burst.rs` | Create (planned) | Shared scheduled-data origin/grant definition, with no channel-truth correction. |
-| `crates/phy/tests/rx_framing.rs` | Create (planned) | Independent origin/range, arbitrary chunk, gap and lifecycle cases. |
+| `crates/phy/src/receiver/framing.rs` | Add (implemented) | Immutable configured timing, received support/identity and explicit gaps. |
+| `crates/phy/tests/rx_framing.rs` | Add (implemented) | Independent CP-versus-useful gap and cancellation prefix cases. |
 
 **Scope and input.** ConfiguredTiming is the initial scheduled-data mode. The
 receiver's accepted [US Configuration](#us-configuration) supplies its frame
@@ -3512,14 +3467,13 @@ and budgets are engineering policies. Blind acquisition/ranging remain deferred.
 
 [Return to RX stage index](#receiver-stage-sequence).
 
-Status: **architecture defined for the declared initial mode; implementation planned**.
+Status: **implemented for the declared bounded synthetic mode; independent acceptance passes**.
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/receiver/symbols.rs` | Create (planned) | Select complete useful receive windows, with explicit sample origin/validity. |
-| `crates/phy/src/configuration/waveform.rs` | Create (planned) | Same accepted upstream N/clock/CP/RP geometry as TX-07/08. |
-| `crates/phy/src/types/samples.rs` | Create (planned) | Shared indexed time blocks; raw/useful intervals retain distinct references. |
-| `crates/phy/tests/rx_symbols.rs` | Create (planned) | Independent useful-window offsets, truncation and CP/overlap boundaries. |
+| `crates/phy/src/receiver/framing.rs` | Add (implemented) | Exact B+j(N+C)+C windows; missing coverage stays unavailable. |
+| `crates/phy/tests/rx_framing.rs` | Add (implemented) | Useful coverage, unobserved suffix and no fabricated zeros. |
+| `crates/phy/tests/waveform_loop.rs` | Add (implemented) | Truncation, arbitrary chunks and both geometries. |
 
 **Window selection.** For physical symbol j, collect exactly the available
 received samples in the half-open interval `[U_j,U_j+N)`, where
@@ -3574,13 +3528,13 @@ and missing-window policies are receiver engineering choices.
 
 [Return to RX stage index](#receiver-stage-sequence).
 
-Status: **architecture defined for the declared initial mode; implementation planned**.
+Status: **implemented for the declared bounded synthetic mode; independent acceptance passes**.
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/receiver/fft.rs` | Create (planned) | Admit one useful receive window and return raw physical bins/metadata. |
-| `crates/phy/src/signal_processing/transform.rs` | Create (planned) | Same centered unitary forward/inverse numerical owner as TX-07. |
-| `crates/phy/tests/transforms.rs` | Create (planned) | Independent forward convention, tone/impulse, energy and paired-transform checks. |
+| `crates/phy/src/signal_processing/transform.rs` | Add (implemented) | Same shared numerical transform with independently tested negative RX convention. |
+| `crates/phy/src/receiver/framing.rs` | Add (implemented) | Received window to raw physical bins. |
+| `crates/phy/tests/transforms.rs` | Add (implemented) | Independent signed tones, direct sums and Parseval. |
 
 **Forward operation.** Admit only a complete finite RX-02 N-sample useful
 window, with N=2048/4096, the corresponding 50/25 kHz geometry and
@@ -3630,16 +3584,13 @@ with TX-07; these tests do not establish a complete DOCSIS receiver.
 
 [Return to RX stage index](#receiver-stage-sequence).
 
-Status: **architecture defined for the declared initial policies; implementation planned**.
+Status: **implemented for the declared bounded synthetic mode; independent acceptance passes**.
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/receiver/channel_estimation.rs` | Create (planned) | Compose received-pilot estimation, coverage and correction; keep outcomes distinct. |
-| `crates/phy/src/signal_processing/channel_estimation.rs` | Create (planned) | Pure received-pilot estimate/reliability numerical owner. |
-| `crates/phy/src/signal_processing/equalization.rs` | Create (planned) | Complex correction with explicit validity/null/failure behavior. |
-| `crates/phy/src/resources/pilots.rs` | Create (planned) | Same physical role/amplitude expectations as TX-05. |
-| `crates/phy/src/bit_processing/pilot_sequence.rs` | Create (planned) | Shared known pilot sequence; receiver uses its own context. |
-| `crates/phy/tests/channel_estimation.rs` | Create (planned) | Independent pilot sign/gain, coverage, estimate/correction and truth-isolation cases. |
+| `crates/phy/src/signal_processing/estimation.rs` | Add (implemented) | Received-only frame-flat or bounded pilot-linear LS/ZF. |
+| `crates/phy/src/configuration/receiver.rs` | Add (implemented) | Explicit policy, power floor and confidence validation. |
+| `crates/phy/tests/rx_estimation.rs` | Add (implemented) | Independent complex G anchors, frequency brackets and deep-null validity. |
 
 **Inputs and pilot reference.** Accept RX-03 raw bins/availability, the receiver's
 resource/pilot plan and an explicit estimation policy. Generate the known BPSK
@@ -3725,17 +3676,13 @@ tracking or measured-noise capability is claimed implemented.
 
 [Return to RX stage index](#receiver-stage-sequence).
 
-Status: **architecture defined for the declared initial policies; implementation planned**.
+Status: **implemented for the declared bounded synthetic mode; independent acceptance passes**.
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/receiver/resources.rs` | Create (planned) | Recover granted loaded cells and logical inverse-visit identities. |
-| `crates/phy/src/resources/pilots.rs` | Create (planned) | Shared physical role/amplitude rules; remove the known payload boost once. |
-| `crates/phy/src/resources/grid.rs` | Create (planned) | Same physical grid, roles/loading and coverage plan as TX-01/05. |
-| `crates/phy/src/resources/permutation.rs` | Create (planned) | Shared joint visit/address sequence, applied in the receiver's inverse direction. |
-| `crates/phy/src/resources/interleaving_blocks.rs` | Create (planned) | Same bounded block partition as TX-05. |
-| `crates/phy/tests/upstream_interleaving.rs` | Create (planned) | Independent inverse visits, partitions and conservation across blocks. |
-| `crates/phy/tests/ofdma_framing.rs` | Create (planned) | Independent physical/logical association, inverse ordering and conservation cases. |
+| `crates/phy/src/resources/grid.rs` | Add (implemented) | Shared pure resource expectations; RX owns actual inverse visits. |
+| `crates/phy/src/receiver/framing.rs` | Add (implemented) | Preserve cell holes/roles/order and remove gain exactly once. |
+| `crates/phy/tests/waveform_loop.rs` | Add (implemented) | All patterns/orders and real missing-coverage decisions. |
 
 **Inverse visit and ordering.** Accept a corrected physical frame with validity,
 plus the same independently accepted grant/profile/role plan as TX-01/04/05.
@@ -3804,15 +3751,13 @@ implementation-time prerequisites, not completed normative transcriptions.
 
 [Return to RX stage index](#receiver-stage-sequence).
 
-Status: **architecture defined for the declared initial policies; implementation planned**.
+Status: **implemented for the declared bounded synthetic mode; independent acceptance passes**.
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/receiver/demapping.rs` | Create (planned) | Admit loaded corrected cells and expose ordered soft bits/confidence metadata. |
-| `crates/phy/src/signal_processing/demapping.rs` | Create (planned) | Shared soft-metric numerical owner using exact label/scale references. |
-| `crates/phy/src/signal_processing/qam.rs` | Create (planned) | Same constellation lookup/reference owner as TX-04. |
-| `crates/phy/src/signal_processing/qam_tables.rs` | Create (planned) | Same source-indexed constellation labels/scales as TX-04. |
-| `crates/phy/tests/soft_demapping.rs` | Create (planned) | Independent labels, MSB positions, LLR sign/scale and finite/noiseless policy cases. |
+| `crates/phy/src/signal_processing/demapping.rs` | Add (implemented) | Finite natural-log MaxLog, explicit variance and erasure0. |
+| `crates/phy/src/signal_processing/qam.rs` | Add (implemented) | Single source labels/scaling owner. |
+| `crates/phy/tests/qam_mapping.rs` | Add (implemented) | Literal distances/signs/ties/clipping and finite input rejection. |
 
 **Input and supported labels.** Admit RX-05 unit-reference payload cells in
 ordered grant-bit coordinates, with role, m, availability and reference scale.
@@ -3877,21 +3822,20 @@ with independently enumerated subsets, not just the shared mapper. Verify
 noiseless source decisions separately from LLR calibration and decoder recovery.
 PHY I20 §7.4.6–7.4.7.2, PDF pp64–65, Figure 13 and Annex A pp197–206 define
 label/bit/scale conventions. The likelihood approximation, v and clipping are
-receiver engineering policies; full label audits and runtime acceptance remain
-pending even though this stage contract is defined.
+receiver engineering policies. Independent label anchors, distance cases and
+runtime acceptance pass within the declared supported scope.
 
 #### RX-07: PHY soft derandomization
 
 [Return to RX stage index](#receiver-stage-sequence).
 
-Status: **architecture defined; implementation planned**.
+Status: **implemented for the declared bounded synthetic mode; independent acceptance passes**.
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/receiver/derandomization.rs` | Create (planned) | Grant/offset context, LLR mask reversal, codeword ordering and pad separation. |
-| `crates/phy/src/bit_processing/randomizer.rs` | Create (planned) | Same grant-seeded PHY mask algorithm as TX-03, with independent RX state. |
-| `crates/phy/src/grant/plan.rs` | Create (planned) | Shared retained-word/shortening/grant-pad lengths and order. |
-| `crates/phy/tests/randomization.rs` | Create (planned) | Independent soft-sign inverse, reset/offset/pad and chunk-state cases. |
+| `crates/phy/src/bit_processing/randomizer.rs` | Add (implemented) | Separately owned grant mask and sign-only soft inverse. |
+| `crates/phy/src/receiver/framing.rs` | Add (implemented) | Clock every transmitted position including pad, collect retained word LLRs. |
+| `crates/phy/tests/randomization.rs` | Add (implemented) | Literal first mask, sign reversal, zero erasure and independent chunks. |
 
 **Grant mask and inverse.** Accept ordered RX-06 finite LLRs, availability/reason
 metadata, exact grant-bit offsets and the independently derived grant/codeword
@@ -3958,14 +3902,14 @@ reversal, erasure metadata and bounded word assembly are engineering inverses.
 
 [Return to RX stage index](#receiver-stage-sequence).
 
-Status: **architecture defined; source validation and integration planned**.
+Status: **source-audited codec integration implemented; bounded RX acceptance passes**.
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/receiver/ldpc.rs` | Create (planned) | Admit ordered retained-word LLRs, restore known-zero shortening and adapt codec outcomes. |
-| `crates/ldpc/src/codec.rs` | Reuse (existing) | Existing upstream standalone codec; independent of QAM/channel/grant orchestration. |
-| `crates/phy/src/grant/plan.rs` | Create (planned) | Same family/length/shortening descriptors used independently by both endpoints. |
-| `crates/phy/tests/rx_ldpc.rs` | Create (planned) | Receiver/codec length/order/known-zero and separate outcome integration cases. |
+| `crates/phy/src/receiver/framing.rs` | Add (implemented) | Retained-length words to audited standalone codec, completed outcomes retained. |
+| `crates/ldpc/src/codec.rs` | Edit/Reuse (existing) | Exactly-once shortening restore and actual bounded decoder results. |
+| `crates/ldpc/src/tests/source_audit.rs` | Edit/Reuse (existing) | All-family independently transcribed matrix/edge acceptance. |
+| `crates/phy/tests/rx_framing.rs` | Add (implemented) | Cancellation between indivisible codec calls preserves completed prefix. |
 
 **Codec boundary and shortening.** Accept exactly one complete derandomized
 transmitted word from RX-07 and a validated shared descriptor. Use mother-code
@@ -4038,21 +3982,20 @@ PHY I20 §7.4.3–7.4.3.3, PDF pp52–58, Table 8 and the source matrices contro
 the code/shortening boundary. LDPC-01/02 source and isolated-codec acceptance
 passed on 2026-11-20, including corrected long/medium tables and independent
 regression fixtures. See the [audit record](development/features/ldpc-source-audit/validation.md).
-The receiver adapter and waveform acceptance remain planned; standalone codec
-acceptance does not close those integration tasks.
+Receiver integration and waveform acceptance have their own current passing
+cases; isolated codec acceptance alone did not close those tasks.
 
 #### RX-09: Information deframing
 
 [Return to RX stage index](#receiver-stage-sequence).
 
-Status: **architecture defined; implementation planned**.
+Status: **implemented for the declared bounded synthetic mode; independent acceptance passes**.
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/receiver/deframing.rs` | Create (planned) | Receiver-known information/fill accounting and explicit partial information decisions. |
-| `crates/phy/src/grant/plan.rs` | Create (planned) | Shared codeword/information-role plan; no original-source ledger. |
-| `crates/phy/src/receiver/result.rs` | Create (planned) | Shared owned recovery outcome/coverage model for orchestration and adapters. |
-| `crates/phy/tests/deframing.rs` | Create (planned) | Independent fill/length accounting, failed/missing words and no truth-based trimming. |
+| `crates/phy/src/receiver/framing.rs` | Add (implemented) | Meaningful decisions/fill checks and actual word/payload coordinates. |
+| `crates/phy/src/source/verifier.rs` | Add (implemented) | Separate independent chronological source comparison after RX. |
+| `crates/morgana/tests/experiment.rs` | Add (implemented) | Complete/cancelled/destructive/empty recovery criteria and bit accounting. |
 
 **Information coordinates and known fill.** Admit RX-08 actual I-bit information
 decisions/outcomes or an explicit not-decoded descriptor in the shared ordered
@@ -4122,20 +4065,31 @@ engineering contracts, not an implemented MAC deframer or interoperability claim
 
 ### Shared QAM Analyzer and Spectrum Analyzer
 
-**Planned code paths (repository-relative).**
+**Implemented code paths (repository-relative).**
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/instruments/observation.rs` | Create (planned) | Bounded typed taps, run/grant/reference identities and owned snapshots. |
-| `crates/phy/src/instruments/qam.rs` | Create (planned) | Matched QAM observations and diagnostic results; reuse shared constellation definitions. |
-| `crates/phy/src/instruments/spectrum.rs` | Create (planned) | Sample-based PSD/window/normalization and SA results. |
-| `crates/phy/src/signal_processing/transform.rs` | Create (planned) | Shared numerical transform; instrument settings remain independent of active TX/RX state. |
-| `crates/phy/tests/instruments.rs` | Create (planned) | Known spectra, reference-plane matching, bounded retention and observer neutrality. |
+| `crates/phy/src/instruments/observer.rs` | Add (implemented) | Bounded selected actual QAM/sample history and owned queries. |
+| `crates/phy/src/instruments/spectrum.rs` | Add (implemented) | Contiguous centered baseband unitary rectangular PSD. |
+| `crates/phy/src/instruments/metrics.rs` | Add (implemented) | Independent matched deboosted-data MER and honest metric states. |
+| `crates/phy/tests/matched_metrics.rs` | Add (implemented) | Literal20dB and empty/exact-zero-error cases. |
+| `crates/morgana/tests/experiment.rs` | Add (implemented) | Observer neutrality and query/lifetime acceptance. |
 
 
 Keep one reusable instrument implementation per instrument type, with tap
 selection rather than separate numerical implementations for TX/channel/RX.
-The instrument availability table is an interface plan, not a list of implemented taps.
+Implemented `Tap` values are TxGrid, TxPreEq, TxUseful, TxOutput, ChannelInput,
+ChannelOutput, RxInput, RxFft and RxEqualized. TX/FFT QAM history records the first
+symbol of each completed frame; RX equalized history records actual visited data/
+complementary cells. Retention is explicitly selected and bounded. The proposed
+expanded tap names below remain presentation/inspection design, not extra retained
+history. Soft-bit and matched paired GUI inspectors are not implemented.
+
+Actual spectrum queries carry run/configuration/grant identity, absolute first
+sample, sample clock, FFT length, rectangular analysis window and explicit linear
+normalized-baseband power/Hz units. They use one retained contiguous interval;
+samples from distinct grants are never joined to fill a window. `TxUseful` can
+be analyzed independently as a retained time-domain symbol.
 
 | Proposed tap | Data and reference plane | Instruments |
 | --- | --- | --- |
@@ -4188,28 +4142,26 @@ pause/resume preserves source, randomizer, interleaver and receiver state.
 
 ### Ownership, results and acceptance
 
-**Planned code paths (repository-relative).**
+**Implemented code paths (repository-relative).**
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/simulation/job.rs` | Create (planned) | Accepted-run lifecycle, bounded pipeline work, pause/resume and partial cancellation. |
-| `crates/phy/src/simulation/source_ledger.rs` | Create (planned) | Source-range metadata owner, separate from normal receiver inputs. |
-| `crates/phy/src/simulation/comparison.rs` | Create (planned) | Independent source and matched-symbol metrics after receiver recovery. |
-| `crates/phy/tests/closed_loop.rs` | Create (planned) | Bounded unity runs with independent source comparison and lifecycle invariants. |
-| `crates/morgana/src/experiment.rs` | Create (planned) | Typed public Rust experiment operation delegating into PHY orchestration. |
-| `crates/morgana/src/lib.rs` | Extend (existing) | Expose reviewed operations and preserve existing FEC imports/methods. |
-| `crates/morgana/src/report.rs` | Extend (existing) | Add reviewed versioned experiment results while preserving schema-1 FEC behavior. |
-| `crates/morgana/tests/experiment.rs` | Create (planned) | Public configuration, errors, owned results and FEC compatibility. |
-| `crates/cli/src/args.rs` | Extend (existing) | Parse future experiment requests without numerical calculations. |
-| `crates/cli/src/command.rs` | Extend (existing) | Dispatch through the same facade and serialize returned results. |
-| `bindings/python/src/lib.rs` | Create (planned) | Later native Python adapter to the same public Rust operations. |
-| `bindings/python/tests/test_experiment.py` | Create (planned) | Later adapter contract tests; expected science comes from independent Rust fixtures. |
+| `crates/phy/src/simulation/request.rs` | Add (implemented) | Frozen cumulative work/storage/sample/time admission. |
+| `crates/phy/src/simulation/control.rs` | Add (implemented) | Shared pause/resume/cancel/progress; acknowledged pause time excluded. |
+| `crates/phy/src/simulation/run.rs` | Add (implemented) | Single science orchestrator, independent source association and matched metrics. |
+| `crates/phy/src/simulation/report.rs` | Add (implemented) | Owned complete/partial/failed outcomes and pending coverage. |
+| `crates/morgana/src/api/session.rs` | Add (implemented) | High-level atomic typed/document configure and shared engine dispatch. |
+| `crates/morgana/src/api/reports.rs` | Add (implemented) | Bounded independent experiment JSON export. |
+| `crates/morgana/tests/experiment.rs` | Add (implemented) | Public science/lifecycle/instruments/owned results. |
+| `crates/cli/src/command.rs` | Edit/Reuse (existing) | Preserved FEC and actual upstream document dispatch. |
+| `crates/cli/src/json_io.rs` | Add (implemented) | Bounded regular-file adapter with no output overwrite API. |
+| `bindings/python/src/simulation.rs` | Add (implemented) | Native worker/interpreter release/Busy and signal-driven partial cancellation. |
 
 
 Retain `crates/ldpc` as the waveform-independent codec. The
 [planned code layout](#planned-code-layout) defines the proposed `crates/phy`
 module roots; the per-stage tables above name their implementation/test files.
-These remain planned responsibilities, not empty files to create now.
+These are actual backend responsibilities; pending capture/UI entries stay explicitly planned.
 `crates/morgana` exposes their typed Rust facade
 and reports; the CLI and future Python wrapper consume it. Numerical reuse from
 the reference toolkit follows a reviewed local-adaptation plan with preserved
@@ -4239,22 +4191,22 @@ transport under different chunking, complete noiseless source recovery, matched
 TX/raw/equalized cell observations and identical unity-path SA reference planes.
 Full codeword convergence and original-bit comparison remain separate assertions.
 No external interoperability or clean-machine/native UI claim follows from these
-planned internal checks. See [ARCH-01 design](development/features/upstream-signal-path/design.md)
+internal checks. See [ARCH-01 design](development/features/upstream-signal-path/design.md)
 and the official checklist for current prerequisite gaps.
 
 Source: CM-SP-PHYv3.1-I20-230419 §7.4.1, Figure 5, PDF p50; §7.4.1.5–7,
 p51; §7.4.3–7, pp52–65; §7.4.9–10, pp65–69; §7.4.16–17, pp101–107.
-Figure 5/p50 was checked in the original local PDF; remaining detailed equations,
-pilot tables and permutations require their implementation-time PDF checks.
+Figure 5/p50 and the implemented stage equations, pilot tables and permutations
+have pinned source checks recorded in the [backend validation](development/features/backend-stages/validation.md).
 PHY4.0 I07 §7.2.4 and §7.3.4 delegation was checked in pinned extracted text;
 FDX/FDD extensions remain separate applicability work, not implied full support.
 
 ## High-level Rust and Python APIs
 
-Status: separate architecture and paired interface stubs only. The existing
-`Morgana::{new,run_ldpc}`, `LdpcCodec` re-exports and schema-1 `FecReport` are
-implemented. The proposed `morgana::api` module, `Simulation` session, native
-Python extension and Python type stubs do not exist. No new API is callable.
+Status: the high-level Rust API and optional native Python adapter are implemented
+for typed/JSON synthetic scheduled data. The existing `Morgana::{new,run_ldpc}`,
+codec re-exports and schema-1 FEC reports remain compatible. Capture APIs remain
+explicit proposals until their verified format/admission gates pass.
 See the [feature design/checklist](development/features/public-api/design.md).
 
 ### API ownership and dependency flow
@@ -4298,92 +4250,84 @@ bytes and call the same Rust loaders; the engine accepts typed domain inputs.
 
 ### API modules and planned stub paths
 
-Every path is repository-relative. Create entries are planned placement, with
-no source files, manifests or dependencies added during this architecture task.
+Every path is repository-relative; the table records actual backend ownership.
+Binary capture adapters remain explicitly pending in their input sections.
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/morgana/src/lib.rs` | Extend (existing) | Export `pub mod api`; preserve existing `Morgana`, LDPC re-exports and FEC behavior. |
-| `crates/morgana/src/report.rs` | Reuse (existing) | Schema-1 FEC snapshots; keep separate from future experiment documents. |
-| `crates/morgana/src/api/mod.rs` | Create (planned) | Document/re-export the high-level public contract. |
-| `crates/morgana/src/api/simulation.rs` | Create (planned) | Idle session, atomic configuration/selection and engine dispatch. |
-| `crates/morgana/src/api/configuration.rs` | Create (planned) | Public configuration, run/observation limits, playback requests and readiness projections; reuse PHY validators. |
-| `crates/morgana/src/api/inputs.rs` | Create (planned) | Named bounded input values, typed retained IDs and inventory/provenance projections; delegate decoding to shared input modules. |
-| `crates/morgana/src/api/units.rs` | Create (planned) | Checked units/IDs and public re-exports of canonical PHY types; no duplicate numerical definitions. |
-| `crates/morgana/src/api/error.rs` | Create (planned) | `ApiError`, `ErrorCode`, `ApiResult` and preserved lower-level diagnostic mapping. |
-| `crates/morgana/src/api/control.rs` | Create (planned) | Public shared Rust run-control/progress handles; delegate lifecycle to simulation. |
-| `crates/morgana/src/api/reports.rs` | Create (planned) | Owned experiment/batch entries, outcomes, provenance and bounded QAM/SA access. |
-| `crates/morgana/src/inputs/mod.rs`, `crates/morgana/src/inputs/us_configuration.rs`, `crates/morgana/src/inputs/rxmer.rs`, `crates/morgana/src/inputs/pre_eq.rs` | Create (already planned) | Shared Rust decoding; API input types compose these owners. |
-| `crates/phy/src/simulation/mod.rs`, `crates/phy/src/simulation/job.rs` | Create (already planned) | Sole scientific run/lifecycle owner; API control is an adapter to it. |
-| `bindings/python/Cargo.toml`, `bindings/python/pyproject.toml` | Create (planned) | Separate opt-in PyO3/maturin build, own lockfile when introduced; depend on `morgana`, independent of Qt/CLI. |
-| `bindings/python/src/lib.rs` | Create (planned) | Native extension registration, version and public error mapping. |
-| `bindings/python/src/simulation.rs`, `inputs.rs`, `configuration.rs`, `control.rs`, `reports.rs`, `units.rs` | Create (planned) | Leaf files under `bindings/python/src/`; conversions and dispatch matching the Rust module owners. |
-| `bindings/python/python/morgana/__init__.py`, `__init__.pyi`, `py.typed` | Create (planned) | Thin package exports, typed signature declarations and typing marker; no scientific Python implementation. |
-| `crates/morgana/tests/public_api.rs`, `api_inputs.rs`, `api_lifecycle.rs`, `api_reports.rs` | Create (planned) | Rust contract, atomic state, bounded lifecycle and result ownership checks. |
-| `bindings/python/tests/test_api.py`, `test_experiment.py`, `test_parity.py`, `test_lifecycle.py`, `test_typing.py` | Create (planned) | Native exports, execution, Rust/Python parity, concurrency and declaration checks. |
-| `examples/rust/high_level.rs`, `examples/python/high_level.py` | Create (planned) | Paired configure/preview/run/report examples; add package registration and example indexes when executable. |
-| `docs/user/api/README.md`, `docs/user/python/README.md` | Create (planned) | Maintained language-specific guides once supported. |
-| `Cargo.toml`, `crates/morgana/Cargo.toml`, `scripts/validate.sh` | Extend (existing, later) | Register API/examples and separate native-binding checks when implemented; keep Rust-only validation independent. |
+| `crates/morgana/src/lib.rs` | Edit/Reuse (existing) | Export reviewed api and inputs while preserving FEC imports. |
+| `crates/morgana/src/api/mod.rs` | Add (implemented) | Canonical domain re-exports, no duplicate numerical types. |
+| `crates/morgana/src/api/session.rs` | Add (implemented) | Idle typed/JSON session, full document inventory, atomic replacement and run. |
+| `crates/morgana/src/api/error.rs` | Add (implemented) | Stable categories/context and preserved shared domain causes. |
+| `crates/morgana/src/api/reports.rs` | Add (implemented) | Bounded owned report/source serialization. |
+| `bindings/python/Cargo.toml` | Add (implemented) | Separate optional exact PyO3 dependency and independent Cargo.lock. |
+| `bindings/python/src/lib.rs` | Add (implemented) | Native registration and structured error mapping. |
+| `bindings/python/src/configuration.rs` | Add (implemented) | Bounded typed conversion only. |
+| `bindings/python/src/document.rs` | Add (implemented) | Same Rust generic source document inventory/export. |
+| `bindings/python/src/measurements.rs` | Add (implemented) | Same synthetic bank/probe/event/RxMER validation and queries. |
+| `bindings/python/src/simulation.rs` | Add (implemented) | Short-held session slot, worker, interpreter release, Busy and controls. |
+| `bindings/python/src/reports.rs` | Add (implemented) | Owned actual results and shared QAM/SA queries. |
+| `bindings/python/python/morgana/__init__.pyi` | Add (implemented) | Runtime-matching signatures/defaults and typing marker alongside exports. |
+| `crates/morgana/examples/upstream_loop.rs` | Add (implemented) | Actual typed Rust closed loop. |
+| `crates/morgana/examples/upstream_measurements.rs` | Add (implemented) | Actual synthetic playback Rust example. |
+| `crates/morgana/examples/upstream_document.rs` | Add (implemented) | Actual shared JSON Rust consumer. |
+| `examples/python/upstream.py` | Add (implemented) | Paired native consumer of the same producer document. |
+| `tools/python/check_native.py` | Add (implemented) | Locked local native build and independent Rust-process parity tests. |
+| `docs/user/upstream-experiments.md` | Add (implemented) | Actual paired APIs, schema, limits and unsupported modes. |
 
-The Python import name is proposed as `morgana`, backed by native
-`morgana._native`; the separate adapter Rust package is proposed as
-`morgana-python`. Distribution name availability, dependency/tool versions,
-interpreter/platform support and wheel publication are future packaging decisions,
-not inferred from another toolkit. No stable C ABI or exposed Rust memory layout
+The implemented Python import is `morgana`, backed by native `morgana._native`;
+the separate Rust adapter package is `morgana-python`. PyO3 is exactly0.30.1 and
+the packaging tool declaration is maturin1.8.3. Actual native validation is local
+Linux/Python3.10; wheel publication and other interpreter/platform acceptance
+remain separate evidence, never inferred from source manifests. No stable C ABI or exposed Rust memory layout
 is promised. Keep application, configuration schema and report versions separate.
 
 ### Paired Rust and Python interface stubs
 
-The signatures below are **design declarations**, not compilable Rust, runnable
-Python or installed `.pyi` files. All types and methods in this table are proposed.
-`ApiResult<T>` means typed Rust failure; Python raises `ApiError` with matching
-`code`, `message` and structured details, returning ordinary values on success.
-Declarations will be finalized against implemented domain contracts before export.
+The implemented operation inventory below supersedes the earlier design-only
+session signatures. Native conversions and shared validation have actual tests;
+Python methods perform no DSP or independent association arithmetic. Source types
+are re-exported by `crates/morgana/src/api/mod.rs`; Rust ownership is canonical.
 
-| Rust declaration on `Simulation` | Python declaration on `Simulation` | Contract |
+| Public Rust | Native Python | Actual contract / owner |
 | --- | --- | --- |
-| `new() -> Self` | `__init__(self) -> None` | Empty idle one-CM/one-channel session; no allocation of waveform work. |
-| `load_us_configuration(&mut self, input: NamedInput) -> ApiResult<ConfigurationInventory>` | `load_us_configuration(self, input: NamedInput) -> ConfigurationInventory` | Retain bounded original bytes/provenance and inspect all presets through Rust; no automatic run. |
-| `configuration_inventory(&self) -> ConfigurationInventory` | `configuration_inventory(self) -> ConfigurationInventory` | Owned inventory, including unsupported entries and readiness reasons; empty before load. |
-| `select_configuration(&mut self, id: ConfigurationId) -> ApiResult<()>` | `select_configuration(self, id: ConfigurationId) -> None` | Atomically select a valid preset and recheck retained input compatibility. |
-| `configure(&mut self, config: ExperimentConfig) -> ApiResult<()>` | `configure(self, config: ExperimentConfig) -> None` | Accept a typed synthetic/reference request through the same validators; preserves state on failure. |
-| `add_rxmer(&mut self, input: RxMerInput) -> ApiResult<RxMerId>` | `add_rxmer(self, input: RxMerInput) -> RxMerId` | One typed capture; repeated calls retain multiple captures without guessed pairing. |
-| `add_pre_eq(&mut self, input: PreEqInput) -> ApiResult<PreEqId>` | `add_pre_eq(self, input: PreEqInput) -> PreEqId` | Admit a corrective bank with unchanged provenance; never reinterpret as injected H. |
-| `add_pre_eq_update(&mut self, input: PreEqUpdateInput) -> ApiResult<PreEqUpdateId>` | `add_pre_eq_update(self, input: PreEqUpdateInput) -> PreEqUpdateId` | Retain an explicit update identity/order/time; validate missing/duplicate/ambiguous references. |
-| `set_options(&mut self, options: ExperimentOptions) -> ApiResult<()>` | `set_options(self, options: ExperimentOptions) -> None` | Set bounded run, source, channel, receiver, observation and single/multi playback policies. |
-| `preview(&self) -> ApiResult<ExperimentPreview>` | `preview(self) -> ExperimentPreview` | Pure readiness, resolved selection/association and capacity/resource plan; no engine execution. |
-| `run(&mut self) -> ApiResult<BatchReport>` | `run(self) -> BatchReport` | Explicit bounded blocking execution using a frozen accepted snapshot. |
-| `run_with_control(&mut self, control: &RunControl) -> ApiResult<BatchReport>` | `run_with_control(self, control: RunControl) -> BatchReport` | Same engine with shared cooperative cancellation and bounded progress access. |
+| `Simulation::new(options)` | `Simulation(options=None)` | Idle validated budgets; no implicit run. |
+| `configure(config)` | `configure(config)` | Atomic accepted typed source/scientific configuration. |
+| `configure_document(document)`, `configure_json(bytes)` | Same names | Strict source schema1 and actual projection; failure preserves config/options. |
+| `set_options(options)` | Same name | Fresh accepted limits, no rewriting of original source document. |
+| `configuration()`, `document()` | Same names returning owned optional snapshots | Rust borrows, Python clones; source inventory remains inspectable. |
+| `preview()` | Same name | Owned readiness/counts and all selected-channel profile IDs. |
+| `run()`, `run_with_control(control)` | Same names | Same Rust engine; native releases interpreter access and returns owned results. |
+| `RunControl::new/pause/resume/cancel/progress` | `RunControl()`, `pause/resume/cancel/progress_json` | Shared bounded control; acknowledged pause retains stack and excludes paused time. |
+| `ConfigurationDocument::from_json/to_json/inventory` | Same names | Full retained named inventory; unknown versions/fields reject. |
+| `ConfigurationDocument::original_bytes/original_sha256` | Same names | Exact admitted source bytes and SHA-256, distinct from canonical serialization. |
+| `PreEqBank::unity/normalized/coefficients/generation` | Same names/property | One numerical normalization/application owner; full physical indices retained. |
+| `SyntheticRxmer::new(config,id,db)` | `SyntheticRxmer(config,id,mer_db)` | Explicit synthetic unit-probe-reference input; nulls stay null. |
+| `RxmerPlayback::new/at` | `RxmerPlayback(...)`, `at_json(symbol)` | Single/average/hold/power interpolation; queries are pure. |
+| `PreEqPlayback::new/at` with `PreEqEvent`/`ProbeReference` | `PreEqPlayback(...)`, `coefficients(symbol)` and event factories | Same full-bank preflight and explicit corresponding-probe bases. |
+| `BatchReport::to_json/qam/spectrum` | Same names; Python tap strings/spacing conversion | Owned actual histories; absent retention is unavailable, never replayed. |
 
-Companion planned declarations:
+Native `.pyi` signatures/defaults and exported members are checked against actual
+extension objects. Independent Rust example processes and native runs compare
+settings, source-document provenance, counts, decisions, FEC outcomes and metrics.
+Reports own both canonical source JSON and its original bytes/hash when admitted
+through a document. Typed reconfiguration clears that document provenance;
+changing only execution limits preserves the admitted source document separately.
+Actual native tests also cover SIGINT, interpreter release, Busy, cancellation,
+pause/resume, atomic load and report lifetimes. See the user guide for runnable
+paired examples, limits and the separate optional adapter gate.
 
-| Rust | Python | Shared meaning |
+**Still proposed capture APIs.** `NamedInput`, capture IDs and the following
+signatures are design stubs only, not exported callable operations:
+
+| Proposed Rust | Proposed Python | Pending gate |
 | --- | --- | --- |
-| `NamedInput::new(name: String, bytes: Vec<u8>) -> ApiResult<NamedInput>` | `NamedInput(name: str, data: bytes)` | Owned bounded input and descriptive name; no path interpreted by the engine. |
-| `RxMerInput::from_bytes(input: NamedInput) -> ApiResult<Self>` | `RxMerInput.from_bytes(input: NamedInput) -> RxMerInput` | Shared decoded/capture admission only after upstream format verification. |
-| `PreEqInput::from_bytes(input: NamedInput) -> ApiResult<Self>` | `PreEqInput.from_bytes(input: NamedInput) -> PreEqInput` | Same source-format gate for corrective banks. |
-| `PreEqUpdateInput::from_bytes(input: NamedInput) -> ApiResult<Self>` | `PreEqUpdateInput.from_bytes(input: NamedInput) -> PreEqUpdateInput` | Same source-format gate for bank/update references. |
-| `RunControl::new() -> Self` / `cancel(&self) -> ()` | `RunControl()` / `cancel(self) -> None` | Shared cooperative stop token; no forced thread termination. |
-| `RunControl::progress(&self) -> ProgressSnapshot` | `progress(self) -> ProgressSnapshot` | Owned bounded current snapshot, polled independently of a busy session. |
-| `BatchReport::to_json(&self) -> ApiResult<String>` | `to_json(self) -> str` | Versioned export of Rust results; not a saved experiment or replacement for typed access. |
-| `BatchReport::qam(&self, query: QamQuery) -> ApiResult<QamSnapshot>` | `qam(self, query: QamQuery) -> QamSnapshot` | Bounded access to retained selected tap/cell observations, never reruns simulation. |
-| `BatchReport::spectrum(&self, query: SpectrumQuery) -> ApiResult<SpectrumSnapshot>` | `spectrum(self, query: SpectrumQuery) -> SpectrumSnapshot` | Shared Rust SA calculations over retained samples; unavailable taps remain unavailable. |
+| `add_rxmer(input: NamedInput) -> ApiResult<RxmerInputId>` | `add_rxmer(input) -> RxmerInputId` | Verified upstream format, original bytes/hash/grid/time/identity association. |
+| `add_pre_eq(input: NamedInput) -> ApiResult<PreEqInputId>` | `add_pre_eq(input) -> PreEqInputId` | Verified applied corrective-bank format and normalization/reference. |
+| `add_pre_eq_update(input: NamedInput) -> ApiResult<PreEqUpdateId>` | `add_pre_eq_update(input) -> PreEqUpdateId` | Verified wire update plus explicit set/adjust/base/probe semantics. |
 
-`ExperimentConfig` composes typed US configuration, source/grant, channel,
-receiver and execution requests; it does not duplicate their PHY definitions.
-`ExperimentOptions` covers runtime policies, not a second mutable configuration
-authority. `configure` replaces the accepted configuration transactionally;
-`set_options` changes only policy. Typed synthetic measurement constructors will
-share the measurement models and validation, without requiring a binary decoder.
-
-One input is a single-shot case; repeated admission plus an explicit existing
-[RxMER](#rxmer-input)/[Pre-EQ](#us-pre-eq-input) policy defines a multi-input run.
-Do not silently form a Cartesian product of captures, presets or update banks.
-Preview identifies selected/unused inputs, effective update boundaries and any
-unresolved association. A preset inventory is not an automatic multi-preset job.
-IDs belong to the retaining session, survive unrelated additions, and reject
-unknown/cross-session references. Replacing a document invalidates its old IDs
-explicitly; a failed replacement changes neither accepted state nor IDs.
+Do not import downstream capture type numbers or infer a source's meaning from its
+filename. Synthetic playback does not close those format/import milestones.
 
 ### API lifecycle, errors and result contracts
 
@@ -4427,7 +4371,7 @@ hashes/timestamps/grids and explicit zero-error/unbounded metric states. Copy
 conversion is the default; any future zero-copy view needs a proven lifetime and
 layout contract. Optional values are `Option<T>` in Rust and `T | None` in Python.
 
-The existing FEC report schema remains unchanged. Future experiment export and
+The existing FEC report schema remains unchanged. Implemented experiment export and
 US Configuration versions are distinct; no saved-workbench loader is implied.
 If one is introduced, decoding/generated recipes and all supported settings must
 load and run through both language APIs with migration or structured rejection.
@@ -4451,5 +4395,6 @@ conversion failures, lock release, Busy, cancellation, result lifetimes and actu
 
 Keep a Rust-only build/test path without Python/PyO3/Qt, and a separate native
 binding build/import/test gate when the adapter exists. Existing workspace tests
-validate the checkpoint, not these proposed contracts. Implementation, native
-runtime, packaging and publication remain unchecked in the official checklist.
+validate the delivered Rust contracts. The separate native gate validates actual
+local import/parity/signatures and lifecycle. Hosted runs, published wheels, native
+installer lifecycle and broader platform acceptance remain unverified.

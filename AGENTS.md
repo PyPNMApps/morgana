@@ -8,7 +8,8 @@ it does not implement a full MAC, scheduler, service group or downstream wavefor
 ## Current authorization and status
 
 The user has approved starting the accepted backend plan in dependency order,
-beginning with the all-family LDPC source audit and codec acceptance. Follow the
+through the bounded synthetic PRBS/TX/channel/RX stages, generic configuration
+and native Python, after the all-family LDPC source audit. Follow the
 official checklist and retain explicit evidence for each completed milestone.
 A request for `commit-msg` means prepare the local save-helper command, not
 execute it.
@@ -100,7 +101,10 @@ partial or source-unverified work unchecked. Do not edit solely to log a review.
 
 Run `scripts/validate.sh`; use `scripts/cargo-local.sh` for individual Cargo calls.
 The gate checks local guidance/navigation, setup/Git tooling, formatting, workspace
-tests and Clippy. Preserve Cargo/toolchain caches. Do not install prerequisites
+tests and Clippy. Preserve downloaded Cargo sources and toolchains. After crate
+testing, clean generated Cargo outputs once all validation consumers finish,
+using Cargo's cleanup command for this repository's target directories. Keep
+validation logs and reviewed package artifacts. Do not install prerequisites
 incidentally; see [build guide](docs/development/build.md). Hosted/platform runs,
 external interoperability and publication require separate actual evidence.
 

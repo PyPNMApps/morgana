@@ -26,4 +26,7 @@ Do not redistribute PDFs, page images, full extracted specifications or keyword
 snippets. Topic/section indexes are navigation metadata. Specification text and
 artifacts retain CableLabs rights. Public implementation constants/tests require
 their own source mapping; internal round trips do not validate a transcription.
-See [LDPC-01](../development/checklist.md) for the unresolved source finding.
+See the [completed LDPC audit](../development/features/ldpc-source-audit/validation.md)
+for the resolved transcription findings and independent source fixtures. The
+[backend validation](../development/features/backend-stages/validation.md) records
+additional rendered PHY/MULPI source pages and separate pending capture research.

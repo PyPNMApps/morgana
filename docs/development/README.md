@@ -3,6 +3,7 @@
 - [Architecture](../architecture.md)
 - [Accepted backend delivery decisions](../architecture.md#accepted-backend-delivery-decisions)
   and [milestone/validation record](features/backend-delivery/design.md)
+- [Backend stage implementation and independent cases](features/backend-stages/design.md)
 - [Requirements baseline](../requirements.md) and
   [consolidation/validation record](features/requirements/design.md)
 - [Planned code layout](../architecture.md#planned-code-layout) and
@@ -54,3 +55,8 @@
 
 Private evidence, downloaded specifications and generated outputs belong under
 ignored `docs/development/local/`. Plans and concise validation summaries are tracked.
+
+
+[Backend scientific/native validation](features/backend-stages/validation.md) and
+[maintained user guides](../user/README.md) record actual supported stages,
+configuration, examples, controls, limits and the remaining capture/platform scope.

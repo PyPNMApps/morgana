@@ -9,6 +9,27 @@ Copyright 2026 DOCSIS OFDM Channel Sim contributors.
 Modifications: binary u8 buffers, typed errors, upstream use and private API.
 https://github.com/mgarcia01752/merlin
 
+crates/phy/src/source/prbs15.rs adapts MERLIN
+crates/ofdm/src/simulation/source/prbs.rs at the same revision.
+Copyright 2026 DOCSIS OFDM Channel Sim contributors.
+Modifications: typed upstream chunks, transactional identity/range admission,
+local errors, and exclusion of the downstream BCH payload helper.
+
+crates/phy/src/signal_processing/transform.rs adapts MERLIN's Apache-2.0
+crates/ofdm/src/signal_processing/waveform/transform.rs at that revision.
+Modifications: upstream 2K/4K geometry, typed Iq values and local validation.
+
+crates/phy/build.rs adapts MERLIN crates/ofdm/build/qam_tables.rs at that revision.
+Copyright 2026 PNM Viewer contributors and DOCSIS OFDM Channel Sim contributors.
+Modifications: upstream-applicable orders only, integer output and local paths.
+
+QAM reference resources preserve PyPNM Apache-2.0 resources via MERLIN.
+Acknowledgment: PyPNM - Proactive Network Maintenance Toolkit.
+Copyright (c) 2025 Maurice Garcia. Retain the full LICENSE and NOTICE under
+crates/phy/resources/qam-table; exact origin and hashes are in provenance.json.
+Raw BPSK/QPSK geometry is permuted into PHY label order at build time.
+8-QAM and 32-QAM coordinates are separately source-transcribed in Rust.
+
 fec-codec uses ldpc-toolbox 0.10.1 (MIT OR Apache-2.0), corresponding to upstream
 release commit 62b02cef2df8c6a3b74843d5b4d1947715fbf78d.
 https://github.com/daniestevez/ldpc-toolbox
@@ -30,4 +51,17 @@ DOCSIS skill instructions derive from MERLIN's pinned PHY guidance at the above
 MERLIN revision. Specification documents/extractions retain CableLabs rights.
 Private PDFs, extracted corpora and rendered table images are local development
 inputs excluded from Git and distributable assets. No GPL Qt application,
-downstream BCH implementation or QAM resource assets are imported here.
+downstream BCH implementation is imported here. Selected attributed QAM
+resources are included as recorded above.
+
+The optional native Python adapter uses PyO3 0.30.1 (MIT OR Apache-2.0);
+MORGANA selects its Apache-2.0 option. No Python or native DSP implementation
+is introduced by this interoperability adapter. Local scientific wheels include
+root LICENSE/NOTICE and the QAM resource LICENSE/NOTICE/provenance; they exclude
+engineering guidance, private evidence and source captures.
+
+tools/python/notices.py adapts MERLIN tools/packaging/notices.py at the pinned
+MERLIN revision above. Copyright 2026 DOCSIS OFDM Channel Sim contributors.
+Modifications: host-reachable graph selection, exact shared-notice VCS identity,
+checksums, generated-directory guards and optional scientific wheel scope.
+The wheel's dependency manifest retains full actual source notices and hashes.

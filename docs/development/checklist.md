@@ -6,7 +6,7 @@ The [accepted backend decisions](../architecture.md#accepted-backend-delivery-de
 set the milestone order; their [decision record](features/backend-delivery/design.md)
 does not mark scientific implementation complete.
 The user authorized starting backend implementation in the accepted dependency
-order, beginning with the all-family source audit. No task grants
+order through the bounded synthetic stages, JSON and native adapter. No task grants
 commit, push, publication, provisioning or GUI implementation authorization.
 
 ## How to use this checklist
@@ -29,9 +29,8 @@ Before each stage implementation, record independent source-checked expected
 inputs/outputs; the full catalog grows stage by stage. Core synthetic inputs do
 not require later JSON/PNM loaders. Shared contracts
 MUST still be source-audited within their declared supported scope before use.
-Initial stage gates cover the bounded/cancellable reference scope. Pause-specific
-stage cases remain pending under DEV-PAUSE-01 and do not block initial loop
-acceptance or justify advertising pause controls prematurely.
+Initial stage gates cover the bounded/cancellable reference scope. Pause-specific cases passed after the initial loop under DEV-PAUSE-01. Capture
+admission and broader modes retain separate unchecked gates.
 
 **Contents**
 
@@ -62,182 +61,233 @@ LDPC-01/02 passed all-family source/codec acceptance. Shared types and supported
   Depends on: LDPC-01.<br>
   Acceptance: All families pass independent parity/shortening, controlled errors, failed decisions and actual-iteration cases; no external-interoperability claim.<br>
   Evidence: [2026-11-20 codec acceptance](features/ldpc-source-audit/validation.md), 35 codec and 3 facade tests, including 20 frozen source-derived impulses and independent report outcomes.
-- [ ] DEV-CORE-01: Register the reviewed PHY owners, shared typed boundaries and explicit resource/error contracts using suitable locally adapted reference code.<br>
+- [x] DEV-CORE-01: Register the reviewed PHY owners, shared typed boundaries and explicit resource/error contracts using suitable locally adapted reference code.<br>
   Requirements: [REQ-SYS-03](../requirements.md#req-sys-03), [REQ-NFR-01](../requirements.md#req-nfr-01), [REQ-LIFE-01](../requirements.md#req-life-01). Architecture: [design/owner](../architecture.md#planned-code-layout).<br>
   Depends on: LDPC-02.<br>
-  Acceptance: Rust-only checks cover units, finite/index/size bounds, checked arithmetic and run/configuration identities; no Python/Qt/MERLIN project dependency, duplicate scientific owner or empty executable placeholder. Review each adaptation, retain provenance/licenses and independently verify upstream applicability; no new external numerical library is selected by this plan.
-- [ ] US-CONFIG-01: Implement the supported typed reference configuration, inventory/selection and legitimate TX/RX projections.<br>
+  Acceptance: Rust-only checks cover units, finite/index/size bounds, checked arithmetic and run/configuration identities; no Python/Qt/MERLIN project dependency, duplicate scientific owner or empty executable placeholder. Review each adaptation, retain provenance/licenses and independently verify upstream applicability; no new external numerical library is selected by this plan.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] US-CONFIG-01: Implement the supported typed reference configuration, inventory/selection and legitimate TX/RX projections.<br>
   Requirements: [REQ-CFG-01](../requirements.md#req-cfg-01), [REQ-CFG-02](../requirements.md#req-cfg-02), [REQ-CFG-05](../requirements.md#req-cfg-05), [REQ-SYS-04](../requirements.md#req-sys-04). Architecture: [design/owner](../architecture.md#us-configuration).<br>
   Depends on: DEV-CORE-01.<br>
-  Acceptance: Audit each reference-scope field before use; invalid settings preserve accepted state, all retained entries are discoverable, and normal RX excludes simulator truth. Full JSON/MULPI coverage stays separately pending.
+  Acceptance: Audit each reference-scope field before use; invalid settings preserve accepted state, all retained entries are discoverable, and normal RX excludes simulator truth. Full JSON/MULPI coverage stays separately pending.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
 
-- [ ] API-RUST/INPUT-01: Implement the typed idle Rust session/configuration/input/inventory/preview surface.<br>
+- [x] API-RUST/INPUT-01: Implement the typed idle Rust session/configuration/input/inventory/preview surface.<br>
   Requirements: [REQ-API-01](../requirements.md#req-api-01), [REQ-API-03](../requirements.md#req-api-03), [REQ-SYS-03](../requirements.md#req-sys-03). Architecture: [design/owner](../architecture.md#paired-rust-and-python-interface-stubs).<br>
   Depends on: US-CONFIG-01.<br>
-  Acceptance: Initial typed reference configuration/session/preview tests pass while existing FEC calls and schema-1 reports stay compatible. Add verified importer operations with their later input milestones; no unverified importer or empty successful run stub is advertised.
+  Acceptance: Initial typed reference configuration/session/preview tests pass while existing FEC calls and schema-1 reports stay compatible. Add verified importer operations with their later input milestones; no unverified importer or empty successful run stub is advertised.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
 
 ## 2. Source and grant planning
 
 These tasks use the accepted shared resource/configuration contract; source verification remains outside normal RX.
 
-- [ ] PHY-01: Implement TX-01 resource capacity, grant/codeword selection and fill/pad accounting.<br>
+- [x] PHY-01: Implement TX-01 resource capacity, grant/codeword selection and fill/pad accounting.<br>
   Requirements: [REQ-TX-01](../requirements.md#req-tx-01), [REQ-CFG-05](../requirements.md#req-cfg-05), [REQ-SYS-02](../requirements.md#req-sys-02). Architecture: [design/owner](../architecture.md#tx-01-grant-framing-and-fec-selection).<br>
   Depends on: US-CONFIG-01, API-RUST/INPUT-01.<br>
-  Acceptance: Independent capacity/threshold/borrowing/byte-residue cases conserve source/fill/shortening/parity/pad counts; RX independently derives the same plan and invalid planning does not consume source.
-- [ ] SOURCE-01: Implement continuous PRBS15, independent verification and source associations.<br>
+  Acceptance: Independent capacity/threshold/borrowing/byte-residue cases conserve source/fill/shortening/parity/pad counts; RX independently derives the same plan and invalid planning does not consume source.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] SOURCE-01: Implement continuous PRBS15, independent verification and source associations.<br>
   Requirements: [REQ-PRBS-01](../requirements.md#req-prbs-01), [REQ-PRBS-02](../requirements.md#req-prbs-02), [REQ-PRBS-03](../requirements.md#req-prbs-03), [REQ-PRBS-04](../requirements.md#req-prbs-04). Architecture: [design/owner](../architecture.md#prbs-block-architecture).<br>
   Depends on: DEV-CORE-01.<br>
-  Acceptance: Literal seeds/period/chunk tests pass; invalid inputs and backpressure preserve state; wrong valid words count errors, gaps stop contiguous comparison, and no-payload BER is unavailable.
+  Acceptance: Literal seeds/period/chunk tests pass; invalid inputs and backpressure preserve state; wrong valid words count errors, gaps stop contiguous comparison, and no-payload BER is unavailable.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
 
 ## 3. CM-US-TX implementation and acceptance
 
 TX-01 is PHY-01 above. Each remaining task includes its independent stage checks; WAVE-TX-01 is the aggregate transmitter gate.
 
-- [ ] DEV-TX-02: Integrate exact upstream LDPC encoding/shortening and ordered grant assembly.<br>
+- [x] DEV-TX-02: Integrate exact upstream LDPC encoding/shortening and ordered grant assembly.<br>
   Requirements: [REQ-TX-02](../requirements.md#req-tx-02). Architecture: [design/owner](../architecture.md#tx-02-ldpc-encoding-and-shortening).<br>
   Depends on: PHY-01, SOURCE-01, LDPC-02.<br>
-  Acceptance: Independent full/shortened words, ordering and exact source/fill/parity/pad conservation pass without BCH or assumed puncturing.
-- [ ] DEV-TX-03: Implement grant-seeded PHY randomization.<br>
+  Acceptance: Independent full/shortened words, ordering and exact source/fill/parity/pad conservation pass without BCH or assumed puncturing.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] DEV-TX-03: Implement grant-seeded PHY randomization.<br>
   Requirements: [REQ-TX-03](../requirements.md#req-tx-03). Architecture: [design/owner](../architecture.md#tx-03-grant-seeded-phy-randomization).<br>
   Depends on: DEV-TX-02.<br>
-  Acceptance: Literal first-mask/reset/chunk cases pass over every transmitted position, with no clocks for omitted shortening or pilots.
-- [ ] DEV-TX-04: Implement MSB-first role-dependent QAM mapping.<br>
+  Acceptance: Literal first-mask/reset/chunk cases pass over every transmitted position, with no clocks for omitted shortening or pilots.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] DEV-TX-04: Implement MSB-first role-dependent QAM mapping.<br>
   Requirements: [REQ-TX-04](../requirements.md#req-tx-04). Architecture: [design/owner](../architecture.md#tx-04-cell-word-construction-and-qam-mapping).<br>
   Depends on: DEV-TX-03.<br>
-  Acceptance: Independent upstream label/energy vectors cover the declared supported orders; mixed loading/inactive cells conserve visit order and bits.
-- [ ] DEV-TX-05: Implement exact pilot roles/signs, block partitioning and joint address generation.<br>
+  Acceptance: Independent upstream label/energy vectors cover the declared supported orders; mixed loading/inactive cells conserve visit order and bits.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] DEV-TX-05: Implement exact pilot roles/signs, block partitioning and joint address generation.<br>
   Requirements: [REQ-TX-05](../requirements.md#req-tx-05). Architecture: [design/owner](../architecture.md#tx-05-pilots-ofdma-framing-and-interleaving).<br>
   Depends on: DEV-TX-04.<br>
-  Acceptance: Independent masks, permutations, edge/body/exclusion/zero-resource/boost cases pass; shared pure resource owners drive capacity and inverse RX expectations.
-- [ ] DEV-TX-06: Implement accepted static Pre-EQ admission/defaults and carrier application.<br>
+  Acceptance: Independent masks, permutations, edge/body/exclusion/zero-resource/boost cases pass; shared pure resource owners drive capacity and inverse RX expectations.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] DEV-TX-06: Implement accepted static Pre-EQ admission/defaults and carrier application.<br>
   Requirements: [REQ-TX-06](../requirements.md#req-tx-06). Architecture: [design/owner](../architecture.md#tx-06-cm-pre-eq).<br>
   Depends on: DEV-TX-05.<br>
-  Acceptance: Independent normalization/complex/default/reset tests pass; excluded zeros and grid identity persist, C stays separate from H, and invalid/stale banks reject atomically.
-- [ ] DEV-TX-07: Implement the accepted centered unitary upstream IFFT.<br>
+  Acceptance: Independent normalization/complex/default/reset tests pass; excluded zeros and grid identity persist, C stays separate from H, and invalid/stale banks reject atomically.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] DEV-TX-07: Implement the accepted centered unitary upstream IFFT.<br>
   Requirements: [REQ-TX-07](../requirements.md#req-tx-07). Architecture: [design/owner](../architecture.md#tx-07-ifft).<br>
   Depends on: DEV-TX-06.<br>
-  Acceptance: Independent direct-sum/tone/impulse/energy checks establish 2K/4K signs/bin order/scaling and exact useful sample metadata.
-- [ ] DEV-TX-08: Implement CP/RP extension, taper, overlap, burst tails and explicit guards.<br>
+  Acceptance: Independent direct-sum/tone/impulse/energy checks establish 2K/4K signs/bin order/scaling and exact useful sample metadata.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] DEV-TX-08: Implement CP/RP extension, taper, overlap, burst tails and explicit guards.<br>
   Requirements: [REQ-TX-08](../requirements.md#req-tx-08). Architecture: [design/owner](../architecture.md#tx-08-sample-assembly).<br>
   Depends on: DEV-TX-07.<br>
-  Acceptance: Independent coefficient/numbered-sample/adjacent-symbol cases establish origins, complete length and chunk/backpressure invariance; partial cancellation is explicit.
-- [ ] WAVE-TX-01: Complete one source-verified scheduled-data burst across all eight TX stages.<br>
+  Acceptance: Independent coefficient/numbered-sample/adjacent-symbol cases establish origins, complete length and chunk/backpressure invariance; partial cancellation is explicit.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] WAVE-TX-01: Complete one source-verified scheduled-data burst across all eight TX stages.<br>
   Requirements: [REQ-TX-01](../requirements.md#req-tx-01), [REQ-TX-02](../requirements.md#req-tx-02), [REQ-TX-03](../requirements.md#req-tx-03), [REQ-TX-04](../requirements.md#req-tx-04), [REQ-TX-05](../requirements.md#req-tx-05), [REQ-TX-06](../requirements.md#req-tx-06), [REQ-TX-07](../requirements.md#req-tx-07), [REQ-TX-08](../requirements.md#req-tx-08). Architecture: [design/owner](../architecture.md#cm-us-tx-block-architecture).<br>
   Depends on: DEV-TX-08.<br>
-  Acceptance: Integrated bit/cell/sample accounting, independent source checks and passive stage taps agree; every required TX stage acceptance passes.
+  Acceptance: Integrated bit/cell/sample accounting, independent source checks and passive stage taps agree; every required TX stage acceptance passes.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
 
 ## 4. Unity CH-SIM boundary
 
 No impairment is required for the initial closed loop. CH-03/04/05 are later extension tasks.
 
-- [ ] DEV-CH-01: Implement indexed sample admission and bounded pipeline preflight.<br>
+- [x] DEV-CH-01: Implement indexed sample admission and bounded pipeline preflight.<br>
   Requirements: [REQ-CH-01](../requirements.md#req-ch-01). Architecture: [design/owner](../architecture.md#ch-01-input-admission).<br>
   Depends on: WAVE-TX-01.<br>
-  Acceptance: Finite clock/identity/continuity/overflow and capacity tests reject atomically; empty blocks do not finish the stream.
-- [ ] DEV-CH-02: Implement exact unity transport and zero-effect bypass.<br>
+  Acceptance: Finite clock/identity/continuity/overflow and capacity tests reject atomically; empty blocks do not finish the stream.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] DEV-CH-02: Implement exact unity transport and zero-effect bypass.<br>
   Requirements: [REQ-CH-02](../requirements.md#req-ch-02). Architecture: [design/owner](../architecture.md#ch-02-unity-transport).<br>
   Depends on: DEV-CH-01.<br>
-  Acceptance: Signed zero/subnormal/sample bits and all metadata survive arbitrary chunking; no random draws or add-zero/multiply-one recomputation.
-- [ ] DEV-CH-06: Implement channel output validity and passive bounded observation routing.<br>
+  Acceptance: Signed zero/subnormal/sample bits and all metadata survive arbitrary chunking; no random draws or add-zero/multiply-one recomputation.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] DEV-CH-06: Implement channel output validity and passive bounded observation routing.<br>
   Requirements: [REQ-CH-06](../requirements.md#req-ch-06), [REQ-SYS-02](../requirements.md#req-sys-02). Architecture: [design/owner](../architecture.md#ch-06-output-and-observations).<br>
   Depends on: DEV-CH-02.<br>
-  Acceptance: Tail/guard/partial/index metadata remains correct; disabled/full observers do not change output or expose truth as RX corrections.
-- [ ] WAVE-CH-01: Accept the complete bounded unity channel boundary.<br>
+  Acceptance: Tail/guard/partial/index metadata remains correct; disabled/full observers do not change output or expose truth as RX corrections.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] WAVE-CH-01: Accept the complete bounded unity channel boundary.<br>
   Requirements: [REQ-CH-01](../requirements.md#req-ch-01), [REQ-CH-02](../requirements.md#req-ch-02), [REQ-CH-06](../requirements.md#req-ch-06). Architecture: [design/owner](../architecture.md#channel-simulator-unity-stub-first).<br>
   Depends on: DEV-CH-06.<br>
-  Acceptance: Every initial channel task passes independently and integrated TX samples/metadata are delivered bit-identically to the RX boundary.
+  Acceptance: Every initial channel task passes independently and integrated TX samples/metadata are delivered bit-identically to the RX boundary.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
 
 ## 5. CMTS-US-RX implementation and acceptance
 
 Configured timing and frame-based pilot estimates are the initial policies. Each RX stage uses legitimate configuration and separately owned state.
 
-- [ ] DEV-RX-01: Implement RX-01: Burst framing and indexed available/missing sample intervals.<br>
+- [x] DEV-RX-01: Implement RX-01: Burst framing and indexed available/missing sample intervals.<br>
   Requirements: [REQ-RX-01](../requirements.md#req-rx-01), [REQ-SYS-02](../requirements.md#req-sys-02). Architecture: [design/owner](../architecture.md#rx-01-burst-framing-and-timing).<br>
   Depends on: WAVE-CH-01.<br>
-  Acceptance: Literal origin/stride/gap/identity/overflow tests retain declared coverage and reject unexplained gaps without hidden acquisition.
-- [ ] DEV-RX-02: Implement RX-02: Exact useful-window extraction and unavailable-symbol outcomes.<br>
+  Acceptance: Literal origin/stride/gap/identity/overflow tests retain declared coverage and reject unexplained gaps without hidden acquisition.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] DEV-RX-02: Implement RX-02: Exact useful-window extraction and unavailable-symbol outcomes.<br>
   Requirements: [REQ-RX-02](../requirements.md#req-rx-02), [REQ-SYS-02](../requirements.md#req-sys-02). Architecture: [design/owner](../architecture.md#rx-02-useful-symbol-extraction).<br>
   Depends on: DEV-RX-01.<br>
-  Acceptance: Numbered windows distinguish available zeros from missing samples; incomplete windows are never silently zero-filled.
-- [ ] DEV-RX-03: Implement RX-03: Centered unitary FFT and raw physical-bin results.<br>
+  Acceptance: Numbered windows distinguish available zeros from missing samples; incomplete windows are never silently zero-filled.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] DEV-RX-03: Implement RX-03: Centered unitary FFT and raw physical-bin results.<br>
   Requirements: [REQ-RX-03](../requirements.md#req-rx-03), [REQ-SYS-02](../requirements.md#req-sys-02). Architecture: [design/owner](../architecture.md#rx-03-fft).<br>
   Depends on: DEV-RX-02.<br>
-  Acceptance: Independent signed tones/direct sums/impulses establish sign/order/scaling and preserve raw validity.
-- [ ] DEV-RX-04: Implement RX-04: Received-pilot C×H estimation and declared zero-forcing correction.<br>
+  Acceptance: Independent signed tones/direct sums/impulses establish sign/order/scaling and preserve raw validity.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] DEV-RX-04: Implement RX-04: Received-pilot C×H estimation and declared zero-forcing correction.<br>
   Requirements: [REQ-RX-04](../requirements.md#req-rx-04), [REQ-SYS-02](../requirements.md#req-sys-02). Architecture: [design/owner](../architecture.md#rx-04-channel-estimation-and-equalization).<br>
   Depends on: DEV-RX-03.<br>
-  Acceptance: Independent complex-anchor/interpolation/notch tests cover FrameFlatLs/FramePilotLinear, known pilot gain and explicit unavailable estimates; no injected H or fast tracking.
-- [ ] DEV-RX-05: Implement RX-05: Resource extraction and inverse joint ordering.<br>
+  Acceptance: Independent complex-anchor/interpolation/notch tests cover FrameFlatLs/FramePilotLinear, known pilot gain and explicit unavailable estimates; no injected H or fast tracking.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] DEV-RX-05: Implement RX-05: Resource extraction and inverse joint ordering.<br>
   Requirements: [REQ-RX-05](../requirements.md#req-rx-05), [REQ-SYS-02](../requirements.md#req-sys-02). Architecture: [design/owner](../architecture.md#rx-05-resource-extraction-and-inverse-interleaving).<br>
   Depends on: DEV-RX-04.<br>
-  Acceptance: Independent mixed-loading/permutation/boost cases preserve unavailable scheduled cells and exact bit positions without compaction.
-- [ ] DEV-RX-06: Implement RX-06: Finite MSB-first MaxLog LLRs and erasures.<br>
+  Acceptance: Independent mixed-loading/permutation/boost cases preserve unavailable scheduled cells and exact bit positions without compaction.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] DEV-RX-06: Implement RX-06: Finite MSB-first MaxLog LLRs and erasures.<br>
   Requirements: [REQ-RX-06](../requirements.md#req-rx-06), [REQ-SYS-02](../requirements.md#req-sys-02). Architecture: [design/owner](../architecture.md#rx-06-soft-qam-demapping).<br>
   Depends on: DEV-RX-05.<br>
-  Acceptance: Independent labels/distances validate P(0)/P(1) signs, positive ReferenceVariance, clipping/ties and zero-confidence erasures.
-- [ ] DEV-RX-07: Implement RX-07: Independent grant-mask soft derandomization and pad separation.<br>
+  Acceptance: Independent labels/distances validate P(0)/P(1) signs, positive ReferenceVariance, clipping/ties and zero-confidence erasures.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] DEV-RX-07: Implement RX-07: Independent grant-mask soft derandomization and pad separation.<br>
   Requirements: [REQ-RX-07](../requirements.md#req-rx-07), [REQ-SYS-02](../requirements.md#req-sys-02). Architecture: [design/owner](../architecture.md#rx-07-phy-soft-derandomization).<br>
   Depends on: DEV-RX-06.<br>
-  Acceptance: Mask-one signs reverse without magnitude changes; erasure/pad clocks, omitted positions, word order and resets match independent vectors.
-- [ ] DEV-RX-08: Implement RX-08: Codec integration with exactly-once shortening restoration.<br>
+  Acceptance: Mask-one signs reverse without magnitude changes; erasure/pad clocks, omitted positions, word order and resets match independent vectors.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] DEV-RX-08: Implement RX-08: Codec integration with exactly-once shortening restoration.<br>
   Requirements: [REQ-RX-08](../requirements.md#req-rx-08), [REQ-SYS-02](../requirements.md#req-sys-02). Architecture: [design/owner](../architecture.md#rx-08-shortening-restoration-and-ldpc-decoding).<br>
   Depends on: DEV-RX-07, LDPC-02.<br>
-  Acceptance: Retained-length inputs, 1..100 iteration limits, failed decisions and separate convergence/parity/known-zero outcomes pass; cancellation respects indivisible codec calls.
-- [ ] DEV-RX-09: Implement RX-09: Information deframing with actual failed/partial payload coverage.<br>
+  Acceptance: Retained-length inputs, 1..100 iteration limits, failed decisions and separate convergence/parity/known-zero outcomes pass; cancellation respects indivisible codec calls.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] DEV-RX-09: Implement RX-09: Information deframing with actual failed/partial payload coverage.<br>
   Requirements: [REQ-RX-09](../requirements.md#req-rx-09), [REQ-SYS-02](../requirements.md#req-sys-02). Architecture: [design/owner](../architecture.md#rx-09-information-deframing).<br>
   Depends on: DEV-RX-08.<br>
-  Acceptance: Independent byte/fill/short-word cases preserve decision positions and continuity; source association/comparison stays outside RX.
-- [ ] WAVE-RX-01: Accept the full configured-timing received-only receiver.<br>
+  Acceptance: Independent byte/fill/short-word cases preserve decision positions and continuity; source association/comparison stays outside RX.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] WAVE-RX-01: Accept the full configured-timing received-only receiver.<br>
   Requirements: [REQ-RX-01](../requirements.md#req-rx-01), [REQ-RX-02](../requirements.md#req-rx-02), [REQ-RX-03](../requirements.md#req-rx-03), [REQ-RX-04](../requirements.md#req-rx-04), [REQ-RX-05](../requirements.md#req-rx-05), [REQ-RX-06](../requirements.md#req-rx-06), [REQ-RX-07](../requirements.md#req-rx-07), [REQ-RX-08](../requirements.md#req-rx-08), [REQ-RX-09](../requirements.md#req-rx-09), [REQ-SYS-02](../requirements.md#req-sys-02). Architecture: [design/owner](../architecture.md#cmts-us-rx-block-architecture).<br>
   Depends on: DEV-RX-09.<br>
-  Acceptance: All nine stage cases and integrated noiseless recovery pass without source/channel truth in normal receiver inputs.
+  Acceptance: All nine stage cases and integrated noiseless recovery pass without source/channel truth in normal receiver inputs.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
 
 ## 6. Closed loop, controls, instruments and results
 
 Passive taps accompany stage work. These aggregate tasks prove lifecycle and complete experiment behavior before measurement extensions or full language adapters.
 
-- [ ] DEV-RUN-01: Implement frozen run settings, identities, cumulative budgets and cancellation with retained completed science.<br>
+- [x] DEV-RUN-01: Implement frozen run settings, identities, cumulative budgets and cancellation with retained completed science.<br>
   Requirements: [REQ-LIFE-01](../requirements.md#req-life-01), [REQ-LIFE-02](../requirements.md#req-life-02), [REQ-LIFE-03](../requirements.md#req-life-03), [REQ-NFR-01](../requirements.md#req-nfr-01). Architecture: [design/owner](../architecture.md#ownership-results-and-acceptance).<br>
   Depends on: WAVE-RX-01.<br>
-  Acceptance: Resolve job-wide limits/safe boundaries before execution; test bounded cancellation, pending tails/ranges and reproducibility. Pause/resume is outside the first-loop milestone; later state/time/stop acceptance belongs to DEV-PAUSE-01.
-- [ ] INSTRUMENTS-01: Implement shared bounded QAM/SA collectors and queryable matched taps.<br>
+  Acceptance: Resolve job-wide limits/safe boundaries before execution; test bounded cancellation, pending tails/ranges and reproducibility. Pause/resume is outside the first-loop milestone; later state/time/stop acceptance belongs to DEV-PAUSE-01.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] INSTRUMENTS-01: Implement shared bounded QAM/SA collectors and queryable matched taps.<br>
   Requirements: [REQ-OBS-01](../requirements.md#req-obs-01), [REQ-CH-06](../requirements.md#req-ch-06). Architecture: [design/owner](../architecture.md#shared-qam-analyzer-and-spectrum-analyzer).<br>
   Depends on: WAVE-RX-01.<br>
-  Acceptance: Tests identify tap/units/grid/run/retention, preserve unavailable history and prove disabled/full/query observers leave samples/RNG/decoder behavior unchanged.
-- [ ] DEV-RESULTS-01: Implement owned experiment reports and independent source/decoder/metric accounting.<br>
+  Acceptance: Tests identify tap/units/grid/run/retention, preserve unavailable history and prove disabled/full/query observers leave samples/RNG/decoder behavior unchanged.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] DEV-RESULTS-01: Implement owned experiment reports and independent source/decoder/metric accounting.<br>
   Requirements: [REQ-OBS-02](../requirements.md#req-obs-02), [REQ-PRBS-03](../requirements.md#req-prbs-03), [REQ-PRBS-04](../requirements.md#req-prbs-04), [REQ-API-06](../requirements.md#req-api-06). Architecture: [design/owner](../architecture.md#ownership-results-and-acceptance).<br>
   Depends on: DEV-RUN-01, INSTRUMENTS-01.<br>
-  Acceptance: Reports retain failed/partial science, true iterations, generated/compared/unverified coverage, provenance and explicit unavailable/unbounded metric states; configuration and report schemas remain distinct.
-- [ ] API-RUN-01: Expose accepted bounded execution, owned reports, progress/cancellation and QAM/SA access.<br>
+  Acceptance: Reports retain failed/partial science, true iterations, generated/compared/unverified coverage, provenance and explicit unavailable/unbounded metric states; configuration and report schemas remain distinct.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] API-RUN-01: Expose accepted bounded execution, owned reports, progress/cancellation and QAM/SA access.<br>
   Requirements: [REQ-API-01](../requirements.md#req-api-01), [REQ-API-03](../requirements.md#req-api-03), [REQ-LIFE-01](../requirements.md#req-life-01), [REQ-LIFE-02](../requirements.md#req-life-02), [REQ-LIFE-03](../requirements.md#req-life-03). Architecture: [design/owner](../architecture.md#api-lifecycle-errors-and-result-contracts).<br>
   Depends on: API-RUST/INPUT-01, DEV-RESULTS-01.<br>
-  Acceptance: Frozen snapshots, limits, Busy, cancellation/partial results and report query/lifetimes pass; pause remains unavailable in the first loop and is delivered separately by DEV-PAUSE-01.
-- [ ] DEV-LOOP-01: Accept the complete source-to-recovered-bits reference unity experiment.<br>
+  Acceptance: Frozen snapshots, limits, Busy, cancellation/partial results and report query/lifetimes pass; pause remains unavailable in the first loop and is delivered separately by DEV-PAUSE-01.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] DEV-LOOP-01: Accept the complete source-to-recovered-bits reference unity experiment.<br>
   Requirements: [REQ-SYS-01](../requirements.md#req-sys-01), [REQ-SYS-02](../requirements.md#req-sys-02), [REQ-SYS-04](../requirements.md#req-sys-04), [REQ-LIFE-01](../requirements.md#req-life-01), [REQ-LIFE-02](../requirements.md#req-life-02). Architecture: [design/owner](../architecture.md#ownership-results-and-acceptance).<br>
   Depends on: API-RUN-01.<br>
-  Acceptance: Runs invoked through the high-level Rust API have exact meaningful-bit counts when completed/drained, full contiguous coverage and zero mismatches; destructive/truncated/cancelled/no-payload cases cannot claim recovery from zero errors alone.
+  Acceptance: Runs invoked through the high-level Rust API have exact meaningful-bit counts when completed/drained, full contiguous coverage and zero mismatches; destructive/truncated/cancelled/no-payload cases cannot claim recovery from zero errors alone.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
 
-- [ ] DEV-PAUSE-01: Add pause/resume after the accepted bounded/cancellable reference loop.<br>
+- [x] DEV-PAUSE-01: Add pause/resume after the accepted bounded/cancellable reference loop.<br>
   Requirements: [REQ-LIFE-03](../requirements.md#req-life-03), [REQ-API-03](../requirements.md#req-api-03). Architecture: [lifecycle design](../architecture.md#api-lifecycle-errors-and-result-contracts), [delivery decision](../architecture.md#accepted-backend-delivery-decisions).<br>
   Depends on: DEV-LOOP-01, DEV-RUN-01.<br>
-  Acceptance: Resolve safe boundaries, paused-time accounting and stop-from-paused behavior; independently verify retained source/mask/interleaver/Pre-EQ/RNG/history/pending output. Public controls remain unavailable until those tests pass; native Python controls additionally require actual matching parity tests. This extension is not a dependency of the initial loop, loaders or first Python wrapper.
+  Acceptance: Resolve safe boundaries, paused-time accounting and stop-from-paused behavior; independently verify retained source/mask/interleaver/Pre-EQ/RNG/history/pending output. Public controls remain unavailable until those tests pass; native Python controls additionally require actual matching parity tests. This extension is not a dependency of the initial loop, loaders or first Python wrapper.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
 
 ## 7. Complete configuration JSON and PNM admission
 
+Typed synthetic selection/replay is implemented before verified capture adapters.
+This refinement preserves the capture requirements instead of making binary
+formats prerequisites for scientific stage acceptance.
+
+- [x] RXMER-SYNTHETIC-01: Implement exact-grid explicitly synthetic RxMER inputs and bounded pure power playback.<br>
+  Requirements: [REQ-PNM-02](../requirements.md#req-pnm-02), [REQ-CH-04](../requirements.md#req-ch-04). Architecture: [RxMER input](../architecture.md#rxmer-input).<br>
+  Depends on: DEV-LOOP-01.<br>
+  Acceptance: Literal10/20dB power average0.055, single/hold/interpolation boundaries, nulls/duplicates/budgets and actual Rust/native parity pass. Synthetic normalized-baseband provenance never masquerades as measured capture identity/time.<br>
+  Evidence: [backend validation](features/backend-stages/validation.md).
+- [x] PREEQ-SYNTHETIC-01: Implement fixed synthetic banks, snapshots and explicit probe-based updates.<br>
+  Requirements: [REQ-PNM-03](../requirements.md#req-pnm-03), [REQ-TX-06](../requirements.md#req-tx-06). Architecture: [US-Pre-EQ](../architecture.md#us-pre-eq-input).<br>
+  Depends on: DEV-LOOP-01.<br>
+  Acceptance: Complete-bank normalization and actual waveform transitions pass; older named probe bases are used exactly; stale/future/duplicate/invalid events reject before Start. Native queries/run parity pass.<br>
+  Evidence: [backend validation](features/backend-stages/validation.md).
+
 These extensions do not become prerequisites for a typed synthetic reference experiment. Source-format work can be researched earlier; integration requires its explicit dependencies.
 
-- [ ] USJSON-COVERAGE-01: Complete the applicable pinned MULPI/PHY field-level coverage audit.<br>
+- [x] USJSON-COVERAGE-01: Complete the applicable pinned MULPI/PHY field-level coverage audit.<br>
   Requirements: [REQ-CFG-04](../requirements.md#req-cfg-04), [REQ-SYS-05](../requirements.md#req-sys-05). Architecture: [design/owner](../architecture.md#cmts-configuration-us-configuration-json).<br>
   Depends on: none.<br>
-  Acceptance: Every applicable/conditional/reserved/inapplicable row has source/endpoint/encoding/JSON/Rust/fixture mapping; the current area inventory is not completion.
-- [ ] USJSON-FORMAT/PRESETS-01: Finalize the versioned generic schema, examples and guide.<br>
+  Acceptance: Every applicable/conditional/reserved/inapplicable row has source/endpoint/encoding/JSON/Rust/fixture mapping; the complete108-row disposition matrix is source/fixture mapped.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] USJSON-FORMAT/PRESETS-01: Finalize the versioned generic schema, examples and guide.<br>
   Requirements: [REQ-CFG-03](../requirements.md#req-cfg-03), [REQ-CFG-06](../requirements.md#req-cfg-06), [REQ-API-06](../requirements.md#req-api-06). Architecture: [design/owner](../architecture.md#cmts-configuration-us-configuration-json).<br>
   Depends on: USJSON-COVERAGE-01.<br>
-  Acceptance: Examples cover 25/50 kHz, mixed/zero loading and honestly unsupported optional modes; versions/defaults/nulls/unknown fields are independently exercised.
-- [ ] USJSON-CORE/PROJECTION/PARITY-01: Implement bounded configuration JSON admission and accepted CMTS/TX/RX views.<br>
+  Acceptance: Examples cover 25/50 kHz, mixed/zero loading and honestly unsupported optional modes; versions/defaults/nulls/unknown fields are independently exercised.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] USJSON-CORE/PROJECTION/PARITY-01: Implement bounded configuration JSON admission and accepted CMTS/TX/RX views.<br>
   Requirements: [REQ-CFG-01](../requirements.md#req-cfg-01), [REQ-CFG-02](../requirements.md#req-cfg-02), [REQ-CFG-03](../requirements.md#req-cfg-03), [REQ-CFG-05](../requirements.md#req-cfg-05), [REQ-API-06](../requirements.md#req-api-06). Architecture: [design/owner](../architecture.md#cmts-configuration-us-configuration-json).<br>
   Depends on: DEV-LOOP-01, USJSON-FORMAT/PRESETS-01, US-CONFIG-01.<br>
-  Acceptance: Round trips, all-field conditional validation, inventory, atomic replacement and source-preserving projections pass in shared Rust; native Python parity closes under API-PARITY/DOCS-01.
+  Acceptance: Round trips, all-field conditional validation, inventory, atomic replacement and source-preserving projections pass in shared Rust; native Python parity closes under API-PARITY/DOCS-01.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
 - [ ] US-CONFIG-FORMAT-01: Verify any claimed upstream configuration/profile capture format before adding its importer.<br>
   Requirements: [REQ-PNM-01](../requirements.md#req-pnm-01), [REQ-CFG-05](../requirements.md#req-cfg-05). Architecture: [design/owner](../architecture.md#us-configuration).<br>
   Depends on: none.<br>
@@ -263,26 +313,36 @@ These extensions do not become prerequisites for a typed synthetic reference exp
 
 Keep unsupported composition rejected. Captured-H reconstruction, fractional timing and broad time-varying composition remain deferred.
 
-- [ ] DEV-CH-03: Implement bounded causal synthetic FIR response and exact terminal drain.<br>
+- [x] DEV-CH-03: Implement bounded causal synthetic FIR response and exact terminal drain.<br>
   Requirements: [REQ-CH-03](../requirements.md#req-ch-03). Architecture: [design/owner](../architecture.md#ch-03-channel-response).<br>
   Depends on: DEV-LOOP-01.<br>
-  Acceptance: Independent literal convolution/impulse/gain/delay/phase/deep-null cases establish T+L-1 length, original origin, history continuity and resumable drain.
-- [ ] DEV-CH-04: Implement declared sample AWGN and restricted RxMER residual synthesis.<br>
+  Acceptance: Independent literal convolution/impulse/gain/delay/phase/deep-null cases establish T+L-1 length, original origin, history continuity and resumable drain.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] DEV-CH-04: Implement declared sample AWGN and restricted RxMER residual synthesis.<br>
   Requirements: [REQ-CH-04](../requirements.md#req-ch-04). Architecture: [design/owner](../architecture.md#ch-04-residual-error).<br>
-  Depends on: DEV-LOOP-01, RXMER-INPUT-01.<br>
-  Acceptance: Independent reference/pilot power and pinned noise draw-order/statistical cases pass; every unsupported C/H/timing combination rejects before consuming input.
-- [ ] DEV-CH-05: Implement integer delay, phase/CFO and emitted-clock continuity.<br>
+  Depends on: DEV-LOOP-01, RXMER-SYNTHETIC-01.<br>
+  Acceptance: Independent reference/pilot power and pinned noise draw-order/statistical cases pass; every unsupported C/H/timing combination rejects before consuming input.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] DEV-CH-05: Implement integer delay, phase/CFO and emitted-clock continuity.<br>
   Requirements: [REQ-CH-05](../requirements.md#req-ch-05). Architecture: [design/owner](../architecture.md#ch-05-timing-and-phase).<br>
   Depends on: DEV-LOOP-01.<br>
-  Acceptance: Independent tone/impulse/rotation cases establish signs/origin, T+D drain and phase/chunk/pause continuity; zero settings select bitwise bypass.
-- [ ] DEV-COMPOSE-01: Validate the entire joint RxMER/channel/Pre-EQ update schedule before execution.<br>
+  Acceptance: Independent tone/impulse/rotation cases establish signs/origin, T+D drain and phase/chunk/pause continuity; zero settings select bitwise bypass.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] DEV-COMPOSE-01: Validate the entire joint RxMER/channel/Pre-EQ update schedule before execution.<br>
   Requirements: [REQ-PNM-04](../requirements.md#req-pnm-04), [REQ-CH-01](../requirements.md#req-ch-01). Architecture: [design/owner](../architecture.md#channel-simulator-unity-stub-first).<br>
-  Depends on: DEV-CH-03, DEV-CH-04, DEV-CH-05, PREEQ-INPUT-01.<br>
-  Acceptance: Later incompatible bank events reject the candidate; C, H, targets and noise truth remain separate; explicit stage order/drain/coverage cases pass.
-- [ ] WAVE-CH-02: Accept the supported impairment/measurement-driven experiment scope.<br>
+  Depends on: DEV-CH-03, DEV-CH-04, DEV-CH-05, PREEQ-SYNTHETIC-01.<br>
+  Acceptance: Later incompatible bank events reject the candidate; C, H, targets and noise truth remain separate; explicit stage order/drain/coverage cases pass.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] WAVE-CH-02: Accept the supported synthetic impairment/measurement-model experiment scope.<br>
   Requirements: [REQ-CH-03](../requirements.md#req-ch-03), [REQ-CH-04](../requirements.md#req-ch-04), [REQ-CH-05](../requirements.md#req-ch-05), [REQ-PNM-04](../requirements.md#req-pnm-04). Architecture: [design/owner](../architecture.md#channel-simulator-unity-stub-first).<br>
   Depends on: DEV-COMPOSE-01.<br>
-  Acceptance: All extension-specific and joint-model checks pass with preserved originals/partial outcomes; unsupported combinations remain explicitly unavailable.
+  Acceptance: All synthetic extension/joint-model checks pass with preserved original synthetic values and partial outcomes; binary capture acceptance remains WAVE-CH-CAPTURE-01. Unsupported combinations remain unavailable.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+
+- [ ] WAVE-CH-CAPTURE-01: Accept verified measured capture import/association through the supported channel models.<br>
+  Requirements: [REQ-PNM-01](../requirements.md#req-pnm-01), [REQ-PNM-04](../requirements.md#req-pnm-04). Architecture: [RxMER](../architecture.md#rxmer-input), [Pre-EQ](../architecture.md#us-pre-eq-input).<br>
+  Depends on: RXMER-INPUT-01, PREEQ-INPUT-01, WAVE-CH-02.<br>
+  Acceptance: Original bytes/hash/time/exact RF grid/CM/channel associations and source/control formats pass independent valid/invalid/boundary fixtures; actual shared Rust/native capture-driven runs preserve that provenance. Synthetic array/replay tests do not close this task.
 
 ## 9. High-level Rust and native Python delivery
 
@@ -290,14 +350,16 @@ The Rust foundation/run tasks are integrated with phases 1 and 6. Native Python
 starts only after DEV-LOOP-01 accepts the Rust-driven experiment; an early FEC-only
 Python wrapper is outside this delivery order. Python consumes working Rust operations.
 
-- [ ] API-PY/STUB-01: Implement native Python conversion/dispatch and runtime-matching type declarations.<br>
+- [x] API-PY/STUB-01: Implement native Python conversion/dispatch and runtime-matching type declarations.<br>
   Requirements: [REQ-API-02](../requirements.md#req-api-02), [REQ-API-03](../requirements.md#req-api-03), [REQ-API-04](../requirements.md#req-api-04), [REQ-API-05](../requirements.md#req-api-05). Architecture: [design/owner](../architecture.md#api-modules-and-planned-stub-paths).<br>
   Depends on: API-RUN-01, DEV-LOOP-01.<br>
-  Acceptance: Actual native import checks structured errors/None/integer-buffer conversion, interpreter release, Busy/session restoration and matching .pyi/py.typed exports; core builds remain independent.
-- [ ] API-PARITY/DOCS-01: Validate independent Rust/native-Python parity and deliver runnable paired examples/guides.<br>
+  Acceptance: Actual native import checks structured errors/None/integer-buffer conversion, interpreter release, Busy/session restoration and matching .pyi/py.typed exports; core builds remain independent.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
+- [x] API-PARITY/DOCS-01: Validate independent Rust/native-Python parity and deliver runnable paired examples/guides.<br>
   Requirements: [REQ-API-03](../requirements.md#req-api-03), [REQ-API-04](../requirements.md#req-api-04), [REQ-API-05](../requirements.md#req-api-05), [REQ-API-06](../requirements.md#req-api-06). Architecture: [design/owner](../architecture.md#api-delivery-and-validation-gates).<br>
   Depends on: API-PY/STUB-01.<br>
-  Acceptance: Actual deterministic runs compare settings/seeds/provenance/status/FEC/partial coverage within declared numerical tolerances; cancellation/concurrency/lifetime and supported schema cases pass, not mocks.
+  Acceptance: Actual deterministic runs compare settings/seeds/provenance/status/FEC/partial coverage within declared numerical tolerances; cancellation/concurrency/lifetime and supported schema cases pass, not mocks.<br>
+  Evidence: [backend stage validation](features/backend-stages/validation.md).
 - [ ] API-01: Close all supported high-level Rust and Python API delivery gates.<br>
   Requirements: [REQ-API-01](../requirements.md#req-api-01), [REQ-API-02](../requirements.md#req-api-02), [REQ-API-03](../requirements.md#req-api-03), [REQ-API-04](../requirements.md#req-api-04), [REQ-API-05](../requirements.md#req-api-05), [REQ-API-06](../requirements.md#req-api-06). Architecture: [design/owner](../architecture.md#high-level-rust-and-python-apis).<br>
   Depends on: API-PARITY/DOCS-01.<br>
@@ -305,7 +367,7 @@ Python wrapper is outside this delivery order. Python consumes working Rust oper
 
 ## 10. Foundation delivery and deferred design gates
 
-These items remain pending. GUI and broader PHY modes need a dedicated design/authorization gate; listed design work is not an implementation claim.
+The remaining foundation/extension items stay pending. GUI and broader PHY modes need a dedicated design/authorization gate; listed design work is not an implementation claim.
 
 - [ ] DEV-LICENSE-01: Complete copied-material/dependency attribution and package-scope review.<br>
   Requirements: [REQ-NFR-02](../requirements.md#req-nfr-02). Architecture: [design/owner](../architecture.md#ownership-results-and-acceptance).<br>
@@ -339,6 +401,12 @@ These items remain pending. GUI and broader PHY modes need a dedicated design/au
   Requirements: [REQ-NFR-04](../requirements.md#req-nfr-04), [REQ-SYS-05](../requirements.md#req-sys-05). Architecture: [design/owner](../architecture.md#api-delivery-and-validation-gates).<br>
   Depends on: DEV-LOOP-01, API-01, FOUNDATION-03.<br>
   Acceptance: Record actual commands/outcomes/limits, keep unsupported/platform/source gaps visible, and never treat this checklist as authorization to commit/push/install. Measurement/UI extensions close only with their own gates.
+
+The synthetic stage handoff is documented in the backend validation record.
+DEV-HANDOFF-01/API-01/FOUNDATION-03 remain unchecked for the required wider
+capture/distribution/platform work; no aggregate completion is inferred from
+these checked scientific stages. Capture research findings are retained under
+RXMER-FORMAT-01/PREEQ-FORMAT-01, not marked as implemented decoders.
 
 ## Requirement coverage
 
@@ -386,7 +454,7 @@ completion; deferred UI/wider-mode work remains subject to its explicit gates.
 | [REQ-RX-08](../requirements.md#req-rx-08) | LDPC-01, LDPC-02, DEV-RX-08, WAVE-RX-01 |
 | [REQ-RX-09](../requirements.md#req-rx-09) | DEV-RX-09, WAVE-RX-01 |
 | [REQ-PNM-01](../requirements.md#req-pnm-01) | US-CONFIG-FORMAT-01, RXMER-FORMAT-01, PREEQ-FORMAT-01, RXMER-INPUT-01, PREEQ-INPUT-01 |
-| [REQ-PNM-02](../requirements.md#req-pnm-02) | RXMER-INPUT-01 |
+| [REQ-PNM-02](../requirements.md#req-pnm-02) | RXMER-SYNTHETIC-01, RXMER-INPUT-01 |
 | [REQ-PNM-03](../requirements.md#req-pnm-03) | PREEQ-FORMAT-01, PREEQ-INPUT-01 |
 | [REQ-PNM-04](../requirements.md#req-pnm-04) | DEV-COMPOSE-01, WAVE-CH-02, CH-EXT-02 |
 | [REQ-OBS-01](../requirements.md#req-obs-01) | INSTRUMENTS-01 |

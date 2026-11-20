@@ -1,5 +1,10 @@
 # PRBS block design
 
+Current execution status: bounded synthetic stage science, generic source JSON
+and native APIs are recorded in the [backend validation](../backend-stages/validation.md).
+The design history below is retained; capture/import, broader PHY and presentation
+items do not gain runtime acceptance from completed design checkboxes.
+
 Status: architecture defined; SOURCE-01 implementation remains planned.
 Scope: PRBS-TX source and independent PRBS-RX comparison. No scientific code, Qt
 implementation, Python bindings or reference-project links are introduced.

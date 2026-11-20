@@ -60,9 +60,10 @@ resource closure, private-evidence exclusion and tool behavior with
 `scripts/validate.sh`. A clean clone may lack optional private corpora; skills
 explain their exact paths and the missing-evidence stopping boundary.
 
-Local overrides: this is a paused scientific checkpoint; further implementation
-needs plan approval. Current APIs are FEC-only; no GUI, Python adapter, workbench,
-CI/release or installed-platform claim is implied. Keep source findings unchecked.
+Local overrides: the accepted bounded synthetic backend, generic source JSON and
+native Python API are implemented. Capture formats/import, GUI/workbench, hosted
+CI/release and installed-platform claims retain separate acceptance. Preserve
+unchecked source/format findings and public guidance redistribution limits.
 Source checkouts stay read-only except for explicitly authorized scoped guidance
 updates. Adoption updates are reviewed diffs, never automatic synchronization.
 

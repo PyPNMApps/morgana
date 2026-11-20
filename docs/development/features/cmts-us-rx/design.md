@@ -1,5 +1,10 @@
 # CMTS-US-RX block and stage design
 
+Current execution status: bounded synthetic stage science, generic source JSON
+and native APIs are recorded in the [backend validation](../backend-stages/validation.md).
+The design history below is retained; capture/import, broader PHY and presentation
+items do not gain runtime acceptance from completed design checkboxes.
+
 Status: receiver block and all nine stage contracts are defined for the declared
 initial scope. Scientific implementation, independent source/algorithm acceptance
 and future policies remain planned. Scope is architecture documentation only.

@@ -1,5 +1,10 @@
 # High-level Rust API and native Python wrapper
 
+Current execution status: bounded synthetic stage science, generic source JSON
+and native APIs are recorded in the [backend validation](../backend-stages/validation.md).
+The design history below is retained; capture/import, broader PHY and presentation
+items do not gain runtime acceptance from completed design checkboxes.
+
 Status: architecture and paired interface stubs defined; implementation remains
 planned. Current callable support is the FEC-only Rust facade. This task creates
 no Rust modules, Cargo members, native extension or installed Python type stubs.

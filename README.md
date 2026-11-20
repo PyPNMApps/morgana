@@ -14,145 +14,108 @@
 [![Ubuntu dev targets: 22.04 / 24.04 amd64](https://img.shields.io/badge/Ubuntu_dev_targets-22.04%20%7C%2024.04%20amd64-E95420?logo=ubuntu&logoColor=white)](docs/development/setup.md)
 [![Core license: Apache-2.0](https://img.shields.io/badge/Core_license-Apache--2.0-blue)](LICENSE)
 
-MORGANA is being developed to simulate the DOCSIS 3.1/4.0 upstream physical
-layer for one cable modem and a simulated CMTS receiver. The target is a closed
-loop from a reproducible test source through transmission, a channel and receiver
-recovery, with independent bit comparison and shared signal instruments.
-All scientific processing, FEC and orchestration belong to Rust.
+MORGANA is a standalone Rust toolkit for bounded DOCSIS upstream OFDMA
+experiments with one CM transmitter and a simulated CMTS receiver.
 
-**In development: source-verified standalone LDPC; waveform backend planned.**
-Implementation follows the accepted backend plan in dependency order.
+**In development: the synthetic upstream backend is implemented.**
 
-## Current capabilities
+```mermaid
+flowchart LR
+    PRBS[Continuous PRBS15] --> TX[CM-US-TX: all eight stages]
+    TX --> CH[CH-SIM: admitted synthetic model]
+    CH --> RX[CMTS-US-RX: all nine stages]
+    RX --> VERIFY[Independent source comparison]
+    PRBS -. expected stream only .-> VERIFY
+    CFG[US Configuration: typed or JSON] -. accepted views .-> TX
+    CFG -. accepted views .-> RX
+    PRE[Synthetic Pre-EQ banks and updates] -. C only .-> TX
+    MER[Synthetic RxMER power playback] -. restricted residual model .-> CH
+```
 
-| Area | Status |
+| Capability | Current support |
 | --- | --- |
-| Upstream LDPC | Long, medium and short matrices audited against the original PHY pages; systematic encoding, shortening and bounded soft decoding pass local acceptance. |
-| Rust interface | A facade runs one noiseless FEC trial and returns owned, schema-versioned JSON results. |
-| CLI and example | A deterministic single-codeword CLI trial and a runnable Rust facade example are available. |
-| Development setup | Ubuntu 22.04/24.04 amd64 prerequisite installer with read-only inspection and plan modes; fresh-machine provisioning remains unverified. |
-| Full signal path | PRBS, OFDMA waveform, unity channel, CMTS receiver and QAM/SA instruments are planned. |
-| Adapters and delivery | GUI, Python bindings and published packages are planned. |
+| Waveform | 2K/50 kHz and 4K/25 kHz scheduled data, source-audited upstream LDPC, QAM through 4096 including non-square orders, all 14 pilot patterns, exact CP/rolloff/overlap. |
+| Receiver | Configured timing and received-pilot frame-flat or bounded linear-frequency correction; actual failed decisions, iterations, parity and source coverage stay separate. |
+| Channel | Exact unity, causal synthetic FIR, sample AWGN, integer delay, constant phase/CFO and restricted synthetic RxMER residual waveform. |
+| Side inputs | Explicit synthetic RxMER single/average/hold/interpolation; Pre-EQ fixed banks/snapshots/probe-based updates at symbol boundaries. Binary PNM import remains pending. |
+| Configuration | Versioned generic US Configuration JSON with named inventory/selection, source-field audit, strict bounded parsing and atomic shared endpoint projections. |
+| APIs and controls | High-level Rust and optional native Python; preview/run, progress, pause/resume/cancel and owned complete/partial reports. |
+| Instruments | Bounded actual QAM/SA taps and independent matched-data MER; no invented history, calibrated RF power or target-to-RX shortcut. |
 
-All 38 Rust unit tests pass, including independent source-derived matrix
-fingerprints and frozen parity vectors. The
-[LDPC audit record](docs/development/features/ldpc-source-audit/validation.md)
-documents the corrected long/medium transcription and all-family acceptance.
-These are internal codec results; full OFDMA and external interoperability remain
-unverified. Current trials expose decoder convergence, syndrome, shortened-zero
-consistency and original-bit comparison separately.
+The [validation record](docs/development/features/backend-stages/validation.md)
+separates independent source/numerical cases, internal closed-loop results and
+actual native/wheel checks. There is no external interoperability, live MAC,
+modem-certification or installed-platform claim. Ranging/probe/testing waveform
+execution, binary PNM/configuration capture import, GUI and wider platforms remain
+explicitly pending in the [checklist](docs/development/checklist.md).
 
-## Getting started
+## Run an experiment
 
-Run these commands from the repository root. Development setup targets Ubuntu
-22.04/24.04 amd64 and requires Python 3.10+ on PATH.
+With development prerequisites available, run from the repository root:
 
-Inspect prerequisites or preview setup without changing the host:
+```bash
+scripts/cargo-local.sh run --locked -p morgana-cli -- upstream examples/configuration/us-50khz.json
+scripts/cargo-local.sh run --locked -p morgana-cli -- upstream examples/configuration/us-25khz.json
+scripts/cargo-local.sh run --locked -p morgana --example upstream_loop
+```
+
+The CLI writes the actual owned experiment report to stdout. `Completed` is
+separate from `reference_recovered`; failures and partial coverage remain visible.
+The existing standalone FEC command remains available:
+
+```bash
+scripts/cargo-local.sh run --locked -p morgana-cli -- ldpc short 420 42
+```
+
+Use the [experiment guide](docs/user/upstream-experiments.md) for typed Rust/native
+Python examples, controls, model compatibility, units, limits and report semantics.
+The [example index](examples/README.md) includes generic JSON, mixed/zero loading,
+synthetic playback and inspection-only ranging/probe controls. Optional vendor
+numbers such as 224 are provenance rather than normative profile meanings.
+
+## Development and validation
+
+Development setup targets Ubuntu 22.04/24.04 amd64. Inspect or preview it without
+applying host changes:
 
 ```bash
 ./install.sh --development --check
 ./install.sh --development --dry-run
 ```
 
-To prepare the development environment:
+`./install.sh --development` explicitly applies missing prerequisites and prepares
+the isolated pinned Rust toolchain; it does not build/install the application.
+See the [setup guide](docs/development/setup.md). Fresh-machine provisioning,
+hosted CI and native Windows/macOS lifecycle acceptance remain unverified.
 
-```bash
-./install.sh --development
-```
-
-Setup installs missing apt prerequisites, prepares isolated Rust 1.85.1 with
-rustfmt/Clippy and fetches locked Cargo sources. It does not build the toolkit.
-See the [setup guide](docs/development/setup.md) for supported hosts, exit statuses,
-local tool roots and provisioning limits.
-
-With prerequisites available, run a standalone LDPC trial or the Rust example:
-
-```bash
-scripts/cargo-local.sh run --locked -p morgana-cli -- ldpc short 420 42
-scripts/cargo-local.sh run --locked -p morgana --example ldpc_loop
-```
-
-The CLI command selects the short code, 420 information bits and fixture seed 42.
-It uses a seeded ChaCha8 test payload and writes one deterministic reference trial
-to standard output. Its JSON identifies the experiment as standalone LDPC and
-leaves waveform RxMER null. The Rust example uses the same facade; Python
-bindings are a future adapter.
-
-Run the local validation gate:
+Run the core and optional native gates:
 
 ```bash
 scripts/validate.sh
+python3 tools/python/check_native.py
 ```
 
-The gate checks local guidance and links, setup/Git tooling, Rust formatting,
-workspace tests and Clippy. See [build and validation](docs/development/build.md)
-for individual commands. Installed application behavior, hosted CI and native
-Windows/macOS execution remain unverified.
+The core remains independent of Python/PyO3/Qt. The optional native gate requires
+an existing Python 3.10+ interpreter/header toolchain and stages local artifacts
+under ignored `target/`. A local optimized CPython 3.10/Linux x86_64 wheel is
+artifact-tested with full host-dependency attribution; no package is installed or
+published. See [build/validation](docs/development/build.md) and the user guide.
 
-## Planned signal path
+## Design and guidance
 
-```mermaid
-flowchart LR
-    SOURCE[PRBS source] --> TX[CM-US-TX]
-    TX --> CHANNEL[CH-SIM: unity first]
-    MER[RxMER: single-shot or multi-input] -. residual model, later .-> CHANNEL
-    PRE[US-Pre-EQ: banks and multiple updates] -. coefficient plan, later .-> TX
-    JSON[US Configuration JSON: planned] -. validate and Apply .-> CFG[CMTS configuration plan]
-    CFG -. accepted TX settings .-> TX
-    CFG -. accepted RX settings .-> RX
-    CHANNEL --> RX[CMTS-US-RX]
-    RX --> VERIFY[Independent PRBS-RX comparison]
-    SOURCE -. expected stream only .-> VERIFY
-```
+- [Architecture](docs/architecture.md): actual stage owners, code/test layout and deferred contracts.
+- [Requirements](docs/requirements.md): mandatory behavior and stable acceptance IDs.
+- [Developer checklist](docs/development/checklist.md): completed stage evidence and remaining work.
+- [Development index](docs/development/README.md): designs and validation records.
+- [User guides](docs/user/README.md) and [examples](examples/README.md).
+- [Agent instructions](AGENTS.md), [skills](skills/README.md) and [specification evidence](docs/reference/specifications.md).
+- [Local Git workflow](docs/git.md): reviewed guarded save commands.
 
-CM-US-TX will own grant framing, upstream LDPC, PHY randomization, QAM mapping,
-pilots/interleaving, Pre-Eq, IFFT and burst sample assembly. CMTS-US-RX will recover
-the payload from received samples and accepted configuration, with pilot-derived
-channel correction. Original source bits stay in the independent verifier.
+## License and delivery
 
-The first Channel Simulator will pass samples through unchanged. Shared
-**QAM Analyzer** and **Spectrum Analyzer (SA)** views will inspect bounded Rust
-observations at TX, channel and RX test points. Impairments follow the unity
-closed loop. A full MAC, scheduler and downstream waveform are outside scope.
-The planned [US Configuration](docs/architecture.md#us-configuration) input
-provides channel geometry, profile inventory/selection and synthetic grants to
-both endpoints. Its generic JSON delivery plan is recorded in the
-[CMTS-US-RX configuration subsection](docs/architecture.md#cmts-configuration-us-configuration-json),
-with separate accepted TX/RX views and a pending MULPI field-coverage audit.
-**PNM Files** contains [RxMER](docs/architecture.md#rxmer-input)
-and [US-Pre-EQ](docs/architecture.md#us-pre-eq-input). Both cover single-shot and
-multi-input selection: RxMER offers power averaging and scheduled playback;
-Pre-EQ offers a fixed bank, multiple snapshots or explicit update replay into
-TX-06. Loading inputs does not start processing or enable an impairment. All
-these inputs and the full waveform remain architecture, not current runtime.
-
-The [canonical architecture](docs/architecture.md#planned-upstream-signal-path-and-workbenches)
-defines ordered stages, instrument contracts and ownership. The
-[implementation checklist](docs/development/checklist.md) tracks prerequisites
-and progress; the diagram above describes the target rather than current runtime.
-
-A separate [high-level Rust and Python API architecture](docs/architecture.md#high-level-rust-and-python-apis)
-defines paired interface stubs and planned module/test paths. The optional native
-Python wrapper will call the same Rust configuration, validation and simulation
-operations. These are design contracts; the broader Rust API and Python package
-remain unimplemented.
-
-## Documentation and development guidance
-
-- [Development index](docs/development/README.md): feature plans and validation records.
-- [Requirements](docs/requirements.md): observable behavior, acceptance and delivery traceability.
-- [Architecture](docs/architecture.md): current owners and planned processing contracts.
-- [Foundation design](docs/development/features/foundation/design.md): requirements and reuse decisions.
-- [Agent instructions](AGENTS.md) and [skill catalog](skills/README.md): local engineering and pinned PHY guidance.
-- [PDE adoption record](docs/development/foundation-adoption.md): guidance origins and local adaptations.
-- [Specification setup](docs/reference/specifications.md): pinned evidence and private local inputs.
-- [Local Git workflow](docs/git.md): guarded local save commands.
-
-## License and source status
-
-MORGANA-owned scientific code and development tooling are Apache-2.0. Read
-[LICENSE](LICENSE), [NOTICE](NOTICE) and the
-[foundation adoption record](docs/development/foundation-adoption.md) for component
-attribution and unresolved redistribution terms for imported guidance.
-Source packages are version 0.1.0 and are not published. Private specifications,
-captures, toolchain caches and build outputs are excluded from distribution.
+MORGANA-owned scientific code/tooling is Apache-2.0. Adapted source/resources
+retain their actual notices and origin hashes. Read [LICENSE](LICENSE),
+[NOTICE](NOTICE) and the [foundation adoption record](docs/development/foundation-adoption.md).
+Imported PDE instructional material has unresolved public redistribution terms;
+it is excluded from the scientific wheel. Source packages are version 0.1.0 and
+unpublished. Private specifications/captures, caches and build artifacts are ignored.

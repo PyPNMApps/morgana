@@ -1,5 +1,10 @@
 # Accepted backend delivery plan
 
+Current execution status: bounded synthetic stage science, generic source JSON
+and native APIs are recorded in the [backend validation](../backend-stages/validation.md).
+The design history below is retained; capture/import, broader PHY and presentation
+items do not gain runtime acceptance from completed design checkboxes.
+
 Subsequent status, 2026-11-20: the user authorized starting this plan. The
 [source audit and standalone codec acceptance](../ldpc-source-audit/validation.md)
 close LDPC-01/02. The original decision-only record follows; remaining runtime

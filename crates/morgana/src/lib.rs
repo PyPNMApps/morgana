@@ -5,6 +5,8 @@
 //! Configure → run → report facade; current execution scope is upstream FEC only.
 #![forbid(unsafe_code)]
 
+pub mod api;
+pub mod inputs;
 mod report;
 
 use morgana_ldpc::LdpcCodec;

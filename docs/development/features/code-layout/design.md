@@ -1,5 +1,10 @@
 # Planned code layout per architecture section
 
+Current execution status: bounded synthetic stage science, generic source JSON
+and native APIs are recorded in the [backend validation](../backend-stages/validation.md).
+The design history below is retained; capture/import, broader PHY and presentation
+items do not gain runtime acceptance from completed design checkboxes.
+
 ## Requirements and design
 
 PATH-01: Each signal-path block/stage section names the repository-relative

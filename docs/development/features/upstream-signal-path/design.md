@@ -1,5 +1,10 @@
 # Upstream signal path and shared instruments
 
+Current execution status: bounded synthetic stage science, generic source JSON
+and native APIs are recorded in the [backend validation](../backend-stages/validation.md).
+The design history below is retained; capture/import, broader PHY and presentation
+items do not gain runtime acceptance from completed design checkboxes.
+
 Status: architecture defined; processing/instrument implementation remains planned.
 Task: ARCH-01. This request authorizes documentation, not scientific or Qt code.
 
