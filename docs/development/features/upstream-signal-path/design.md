@@ -30,9 +30,9 @@ a candidate, not an approved migration of another repository.
 
 The [Channel Simulator design](../channel-simulator/design.md) now expands that
 boundary into six linked stages and a separate
-[RxMER input](../../../architecture.md#rxmer-input). Admission, unity and output
-contracts are defined; response/residual/timing sections remain explicit pending
-placeholders. RxMER input uses the reference selection/power-playback workflow
+[RxMER input](../../../architecture.md#rxmer-input). All six channel contracts
+are defined for their declared initial modes; implementation remains planned.
+RxMER input uses the reference selection/power-playback workflow
 with upstream CMTS/user/probe semantics, not downstream DPD/file assumptions.
 The first waveform milestone still requires exact unity without measurements.
 

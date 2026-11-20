@@ -52,11 +52,14 @@ See [architecture](../architecture.md) and [foundation design](features/foundati
 - [x] ARCH-RXMER-01: Add the separate upstream RxMER input, original provenance,
   exact association, power selection/playback and model/metric boundaries;
   see [RxMER input](../architecture.md#rxmer-input). Implementation remains planned.
-- [ ] ARCH-CH-03: Expand channel response/filter/delay as the next channel
-  architecture stage, with explicit domain, history and drain conventions.
-- [ ] ARCH-CH-04: Expand RxMER-conditioned sample synthesis, power reference,
-  RNG/draw ordering, role/Pre-Eq/H composition and independent acceptance.
-- [ ] ARCH-CH-05: Expand timing/frequency/phase models and sample-clock semantics.
+- [x] ARCH-CH-03: Define causal complex FIR, original tap/path reference,
+  bounded history/work, exact tail and independent acceptance; architecture only.
+- [x] ARCH-CH-04: Define sample AWGN and restricted unity-C/H RxMER synthesis,
+  reference/pilot power, seeded draw order and independent acceptance; architecture only.
+- [x] ARCH-CH-05: Define integer delay and constant phase/CFO, emitted-clock
+  state, length/drain rules and independent acceptance; architecture only.
+- [ ] CH-EXT-02: Detail captured-H reconstruction, fractional timing/clock error,
+  stochastic phase noise and broader RxMER/response composition before support.
 - [ ] RXMER-FORMAT-01: Verify upstream format/type/units/null handling and lawful
   fixtures before claiming a binary/decoded capture adapter.
 - [x] ARCH-RANGING-00: Reserve explicit future ranging/preamble and probing modes;

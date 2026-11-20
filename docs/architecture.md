@@ -105,7 +105,7 @@ validation and bounded orchestration stay Rust; adapters present owned results.
 | `crates/phy/src/resources/mod.rs` | Create (planned) | Shared grant grids, pilot roles/patterns, block partitioning and cell permutations. |
 | `crates/phy/src/grant/mod.rs` | Create (planned) | Shared pure capacity/codeword planning. |
 | `crates/phy/src/bit_processing/mod.rs` | Create (planned) | Shared payload randomizer and independent known-pilot sequence. |
-| `crates/phy/src/signal_processing/mod.rs` | Create (planned) | Shared QAM/transform/coefficient-bank arithmetic and focused cyclic-extension, transmit-window and overlap owners. |
+| `crates/phy/src/signal_processing/mod.rs` | Create (planned) | Shared QAM/transform/coefficient-bank arithmetic, cyclic/window/overlap and channel response/noise/timing primitives. |
 | `crates/phy/src/transmitter/mod.rs` | Create (planned) | Compose the eight TX stage adapters. |
 | `crates/phy/src/channel/mod.rs` | Create (planned) | Unity sample transport and future ordered channel stages. |
 | `crates/phy/src/measurements/mod.rs` | Create (planned) | Register upstream RxMER observation/admission types; future measured inputs retain separate source/reference semantics. |
@@ -2231,7 +2231,7 @@ The Channel Simulator consumes the actual indexed
 [TX-08 output](#tx-08-sample-assembly) and delivers received samples to CMTS-RX.
 Its initial mode is exact unity, independent of whether an RxMER file is open.
 The [channel design/checklist](development/features/channel-simulator/design.md)
-separates completed boundary/input architecture from pending impairment designs.
+tracks all six stage contracts, declared model scope and pending implementation.
 
 **Planned code paths (repository-relative).**
 
@@ -2247,18 +2247,19 @@ separates completed boundary/input architecture from pending impairment designs.
 
 #### Channel stage sequence
 
-The table is the linked stage index for the diagram. "Boundary defined" is an
-architecture status; all channel-stage scientific code remains unimplemented. Future-stage
-placeholders reserve ownership without claiming their detailed algorithms.
+The table is the linked stage index for the diagram. All six stages have
+architecture for the initial modes below; all channel-stage scientific code
+remains unimplemented. Enabling a designed mode still requires implementation
+and its independent acceptance, with unity remaining the first milestone.
 
 | Stage | Responsibility / output | Architecture and initial mode |
 | --- | --- | --- |
-| [CH-01: Input admission](#ch-01-input-admission) | Validate immutable samples, timing/identity and bounded execution request. | Boundary defined; required. |
-| [CH-02: Unity transport](#ch-02-unity-transport) | Preserve the admitted waveform/reference plane exactly. | Boundary defined; initial transport owner. |
-| [CH-03: Channel response](#ch-03-channel-response) | Future deterministic response/filter with explicit delay/tail semantics. | Placeholder; disabled. |
-| [CH-04: Residual error](#ch-04-residual-error) | Future RxMER-conditioned or separately selected controlled noise synthesis. | Placeholder; disabled. |
-| [CH-05: Timing and phase](#ch-05-timing-and-phase) | Future timing/frequency/phase effects with an explicit clock contract. | Placeholder; disabled. |
-| [CH-06: Output and observations](#ch-06-output-and-observations) | Commit/deliver indexed samples and passive SA observations with completion status. | Boundary defined; required. |
+| [CH-01: Input admission](#ch-01-input-admission) | Validate immutable samples, timing/identity and bounded execution request. | Defined; required. |
+| [CH-02: Unity transport](#ch-02-unity-transport) | Preserve the admitted waveform/reference plane exactly. | Defined; initial transport owner. |
+| [CH-03: Channel response](#ch-03-channel-response) | Bounded causal complex FIR, explicit state and terminal tail. | Defined; off in unity. |
+| [CH-04: Residual error](#ch-04-residual-error) | Sample AWGN or restricted RxMER-conditioned sample synthesis. | Defined; off in unity. |
+| [CH-05: Timing and phase](#ch-05-timing-and-phase) | Integer delay and constant phase/CFO with an emitted-sample clock. | Defined; off in unity. |
+| [CH-06: Output and observations](#ch-06-output-and-observations) | Commit/deliver indexed samples and passive SA observations with completion status. | Defined; required. |
 
 ```mermaid
 flowchart LR
@@ -2279,6 +2280,38 @@ another copy of the transmitted signal. CH-02 is the identity starting boundary.
 An empty impairment list is exactly unity. Until a stage is implemented and
 accepted, enabling it is an unsupported-mode error, never a silent bypass.
 No read-only input preview runs a channel or consumes source/noise state.
+
+**Declared composition and limits.** The initial accepted designs are:
+
+| Model selection | CH-03 | CH-04 | CH-05 | Meaning |
+| --- | --- | --- | --- | --- |
+| Unity | Identity | Off | Off | Exact TX-08 sample transport, with no RNG. |
+| Deterministic | Identity or causal FIR | Off | Off or integer delay/phase/CFO | Deliberately impaired waveform; receiver outcomes need measurement. |
+| Controlled AWGN | Identity or causal FIR | Explicit complex sample-noise power | Off or integer delay/phase/CFO | Output-referred sample noise after the response, before timing/phase. |
+| RxMER residual | Identity; TX C must also be unity | Accepted RxMER power synthesis | Off | Declared unit-reference probe-to-data approximation; no hidden H/C compensation. |
+
+Reject incompatible selections before a run. Input inspection may still retain
+an otherwise valid RxMER capture when a chosen response mode cannot use it.
+Captured-H-to-FIR reconstruction, fractional timing, sample-rate error, stochastic
+phase noise and arbitrary RxMER/FIR/timing combinations remain unsupported
+extensions. They need their own design/acceptance, not additional implicit steps.
+The selected modes are engineering experiments, not modem conformance claims.
+
+Prepare immutable geometry/model plans and validate total sample/work/retention
+budgets before source consumption. Stage state is job-owned. Process at most
+4096 samples per internal work quantum within the CH-01 block limit; cancellation
+is observed between quanta. Clone/checkpoint bounded mutable state, calculate
+finite candidate output, then commit state and one ready output quantum together.
+Backpressure stops the next quantum. Failure leaves its prior state unchanged;
+previously delivered quanta remain completed partial output. An admitted input
+block may therefore have an explicit unprocessed suffix, never silent loss.
+
+Rust owns these numerical operations and future public validation/results.
+Record accepted models, units, seed/dependency versions, stage order and support
+ranges in results. Normal RX gets received samples plus its own accepted
+configuration; it is never automatically retimed or corrected using channel
+delay, H, noise targets or seed. Python/UI adapters inherit the same validation,
+errors, partial status and sample ordering after the public Rust operations exist.
 
 #### RxMER input
 
@@ -2428,7 +2461,7 @@ behavior are promoted to upstream requirements.
 
 [Return to channel stages](#channel-stage-sequence).
 
-Status: **boundary architecture defined; implementation planned**.
+Status: **architecture defined; implementation planned**.
 
 | Planned path | Disposition | Responsibility |
 | --- | --- | --- |
@@ -2449,11 +2482,20 @@ processing. Unity does not require frequency-grid captures, RxMER or H. A reques
 enabling unimplemented stages fails before consuming any TX block. Acceptance
 covers invalid finite/range/identity cases and transactionally preserved state.
 
+Accept only the declared composition table and upstream clock. Report a typed
+unsupported-model error for every undeclared combination; numeric failure,
+identity mismatch, capacity/backpressure and cancellation remain distinct. For
+nonunity jobs, preflight FIR/delay drain counts, per-quantum operation counts and
+the full RxMER schedule/required role coverage. Never advance source, noise or
+stage state just to check readiness. Tests include rejection after an accepted
+plan, input split at a work-quantum boundary, buffer exhaustion and preserving
+the accepted configuration when a proposed replacement fails.
+
 #### CH-02: Unity transport
 
 [Return to channel stages](#channel-stage-sequence).
 
-Status: **boundary architecture defined; implementation planned**.
+Status: **architecture defined; implementation planned**.
 
 | Planned path | Disposition | Responsibility |
 | --- | --- | --- |
@@ -2470,84 +2512,262 @@ waveform. No filter, resampling, clipping, noise, jitter, frequency offset or
 phase rotation is applied. Tests compare bits and metadata, not approximate
 float equality alone. Empty impairment configuration must take this same path.
 
+Canonical identity response, Off residual and zero-delay/zero-rotation timing
+select this bypass even when optional inputs remain loaded. Do not allocate an
+unused noise generator or perform add-zero/multiply-one operations. Accept
+zero-length no-op blocks without emitting duplicate boundary events. Independent
+cases include signed zero, subnormals, mixed I/Q signs, TX-08 tail/guard spans,
+one-sample versus maximum-size chunks and paused/disabled/full observers.
+
 #### CH-03: Channel response
 
 [Return to channel stages](#channel-stage-sequence).
 
-Status: **placeholder; detailed architecture and implementation planned**.
+Status: **architecture defined for causal FIR; implementation planned**.
 
 | Planned path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/channel/response.rs` | Create (planned) | Future response/filter adapter with explicitly declared domain and delay. |
-| `crates/phy/src/signal_processing/channel_response.rs` | Create (planned) | One Rust owner for the eventual accepted response operation. |
+| `crates/phy/src/configuration/channel.rs` | Create (planned) | Admit original synthetic tap/path settings and immutable response budgets. |
+| `crates/phy/src/channel/response.rs` | Create (planned) | Indexed FIR stream, state checkpoint and explicit terminal drain adapter. |
+| `crates/phy/src/signal_processing/channel_response.rs` | Create (planned) | Pure complex convolution and full-grid realized-response calculation. |
 | `crates/phy/tests/channel_response.rs` | Create (planned) | Independent response/delay/history and unity-limit acceptance. |
 
-Reserve deterministic H or a time-domain response with explicit units, frequency
-origin, causal delay/history, warm-up/tail and chunk invariance. A diagonal
-symbol model and continuous convolution are different support modes. Measured
-TX Pre-Eq C is not H; inferring H from C requires a separately justified model.
-Detailed mode choice, response admission and timing remain ARCH-CH-03 work.
-This stage is disabled in unity; the future dispatcher must reject nonidentity
-settings until the selected response operation is supported.
+**Model and reference.** Select identity or an explicitly supplied synthetic
+causal complex FIR h with L coefficients, `1 <= L <= 1025`. A convenience list
+of at most 32 unique integer-delay paths, delays 0..1024, expands into that same
+tap vector; no second echo algorithm is introduced. Tap index is delay at the
+102.4 Msamples/s clock. A delayed path need not have a nonzero direct path.
+These are application bounds, not CM RF limits. Reject negative/fractional or
+duplicate path delays, empty/nonfinite taps and out-of-budget work. Preserve
+the caller's declared L, including trailing zeros, in duration/provenance.
+
+For input starting at a, with relative index m and zero prehistory:
+
+```text
+v[a+m] = sum over ell=0..L-1 of h[ell] * u[a+m-ell]
+H[k]   = sum over ell=0..L-1 of h[ell] *
+         exp(-j * 2*pi * (k-N/2) * ell / N)
+```
+
+Input outside the finite admitted signal is zero only for the declared
+startup/terminal convolution boundary. Use direct safe Rust complex arithmetic,
+without an implicit circular convolution or another FFT-size convention. Report
+H on the accepted physical grid as diagnostic truth; it never becomes a normal
+RX equalizer input. Do not normalize tap energy, conjugate coefficients or
+apply Pre-Eq again. C remains a transmitter correction; h/H is the separately
+chosen channel. All-zero and deep-null responses are valid destructive tests;
+do not clamp/invert them to make decoding succeed.
+
+**State and finish.** Retain at most L-1 prior input values across every chunk,
+symbol, prefix, frame and TX-08 tail/guard boundary. No per-symbol filter reset
+or discarded startup transient is allowed. New explicit isolated streams have
+zero history. An identity plan is exactly one tap `[1+j0]` and uses CH-02; a
+different declared tap vector remains a distinct model even if some taps are zero.
+Each quantum validates finite results before committing history/cursor/output.
+
+For T input samples, normal finish processes exactly L-1 zero-input ticks and
+returns T+L-1 samples at the original origin. Repeated finish requests do not
+restart the bounded drain; after it is delivered they add nothing;
+post-finish input rejects. This tail is channel memory after the entire TX-08
+stream, separate from its R-sample suffix. Drain is resumable/cancellable under
+the same quantum and budget rules. Do not truncate a response longer than CP:
+the resulting ISI/ICI and receiver failure are experiment outcomes.
+
+Bound work by `quantum_length * L` complex multiply-adds (at most
+4,198,400 for a 4096-sample quantum), plus a separately bounded N*L diagnostic
+calculation at planning time. Reject excessive accepted total work, not just
+excess memory. Input/tap overflow leaves the failing quantum's history unchanged.
+Measured H reconstruction and inverse-C inference remain separate extensions;
+no unknown/excluded frequency bins are filled to synthesize an invented FIR.
+
+**Independent acceptance.** Use literal impulse/complex-gain/path vectors and
+a direct short convolution oracle, not only FFT round trips. Include pure delay,
+two paths with differing phases, zero/deep-null taps, L=1/1025, signed values,
+arbitrary chunking and tail pause/cancel. A positive-frequency tone must acquire
+the stated negative delay phase in H. Verify T+L-1 length, preserved origin,
+no CP-boundary reset, repeated finish, finite overflow failure and unchanged
+unity bypass. Statistical source recovery is a later integration assertion.
 
 #### CH-04: Residual error
 
 [Return to channel stages](#channel-stage-sequence).
 
-Status: **placeholder; detailed synthesis architecture and implementation planned**.
+Status: **architecture defined for sample AWGN and restricted RxMER synthesis;
+implementation planned**.
 
 | Planned path | Disposition | Responsibility |
 | --- | --- | --- |
 | `crates/phy/src/channel/residual.rs` | Create (planned) | Future sample-stream residual synthesis/composition adapter. |
 | `crates/phy/src/channel/measurement_playback.rs` | Create (planned) | Shared RxMER-derived power query owner defined above. |
 | `crates/phy/src/signal_processing/residual_power.rs` | Create (planned) | Shared conversion/combination arithmetic; no duplicate adapter math. |
-| `crates/phy/src/signal_processing/noise.rs` | Create (planned) | Future bounded Rust Gaussian draws; algorithm/version/order need detailed CH-04 design. |
+| `crates/phy/src/signal_processing/noise.rs` | Create (planned) | Pinned noise-only ChaCha8/StandardNormal draws and explicit I/Q ordering. |
 | `crates/phy/src/signal_processing/transform.rs` | Create (planned) | Same unitary upstream numerical transform owner as TX-07. |
 | `crates/phy/src/signal_processing/cyclic_extension.rs` | Create (planned) | Same pure cyclic-copy owner as TX-08. |
 | `crates/phy/src/signal_processing/transmit_window.rs` | Create (planned) | Same immutable upstream taper owner as TX-08. |
 | `crates/phy/src/signal_processing/overlap_add.rs` | Create (planned) | Same overlap primitive as TX-08 with independent residual-stream state. |
 | `crates/phy/tests/channel_residual.rs` | Create (planned) | Independent power/reference, seeded reproducibility and stream acceptance. |
 
-Reserve an explicit controlled-noise selection or the accepted
-[RxMER input](#rxmer-input), never both by implicit default. A proposed first
-measured mode uses conditionally independent complex Gaussian residuals at an
-aligned symbol grid, with a declared ideal-cell power reference and I/Q variance
-split. It must synthesize actual contiguous residual samples with upstream
-IFFT/extension/window/overlap and then compose them with the transported waveform;
-changing receiver QAM points or LLRs is not channel simulation.
+**Exclusive modes and reference power.** Select Off, ControlledSampleAwgn or
+RxmerResidual. No mode adds a hidden system/thermal floor. Off and explicit
+zero sample-noise power bypass arithmetic and consume no random draws.
 
-ARCH-CH-04 must fix power normalization for data/pilot/complementary roles,
-Pre-Eq/response composition, synthesis history/tail, RNG algorithm/version and
-canonical draw ordering before implementation. The simplest initial residual
-acceptance may require unity C/H; any such restriction must be explicit.
-Reuse shared TX-07/TX-08 numerical owners rather than another transform/window
-implementation. Schedule changes preserve source, RNG and overlap history.
-No impulse/noise-correlation process is inferred from RxMER alone. This stage
-stays disabled/rejected until its detailed architecture and acceptance exist.
+ControlledSampleAwgn accepts a finite complex sample variance p, in normalized
+sample-power units at CH-03 output. For independent standard normal gI/gQ:
+
+```text
+e[n] = sqrt(p/2) * (gI[n] + j*gQ[n])
+q[n] = v[n] + e[n],  E[|e[n]|^2] = p
+```
+
+Apply it once to every sample supplied by CH-03, including explicit silence,
+TX-08 suffix and FIR drain, with no inferred signal-present gating. Its power is
+output-referred and is not multiplied by H again. Select `0 <= p <= 1,000,000`
+as a proposed application ceiling, with finite per-run/total-energy/work checks.
+Do not infer Eb/N0, RF dBmV or post-EQ RxMER from p without a separate reference.
+
+RxmerResidual consumes the immutable [RxMER power playback](#rxmer-input).
+The initial design requires identity CH-03, unity accepted TX Pre-Eq C and Off
+CH-05. The unit BPSK-probe reference is explicitly mapped to unit-average-power
+scheduled data/complementary QAM. This is a model assumption, not a recovered
+field RF waveform. For physical symbol j and each full-grid carrier k:
+
+```text
+rho[j,k] = selected/interpolated 10^(-mer_db[k]/10)
+E[j,k]   = sqrt(rho[j,k]/2) * (gI[j,k] + j*gQ[j,k]) for active cells
+           0                                                   otherwise
+```
+
+Use the accepted resource plan to identify data, complementary data and known
+pilots; require finite readings for every active carrier. Use the same rho
+as absolute normalized error power on those roles. Do not multiply the error
+by the pilot boost: a pilot with power 3 has expected ideal-reference MER
+`10*log10(3/rho)`, while unit-power data has `-10*log10(rho)`. Missing required
+values reject; excluded/unallocated cells remain exact zero residual bins.
+Require strictly positive finite rho <=1,000,000 without clamping; an input
+outside this model range may remain inspectable. "Noiseless" is Off, not infinity
+stored in an RxMER array. This per-role reference must appear in model results.
+
+Synthesize E with the shared centered/unitary TX-07 transform and TX-08 cyclic
+extension/window/overlap primitives, using its own bounded tail and the same
+symbol origin/stride. Add that actual contiguous residual stream once to the
+original TX sample stream. Do not regenerate the payload, alter only QAM/LLRs
+or route hidden TX frequency cells to RX. Playback is evaluated once per
+physical symbol; changing its variance never resets overlap or the random
+stream. Flush its final R samples exactly with TX-08's final tail. Declared
+extra guards have zero synthesized residual in this symbol-conditioned model;
+they differ deliberately from the all-sample AWGN model's noise floor.
+
+No nonunity H/C composition is claimed for this first RxMER mode. Such requests
+reject rather than guessing how to scale post-EQ measurements through a filter.
+RxMER alone supplies no event correlation, impulsive process or noise phase.
+Finite observed receiver MER fluctuates and includes estimation error; a target
+curve is not proof that each simulated observation equals it.
+
+**RNG and transactional streaming.** Reuse the workspace's exact Rust pins:
+rand 0.9.5, rand_chacha 0.9.0, rand_distr 0.5.1. Use a channel-only ChaCha8Rng
+with an explicit 32-byte seed through `from_seed`; retain seed bytes, algorithm
+tag `chacha8-standardnormal-v1` and versions in the run record. No source/PRBS,
+observer or future phase-noise RNG is shared. StandardNormal supplies two real
+draws per complex event, I then Q. Internal rejection sampling consumes whatever
+the pinned distribution requires; callers never reseed or reorder those calls.
+
+For positive sample AWGN, events advance by increasing emitted CH-03 sample
+index, including its drain. For RxMER mode, advance symbols then physical bins
+0..N-1, taking I/Q draws for every bin before masking inactive bins to zero.
+This fixes draw order independently of allocation, observer state, output chunks
+and playback variance. A mode change starts a fresh accepted run. Clone the RNG,
+synthesis state and playback position into a candidate quantum/symbol; commit
+only after finite output and capacity checks pass. Retrying a rejected quantum
+must yield the same next events. Pause preserves all state and excludes wall
+time; cancellation retains delivered samples and pending counts without a
+successful implicit drain. Bitwise reproducibility is for identical pinned
+build/platform/settings; cross-platform normal/transform results use explicit
+numerical tolerances rather than an unverified bitwise promise.
+
+Bound RxMER synthesis to one N<=4096 symbol, one ready stride and R<=224 tail;
+sample AWGN needs only the ready quantum and RNG. No whole-run noise array.
+Validate prospective power/energy and finite addition even when both operands
+are finite. Guards and masks do not consume source/randomizer/pilot clocks.
+
+**Independent acceptance.** Test known complex variance with declared sample
+count/seed and confidence bounds, I/Q variance p/2, near-zero mean/covariance and
+sample-noise unitary FFT variance. Include independent dB/power examples and
+pilot-boost/reference cases. Compare noise-only synthesis to a separate short
+direct-sum/copy/window oracle, plus useful-window variance and exact K*S+R
+support. Freeze seed-stream fixtures independently of the adapter; test missing
+coverage, forbidden C/H/timing combinations, numeric extremes, schedule endpoints,
+guard policy, tail finish, repeated finish, arbitrary drains and pause/retry.
+Disabled/full observers and failed quantum retries must not change subsequent
+draws. These are planned tests, not evidence from existing codec tests.
 
 #### CH-05: Timing and phase
 
 [Return to channel stages](#channel-stage-sequence).
 
-Status: **placeholder; detailed architecture and implementation planned**.
+Status: **architecture defined for integer delay, constant phase and CFO;
+implementation planned**.
 
 | Planned path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/channel/timing_phase.rs` | Create (planned) | Future timing/oscillator state and sample-domain effect composition. |
+| `crates/phy/src/configuration/channel.rs` | Create (planned) | Accepted delay/phase/frequency units, combination and output budgets. |
+| `crates/phy/src/channel/timing_phase.rs` | Create (planned) | Indexed delay FIFO and emitted-sample phase state; stage admission/drain. |
+| `crates/phy/src/signal_processing/timing_phase.rs` | Create (planned) | Pure complex rotation and phase-step arithmetic with no scheduler/receiver truth. |
 | `crates/phy/tests/channel_timing_phase.rs` | Create (planned) | Independent phase/timing vectors, absolute-clock and pause/chunk cases. |
 
-Reserve separately selected delay, clock/frequency offset and phase processes.
-Their sign/units/reference clock, absolute phase, sample count/index mapping and
-state across pause/reset must be designed under ARCH-CH-05. RxMER arrays do not
-specify these processes. Keep zero-offset unity exact; do not sneak an extra
-resample/delay or random phase into the baseline. Enabled effects must be rejected
-until supported.
+Select Off or integer delay D plus constant initial phase phi0 and carrier
+frequency offset delta_f. Proposed bounds are D=0..4096 samples,
+`-pi <= phi0 < pi` radians and finite `abs(delta_f) < fs/2` in Hz. These bound
+an experiment, not a DOCSIS receiver tolerance. Reject fractional/negative delay,
+sample-clock drift/jitter and stochastic phase noise; they need separate models.
+The residual compatibility table rejects this stage in initial RxMER mode.
+
+Let a be the absolute first CH-05 input/output tick, including any configured
+leading guard, and v the CH-04 output. Define the finite stream by:
+
+```text
+w[n] = v[n-D] * exp(+j * (phi0 + 2*pi*delta_f*(n-a)/fs))
+```
+
+Use zero input before a for the explicit startup boundary. Positive delta_f
+rotates counterclockwise and raises a tone's baseband frequency; there is no
+complex conjugation. Delay shifts content, not the stored clock origin or fs.
+Emit D leading zero samples, then the delayed content, and drain the final D
+stored values: T input samples produce T+D output samples beginning at a.
+Constant phase/CFO add no samples. When all parameters are zero, use CH-02's
+exact bypass; do not rotate by a computed approximation of 1+j0.
+
+Keep a bounded D-value FIFO. Phase state begins at phi0 at tick a and advances
+by `omega=2*pi*delta_f/fs` once per emitted tick, including leading zeros,
+explicit guards and terminal drain. Reduce the scalar phase modulo 2*pi each
+step to bound argument growth, retaining the same sample-by-sample order across
+chunks. Evaluate rotation in safe Rust f64 arithmetic; document absolute/relative
+tolerances and accumulated phase error against the analytic formula. Never
+convert a large absolute u64 index directly to a floating phase or use wall
+clock elapsed time. Pausing causes no phase advance. A declared fresh stream
+resets FIFO/phase; chunk, prefix, symbol and frame boundaries do not.
+
+Validate finite rotations and complex products before committing FIFO, phase
+and output cursor. CH-05 drain rotates the retained values with continuing
+output phase; it does not request additional CH-04 noise draws. Repeated finish
+does not restart the drain and is empty after delivery; post-finish input rejects.
+Cancellation reports pending delayed
+samples rather than calling a partial delayed stream complete. Explicit path
+delays in CH-03 and D here are cumulative chosen effects; do not silently remove
+or double-infer one from the other. Normal RX receives no hidden timing/CFO
+correction derived from these settings; loss of synchronization is an outcome.
+
+Independent acceptance covers a delayed impulse at a+D, exact T+D count,
+positive/negative quarter-turn rotations, signed tone offsets, phi0 origin,
+large absolute a, D=0/4096, phase continuity across odd chunks/frames and drain,
+pause/cancel/retry, finite overflow and zero-mode bitwise identity. Test the
+joint FIR+sample-AWGN+timing order with a small literal sequence. Do not describe
+these tests as fractional-clock/phase-noise support or RF acquisition validation.
 
 #### CH-06: Output and observations
 
 [Return to channel stages](#channel-stage-sequence).
 
-Status: **boundary architecture defined; implementation planned**.
+Status: **architecture defined; implementation planned**.
 
 | Planned path | Disposition | Responsibility |
 | --- | --- | --- |
@@ -2569,7 +2789,33 @@ sample order. Cancellation/failure retains completed delivery and reports input
 accepted, samples delivered, pending count and partial status. Empty input or
 end of one transport chunk is not finish. Unity adds no tail; normal completion
 requires explicit upstream finish and every TX-08 tail/declared guard sample
-delivered. Future stage drains need stage-specific rules before support.
+delivered. Normal finish propagates exactly once in order: TX-08 final R tail
+and explicit guards → CH-03 L-1 FIR drain → CH-04 processing/normal residual
+finish → CH-05 D-value delay drain → final delivery. In sample-AWGN mode the
+FIR tail is noised, while the CH-05 stored-value drain generates no new draws.
+RxMER mode's separate synthesis emits exactly its TX-matched R tail, with no
+FIR or delay extension. Repeated finish cannot restart noise or drain a stage
+again; early finish with incomplete declared input is an error.
+
+For T complete TX samples, identity transport and RxMER mode emit T samples.
+An enabled L-tap FIR and D delay emit `T+(L-1)+D`, with p/phase/CFO adding no
+length. Preserve original TX frame/useful origins as source association, and
+separate actual output range, modeled startup/drain and configured content delay.
+Do not relabel an echo/filter tail as another scheduled data symbol or imply
+that noisy guard samples remain zero. Check all support/count additions before
+starting and against actual delivered totals at completion.
+
+Per-quantum atomic commits include every stage's history/RNG/phase, its consumed
+input interval and output. If delivery is paused partway through a ready quantum,
+retain its cursor without reexecuting that quantum. Failed/cancelled jobs retain
+committed/delivered prefixes and explicitly report buffered, unprocessed and
+drain-pending counts. Do not infer success from an empty queue before all finish
+states are accepted. Tests exercise composed drains and failure at each stage,
+as well as no changes to source/observer independence. An instrument failure or
+exhausted observation budget is reported separately; it does not undo valid
+scientific output, advance processing again or make a sample interval unavailable
+to the receiver. A fresh isolated burst requires explicit reset after finish or
+abort, with discarded pending state counted in the aborted result.
 
 Channel plan/seed/H/RxMER truth remains in simulation and independent metrics.
 CMTS-RX accepts received samples and its configured grant/timing, never an
