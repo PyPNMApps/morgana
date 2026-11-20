@@ -1,6 +1,6 @@
 # CM-US-TX block and stage design
 
-Status: transmitter overview and TX-01 through TX-06 architecture defined; integration is
+Status: transmitter overview and TX-01 through TX-07 architecture defined; integration is
 planned. Subsequent stages are expanded one at a time in processing order.
 Scope is documentation in this repository, with no links to another source
 checkout and no scientific, UI, CLI or binding implementation changes.
@@ -37,6 +37,10 @@ checkout and no scientific, UI, CLI or binding implementation changes.
 | TX-PREEQ-02 | Normalize newly calculated banks over used and unused non-excluded carriers, preserving excluded zeros. | Coefficient admission; independent full-domain energy/phase cases, empty/zero/nonfinite rejection and atomic state. |
 | TX-PREEQ-03 | Distinguish defaults/reset, replacement and multiplicative adjustment with explicit geometry/base identities. | Configuration owner; stale-base, range, reset-trigger and future last-probe association cases; no MAC parsing or live adaptation claim. |
 | TX-PREEQ-04 | Keep corrective C separate from injected H, source truth and receiver estimation. | Pipeline/API observations; received-pilot effective-response checks and bounded partial/observer behavior. |
+| TX-IFFT-01 | Admit complete upstream physical grids at 2K/50 kHz or 4K/25 kHz and 102.4 Msamples/s. | Shared accepted geometry and TX adapter; exact length, clock, identity and inactive-bin checks. |
+| TX-IFFT-02 | Use the positive centered exponent and unitary scaling with ascending physical bins. | Shared safe Rust transform; independent complex-sum/tone/impulse and energy checks, not round trips alone. |
+| TX-IFFT-03 | Emit one owned useful complex symbol with local timing before CP/window/overlap assembly. | Sample types and adapter; exact N/order/rate/validity, no invented global continuity or power calibration. |
+| TX-IFFT-04 | Bound plans/scratch/output and share conventions with RX and passive instruments. | Rust numerical owner; atomic failure, completed-symbol retention, concurrency and future adapter parity cases. |
 
 The canonical [CM-US-TX block](../../../architecture.md#cm-us-tx-block-architecture)
 owns the overview and
@@ -55,8 +59,8 @@ defines module roots. TX-01 maps to shared resource/grant planning and
 `crates/phy/src/transmitter/framing.rs`; TX-02 adds
 `crates/phy/src/transmitter/ldpc.rs` around the existing codec; TX-03 uses
 `crates/phy/src/bit_processing/randomizer.rs` with separate transmitter/receiver
-adapters. TX-07..08 have proposed file locations while their detailed designs
-remain pending. Test filenames are recorded beside each owner in the canonical
+adapters. TX-08 has proposed file locations while its detailed design
+remains pending. Test filenames are recorded beside each owner in the canonical
 section rather than creating empty modules or duplicate algorithms.
 The [TX-04 section](../../../architecture.md#tx-04-cell-word-construction-and-qam-mapping)
 defines exact label/role/scaling contracts and stateful word assembly. It adds
@@ -64,7 +68,7 @@ planned `crates/phy/src/configuration/modulation.rs`,
 `crates/phy/src/signal_processing/qam_tables.rs` and
 `crates/phy/tests/tx_mapping.rs` alongside the existing planned lookup/adapter
 paths. Shared `resources/permutation.rs` supplies the visit sequence; its detailed
-implementation follows the shared ARCH-TX-05 contract. The first six stage designs do
+implementation follows the shared ARCH-TX-05 contract. The first seven stage designs do
 not establish a running grant-integrated transmitter.
 The [TX-05 section](../../../architecture.md#tx-05-pilots-ofdma-framing-and-interleaving)
 owns shared resource roles, block partitioning, joint visits, pilot expectations
@@ -86,6 +90,16 @@ grid/types and primitive acceptance tests. Normalization is bank admission,
 not a per-symbol/active-mask adjustment. Defaults are unity on used/unused
 non-excluded carriers and zero on excluded carriers. A run freezes its bank;
 live probe-driven updates and measured import remain outside this baseline.
+The [TX-07 section](../../../architecture.md#tx-07-ifft) defines full upstream
+geometry, the centered unitary transform and useful-symbol sample metadata.
+The planned shared `crates/phy/src/signal_processing/transform.rs` owns safe Rust
+radix-2 arithmetic and paired synthesis/analysis conventions. It reuses the
+reviewed numerical organization with upstream parameters; no new FFT dependency
+or copied implementation is introduced. Planned `transmitter/ifft.rs` and
+`receiver/fft.rs` admit their own inputs, while `types/samples.rs` and
+`configuration/profile.rs` remain shared owners. `crates/phy/tests/tx_ifft.rs`
+adds stage checks beside `crates/phy/tests/transforms.rs`. No useful symbols
+are silently concatenated into a final time stream; TX-08 owns assembly.
 
 ## Reference and source boundaries
 
@@ -159,10 +173,22 @@ and event scheduling require separate MULPI/probing evidence. Read-only referenc
 review supplied complex-response and receiver-estimation ownership patterns only;
 its downstream H interpretation/inverse floor are not a CM transmit-bank contract.
 
+TX-07 uses §7.3.2, Table 7, p48; §7.4.1.6, p51 (extracted placement prose);
+and §7.4.9, pp65–66, Figure 15. Original PDF pp48, 65 and 66 were rendered
+and visually inspected for 2K/4K geometry, 102.4 Msamples/s, positive centered
+exponent, unitary scaling and lowest-to-highest physical bin order. The
+[publisher's pinned PHY I20](https://account.cablelabs.com/server/alfresco/4eb470eb-aca3-4e64-af88-773b8c594fbd)
+was also checked for revision/section identity. Read-only reference inspection
+covered the safe Rust radix-2 plan, forward/inverse wrappers and sample-rate
+ownership. Fixed downstream 4K/8K geometry is unsuitable here. Mathematical
+equivalence of the centering methods and useful-window timing/retention policies
+are local engineering contracts, not additional CM RF requirements. Source
+inspection does not execute the planned kernel, stage or receiver.
+
 ## Dependency-ordered checklist
 
 - [x] ARCH-TX-NAV: Link all eight TX overview/output labels to unique local
-  sections; mark TX-07..08 as pending placeholders and add overview backlinks.
+  sections; retain TX-08's pending placeholder and add overview backlinks.
 - [x] ARCH-TX-PATH: Name planned implementation/test files in every TX section
   and distinguish existing codec reuse from new PHY adapters.
 - [x] ARCH-TX-00: Standardize CM-US-TX and document the ordered internal stages.
@@ -180,7 +206,8 @@ its downstream H interpretation/inverse floor are not a CM transmit-bank contrac
   independent pilots/gains, grid assembly, shared ownership and acceptance checks.
 - [x] ARCH-TX-06: Define Pre-Eq bank normalization, multiplication, defaults,
   update/reset identities, truth boundaries, streaming and independent acceptance.
-- [ ] ARCH-TX-07: Expand IFFT geometry, bin order and normalization.
+- [x] ARCH-TX-07: Define IFFT geometry, centered/unitary conventions, useful-sample
+  timing, bounded shared ownership, planned file paths and independent acceptance.
 - [ ] ARCH-TX-08: Expand CP, roll-off/window/overlap and burst sample assembly.
 - [ ] PHY-01: Implement and validate the shared grant planner after scientific
   plan approval; verify exact boundaries, borrowing and bit-role conservation.
@@ -259,3 +286,14 @@ implementation acceptance remain unchecked. `git diff --check` passed. Original
 PDF review includes the upstream continuation on p108; no coefficient normalizer,
 complex-grid stage, live update/probe controller, capture adapter or Python/UI
 behavior was implemented or validated by executing this documentation change.
+
+For TX-07, `scripts/validate.sh` passed 20 skills, 290 local links, the existing
+23 Rust tests, 19 setup tests and 5 Git tests, formatting and Clippy. Focused
+documentation checks resolved 61 section links, retained all 16 TX overview/output
+links and confirmed that the seven planned code/test paths remain absent.
+TX-08 remains a placeholder; LDPC-01/02, grant integration and waveform
+implementation acceptance remain unchecked. `git diff --check` passed. Original
+PDF review substantiates geometry and transform conventions; no IFFT kernel,
+sample adapter, receiver transform, Python binding or SA execution was added.
+These results validate the existing checkpoint and documentation, not the
+planned numerical vectors or useful-symbol processing.

@@ -335,7 +335,7 @@ maps these requirements to owners and planned checks:
 
 
 Status: **planned**. ARCH-TX-00 defines the transmitter block; ARCH-TX-01 through
-ARCH-TX-06 expand its first six stages below. The isolated LDPC codec is a
+ARCH-TX-07 expand its first seven stages below. The isolated LDPC codec is a
 dependency; it does not make this transmitter implemented. CM-US-TX converts meaningful
 PRBS source bits and an accepted upstream grant into complex baseband samples
 delivered to the Channel Simulator.
@@ -417,8 +417,8 @@ run and invalidates older observations by generation. Explicit cancellation
 retains completed work and reports partial emission rather than treating
 generated codewords as proof that their waveform was delivered.
 
-Detailed contracts below cover TX-01 through TX-06. TX-07 and TX-08 remain
-overview contracts and will be expanded one at a time in processing order. The local
+Detailed contracts below cover TX-01 through TX-07. TX-08 remains an overview
+contract and is the next architecture step in processing order. The local
 [CM-US-TX feature record](development/features/cm-us-tx/design.md) tracks those
 architecture steps separately from implementation.
 
@@ -1737,20 +1737,213 @@ or linked into this transmitter design.
 
 #### TX-07: IFFT
 
+[Return to TX stage overview](#internal-stage-sequence).
+
+Status: **architecture defined; implementation remains planned**. ARCH-TX-07
+converts each complete corrected frequency grid from
+[TX-06](#tx-06-cm-pre-eq) into one useful complex time symbol. It fixes physical
+bin order, transform sign, normalization and upstream sample geometry. It leaves
+cyclic extension, roll-off/windowing, overlap, guards and final stream timing to
+[TX-08](#tx-08-sample-assembly).
+
 **Planned code paths (repository-relative).**
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/signal_processing/transform.rs` | Create (planned) | Single shared Rust transform owner for IFFT/FFT and instrument reuse; dependency choice remains open. |
-| `crates/phy/src/transmitter/ifft.rs` | Create (planned) | TX geometry/bin-order/normalization adapter around the shared transform. |
-| `crates/phy/tests/transforms.rs` | Create (planned) | Independent impulse/tone, bin-order and normalization checks for both directions. |
+| `crates/phy/src/configuration/profile.rs` | Create (planned) | Shared accepted upstream numerology/clock; already proposed by earlier stages, with no separate transform configuration owner. |
+| `crates/phy/src/types/samples.rs` | Create (planned) | Shared useful-symbol samples, local indices, rate, identity and timing/validity metadata; extend the existing plan for indexed sample blocks. |
+| `crates/phy/src/signal_processing/transform.rs` | Create (planned) | Single safe Rust radix-2 numerical owner, reusable immutable plans and unitary centered synthesis/analysis wrappers. |
+| `crates/phy/src/transmitter/ifft.rs` | Create (planned) | Admit one full corrected grid and return one owned useful symbol with accepted geometry and generation. |
+| `crates/phy/src/receiver/fft.rs` | Create (planned) | Paired RX-03 adapter using the same transform convention on independently selected receive windows. |
+| `crates/phy/tests/transforms.rs` | Create (planned) | Independent complex-sum, impulse/tone, bin-order and energy checks in both directions. |
+| `crates/phy/tests/tx_ifft.rs` | Create (planned) | Full-grid admission, identity/timing, bounded output, observer, failure and cancellation checks. |
 
+All paths remain proposed creations; references to shared owners extend their
+design, not existing files. The transform kernel is independent of grant/FEC,
+pilot roles, Pre-Eq banks, channel responses and presentation. TX/RX adapters own
+stage admission. Instruments reuse numerical operations with separate settings
+and scratch storage; they do not consume or alter a transmitter/receiver context.
 
-Status: **placeholder; detailed architecture and implementation remain planned**.
-Transform the complete frequency grid into useful complex samples with
-explicit bin order, geometry and normalization.
-ARCH-TX-07 stays unchecked until its detailed contract and acceptance criteria
-are defined. [Return to TX stage overview](#internal-stage-sequence).
+**Accepted geometry and full-grid input.**
+
+The accepted profile selects exactly one upstream mode:
+
+| Mode | Physical grid / useful samples N | Carrier spacing | Sample rate fs | Useful duration N/fs |
+| --- | --- | --- | --- | --- |
+| 2K | 2048 | 50 kHz | 102.4 Msamples/s | 20 microseconds |
+| 4K | 4096 | 25 kHz | 102.4 Msamples/s | 40 microseconds |
+
+The interval between samples is `1/fs` (9.765625 ns, derived). These are useful
+durations, before cyclic extension or window/overlap. Allocation size, codeword
+count and number of occupied carriers never select a smaller transform or change
+the clock. Validate N, spacing and fs together; reject downstream 4K/8K at
+204.8 Msamples/s, unsupported lengths, resampling requests and stale geometry.
+
+Input is exactly N finite complex values in ascending physical carrier order,
+including every zero/unallocated/excluded position from TX-05/06. Validate its
+run/configuration generation, burst/frame/symbol identity, grid layout and
+accepted Pre-Eq generation before allocating output. TX-07 neither packs active
+carriers nor fills a sparse carrier list implicitly. The adapter checks exact
+zero values at roles declared inactive, without imposing real-only values on
+active cells. A numerical kernel test can use arbitrary finite full-length
+vectors independently of transmitter resource admission.
+
+**Centered IDFT and normalization.**
+
+Let `X[k]` be the actual TX-06 output, after pilot-role amplitude scaling and
+complex C multiplication. For `i = 0 .. N-1`, the controlling synthesis is:
+
+```text
+x[i] = (1 / sqrt(N)) * sum over k=0..N-1 of
+       X[k] * exp(+j * 2*pi * i * (k - N/2) / N)
+```
+
+`X[0]` is the lowest frequency component and `X[N-1]` the highest. Its baseband
+frequency is `(k - N/2) * spacing`: k=0 is -fs/2, k=N/2 is DC and k=N-1 is
+fs/2 minus one spacing. Preserve this physical index for resource/pilot identity.
+The accepted RF frequency at physical k=0 supplies display labels only; deriving
+baseband offsets does not retune the waveform or change the resource grid.
+
+A conventional inverse FFT buffer with DC at index zero requires
+`buffer[(k + N/2) % N] = X[k]`, followed by positive-exponent synthesis and
+`1/sqrt(N)` scaling. Equivalently, the chosen centered wrapper can synthesize
+unshifted X and multiply time sample i by `(-1)^i`. The initial design uses
+that latter convention, matching the reviewed safe Rust radix-2 pattern.
+Apply the centering adjustment exactly once; do not shift bins and also apply
+the alternating sign. The externally visible contract remains the equation
+above regardless of internal storage.
+
+The kernel's inverse direction uses positive roots; its forward direction uses
+negative roots. Both wrappers scale by `1/sqrt(N)`. RX-03 applies the matching
+analysis equation to its useful receive window:
+
+```text
+X_recovered[k] = (1 / sqrt(N)) * sum over i=0..N-1 of
+                 x_received[i] * exp(-j * 2*pi * i * (k - N/2) / N)
+```
+
+For that centered forward wrapper, apply `(-1)^i` before the conventional
+negative-exponent transform. Receiver window alignment remains receiver work;
+sharing this primitive does not expose TX bins, C, injected H or original bits
+as recovery inputs. A transform round trip is numerical evidence only and must
+not substitute for independent convention vectors or receiver acceptance.
+
+Unitary scaling preserves discrete energy:
+`sum_i |x[i]|^2 = sum_k |X[k]|^2`, within documented floating-point tolerance.
+Mean sample power is the latter sum divided by N. Preserve QAM scaling,
+pilot boosts and Pre-Eq effects already present in X; do not add normalization
+by occupied-carrier count, AGC, clipping or a second `1/N` factor. A sparse
+allocation legitimately changes mean waveform power. Values remain normalized
+complex baseband quantities until a separately designed physical calibration;
+this stage cannot claim CM RF output power or spectral-mask compliance.
+
+Output retains both I and Q. No Hermitian mirror, forced real output or
+conjugation is introduced. There is no transmit analysis window, cyclic prefix,
+extra zero padding, gain adjustment, frequency impairment or channel convolution
+in this stage. Inactive frequency bins remain zero in the input grid; their
+presence does not imply zero-valued time samples.
+
+**Useful-symbol output and processing bounds.**
+
+Return one owned block of exactly N samples in increasing local time order,
+with useful-relative indices 0 through N-1, fs, N, normalization/convention,
+run/configuration generation and burst/frame/symbol/Pre-Eq identities. Preserve
+the accepted timing reference if available; otherwise mark final stream origin
+pending assembly. `i=0` is the start of this useful interval. Do not infer a
+global sample index as `symbol_number * N`: CP, overlap and guard handling will
+determine the actual interval placement in TX-08. Do not concatenate separate
+useful intervals and label them as uninterrupted transmitted time.
+
+```mermaid
+flowchart LR
+    GRID[TX-06 complete physical grid] --> CHECK[Identity and geometry admission]
+    CHECK --> INV[Shared positive-root inverse transform]
+    INV --> SCALE[Unitary scale and centered time sign]
+    SCALE --> USEFUL[One owned useful complex symbol]
+    USEFUL --> ASSEMBLE[TX-08 sample assembly]
+    USEFUL -. passive sample window .-> SA[Shared Spectrum Analyzer]
+```
+
+Plan the first implementation as an all-Rust, safe radix-2 kernel with finite
+`f64` I/Q arithmetic. Reuse the reviewed immutable bit-reversal/root-plan and
+butterfly organization, adapted to upstream geometry, rather than introducing
+a second numerical algorithm per endpoint. No new FFT dependency is selected
+or needed by this design. Any later code adaptation must preserve actual
+copyright/SPDX notices and record origin/modifications under the reuse process;
+this architecture copies no source code. A later optimized backend must retain
+the same independent convention/energy tests and Rust-only dependency boundary.
+
+Bound each operation to one admitted symbol, at most 4096 complex input/output
+values and checked, linear-size plan/scratch storage. Precompute immutable
+roots/bit reversal for the accepted N, with at most the two supported plans
+retained by an owner. No unbounded global length cache or per-symbol plan
+history is allowed. Mutable scratch belongs to the executing worker; concurrent
+instruments use their own bounded buffers. Reject wrong lengths, nonfinite
+components, stale identities, exhausted output budgets and nonfinite numerical
+results with typed errors. Publish output atomically after the entire symbol
+is valid, without mutating the accepted grid or configuration on failure.
+
+This transform has no cross-symbol filter history or RNG. Source generation,
+randomizer/pilot clocks and grant visitation never advance inside it. Validate
+and acquire a bounded output slot before processing. Pause preserves the next
+symbol identity and any already completed block; resume must not emit it twice.
+Cancellation at symbol boundaries retains completed outputs and reports the
+emitted prefix. At most one bounded transform may finish before cancellation
+is observed; never publish a partial useful symbol as complete. TX-08 will add
+its own overlap state and emission acceptance rather than inheriting fabricated
+history here. Planning/readiness alone executes no transform or source read.
+
+**Inspection and future adapters.**
+
+The TX-07 sample tap supplies actual contiguous useful samples to the shared
+Spectrum Analyzer, with sample rate, useful-window identity, frequency origin
+and normalization. Independent symbol windows stay independent. A useful-window
+spectrum is not the spectrum of an assembled/windowed burst; final transmitter
+SA measurements belong at TX-08. FFT-bin lists and QAM cells are not SA sample
+inputs. Time-domain I/Q samples are not a carrier QAM constellation. QAM views
+continue to use matched frequency-grid taps. Disabled/full/failed observers
+cannot change synthesis results, input ownership or processing order.
+
+Rust owns geometry, transform arithmetic, observations and errors. Future Rust
+public operations and native Python bindings must share these semantics and
+owned sample ordering; Python supplies no FFT/scaling/reindexing implementation.
+Any eventual persisted model needs the public API compatibility review. This
+section introduces no public function, saved schema, Python binding or UI.
+
+**Independent acceptance before implementation completion.**
+
+1. Verify both upstream mode tuples and reject contradictory clock/spacing/N,
+   partial/oversized grids, stale layout/Pre-Eq generations, inactive nonzero
+   cells, nonfinite values and resource-budget failures without input mutation.
+2. For both lengths, use independent literal/sum-derived vectors: a sole
+   `X[N/2]=A` yields constant `A/sqrt(N)`; a sole `X[0]=A` yields alternating
+   `A*(-1)^i/sqrt(N)`; `X[N/2+1]` and `X[N/2-1]` yield oppositely rotating
+   tones. Use complex A and an asymmetric mixture to detect wrong sign,
+   conjugation, I/Q exchange, one-bin shifts and double centering.
+3. In kernel-only tests, constant X yields an impulse of `A*sqrt(N)` at i=0.
+   Compare bounded selected samples of sparse/dense vectors against a direct
+   Rust evaluation of the specified complex sum, independent of butterfly and
+   RX code. Fixed source-derived convention cases are required in addition to
+   TX/RX round trips; no duplicate production transform serves as the oracle.
+4. Check Parseval and paired forward/inverse results with explicit absolute/
+   relative tolerances appropriate to finite `f64` arithmetic and signal scale.
+   Include zero, pilot-boosted, sparse-allocation and complex Pre-Eq cases.
+   No waveform renormalization may make an incorrect gain pass.
+5. Verify exact N output length, local order, useful duration, metadata and no
+   CP/window/guard insertion. Test repeated-symbol determinism, chunk grouping,
+   pause/resume, bounded cancellation and independent concurrent scratch.
+6. Check passive/disabled/full observers, preserved completed symbols on error,
+   useful-window SA labels and absence of invented global continuity. Future
+   Rust/Python adapters must agree on samples/metadata/errors when implemented.
+
+Controlling evidence: CM-SP-PHYv3.1-I20-230419 §7.3.2, Table 7, PDF p48;
+§7.4.1.6, p51 (placement/unused inputs, extracted prose); and §7.4.9, pp65–66,
+including Figure 15. Original pp48, 65 and 66 were rendered and visually
+inspected for upstream geometry, the positive centered exponent, unitary factor
+and ascending frequency order. The indexed useful-sample boundary, backend
+organization, failure/retention policy and adapter rules are local engineering
+contracts. This does not design §7.4.10 assembly, prove waveform execution or
+resolve the earlier LDPC/source acceptance gaps.
 
 #### TX-08: Sample assembly
 
