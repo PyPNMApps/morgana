@@ -10,7 +10,7 @@ implementation, Python bindings or reference-project links are introduced.
 | --- | --- | --- |
 | PRBS-01 | Explicit PRBS15 recurrence, seed/emission order, period and continuous absolute identity. | Rust source; independent literal vectors, all nonzero states and continuity across chunk/grant/codeword/period boundaries. |
 | PRBS-02 | Request exact meaningful payload lengths from accepted upstream grants; separate fill, shortening and padding. | TX grant framing plus orchestration ledger; source counts and comparison exclude non-source bits. |
-| PRBS-03 | Independently compare actual received decisions, preserving decoder failure outcomes. | Rust verifier outside CMTS-RX; exact injected mismatch counts and a parity-valid wrong payload. |
+| PRBS-03 | Independently compare actual received decisions, preserving decoder failure outcomes. | Rust verifier outside CMTS-US-RX; exact injected mismatch counts and a parity-valid wrong payload. |
 | PRBS-04 | Bound work/memory and preserve accepted state on invalid input or overflow. | Generator/verifier constructors and operations; zero-count, invalid seed/bits, oversized chunk and counter-boundary cases. |
 | PRBS-05 | Detect incomplete/discontinuous recovery without hidden phase search or gap skipping. | Source association/verification coverage; missing, duplicate, reordered, wrong-run and wrong-length ranges retain prior totals and report incomplete status. |
 | PRBS-06 | Freeze settings per run; pause/resume preserves state and restart resets with a new identity. | Orchestration; equivalent resumed stream, partial cancellation results and observer neutrality. |

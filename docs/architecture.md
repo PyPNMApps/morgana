@@ -15,7 +15,7 @@ contains requirements, reuse assessments, evidence, API proposal and milestones.
 - [Deferred burst modes and preambles](#deferred-burst-modes-and-preambles)
 - [Channel Simulator](#channel-simulator-unity-stub-first) and [channel stage index](#channel-stage-sequence)
 - [RxMER input](#rxmer-input)
-- [CMTS-RX stages](#cmts-rx-stages)
+- [CMTS-US-RX stages](#cmts-us-rx-stages)
 - [Shared QAM Analyzer and Spectrum Analyzer](#shared-qam-analyzer-and-spectrum-analyzer)
 - [Ownership, results and acceptance](#ownership-results-and-acceptance)
 
@@ -43,7 +43,7 @@ flowchart LR
     PRBS[PRBS source] --> TX[CM-US-TX]
     TX --> CH[Channel Simulator: unity first]
     MER[RxMER input: optional] -. accepted residual model, later .-> CH
-    CH --> RX[CMTS-RX]
+    CH --> RX[CMTS-US-RX]
     CFG[Virtual CMTS configuration] -. configuration .-> TX
     CFG -. configuration .-> RX
     PRBS -. expected stream only .-> TRUTH[Independent PRBS-RX comparison]
@@ -73,8 +73,8 @@ the existing executable still runs isolated LDPC trials. No PRBS waveform,
 channel object, CMTS receiver, instrument or GUI is claimed implemented here.
 
 Use the same left-to-right organization as the reference workbench:
-**PRBS → CM-US-TX → Channel Simulator → CMTS-RX → PRBS-RX/results**.
-CM-US-TX and CMTS-RX open their own stage workbenches. Test-point actions open
+**PRBS → CM-US-TX → Channel Simulator → CMTS-US-RX → PRBS-RX/results**.
+CM-US-TX and CMTS-US-RX open their own stage workbenches. Test-point actions open
 the shared **QAM Analyzer** or **Spectrum Analyzer (SA)** for the selected tap.
 The separate [RxMER input](#rxmer-input) sits above the
 [Channel Simulator](#channel-simulator-unity-stub-first) and feeds its future
@@ -179,7 +179,7 @@ no dependency on reference-project documentation or source checkouts.
 
 The block has two independently owned roles: **PRBS-TX** supplies continuous
 test payload bits, and **PRBS-RX** compares recovered payload decisions after
-CMTS-RX. Both use the accepted source seed, with separate mutable registers and
+CMTS-US-RX. Both use the accepted source seed, with separate mutable registers and
 counters. Only the comparison branch receives expected PRBS truth; neither
 the PRBS seed nor expected bits enter the receiver's decoding/equalization API.
 
@@ -187,7 +187,7 @@ the PRBS seed nor expected bits enter the receiver's decoding/equalization API.
 flowchart TB
     SETTINGS[Accepted PRBS15 settings] --> GENERATOR[PRBS-TX generator]
     GENERATOR --> CHUNK[Bounded payload bits and absolute range]
-    CHUNK --> TRANSPORT[CM-US-TX then channel then CMTS-RX]
+    CHUNK --> TRANSPORT[CM-US-TX then channel then CMTS-US-RX]
     CHUNK -. range metadata only .-> LEDGER[Orchestration source-range ledger]
     TRANSPORT --> RECOVERED[Decoded bits and grant/codeword coordinates]
     RECOVERED --> ASSOCIATE[Associate recovered payload range]
@@ -249,7 +249,7 @@ generating it rather than advancing PRBS for discarded work.
 | `Prbs15Config` | Kind and validated seed; fixed recurrence/period are descriptive metadata. | Immutable accepted settings, frozen per run. |
 | `Prbs15` | Validated seed; `generate(count)` returns the next bounded binary chunk, and `position()` reports the next absolute index. | Owns its register and position; no shared mutable state with observers or the verifier. |
 | `SourceChunk` | Owned bits with `first_bit`; its checked half-open range is `[first_bit, first_bit + len)`. | Immutable output handed to TX; diagnostic copies are bounded. |
-| Source-range ledger | Run/configuration identity and meaningful source ranges associated with accepted grant/codeword payload coordinates. | Orchestration metadata only; no original bits or PRBS seed are injected into CMTS-RX. |
+| Source-range ledger | Run/configuration identity and meaningful source ranges associated with accepted grant/codeword payload coordinates. | Orchestration metadata only; no original bits or PRBS seed are injected into CMTS-US-RX. |
 | Recovered association | Actual decoded information decisions and grant/codeword coordinates, mapped to a source range outside RX. | Validate run identity, length and expected next range before comparison. |
 | `PrbsVerifier` | Same accepted seed and independently owned expected stream; compares ordered binary decisions. | Advances through mismatches without correcting decisions or searching for another PRBS phase. |
 | `PrbsComparison` | First compared position, bits tested, bit errors and optional absolute first-error position, per window and cumulatively. | Owned result snapshots remain valid after later operations. |
@@ -599,7 +599,7 @@ status, ordered codeword descriptors, retained/mother lengths, shortening,
 information-role ranges and encoded-stream offsets, and final grant-padding
 count. Planning from configuration is pure and consumes no PRBS. A separate
 admitted-payload result attaches the actual source range and ledger association
-during bounded payload admission; CMTS-RX derives
+during bounded payload admission; CMTS-US-RX derives
 its layout independently from the accepted grant configuration without the
 transmitter's source ledger or original bits.
 
@@ -961,7 +961,7 @@ separate state copy without advancing the active stream. Constant-size state
 does not remove the need to bound chunk buffers, queues and retained views.
 
 **Matching RX-07 inverse.** After resource deinterleaving and soft demapping,
-CMTS-RX uses the accepted grant configuration and its own register to regenerate
+CMTS-US-RX uses the accepted grant configuration and its own register to regenerate
 the same mask at the same ordered coded-bit positions. The PHY seed is legitimate
 receiver configuration; it is separate from hidden PRBS payload truth.
 For natural-log `L = log(P(randomized_bit=0)/P(randomized_bit=1))`, return `L`
@@ -2228,7 +2228,7 @@ closed loop remain unfinished and require the existing approval/prerequisites.
 
 Status: **staged architecture defined; implementation remains planned**.
 The Channel Simulator consumes the actual indexed
-[TX-08 output](#tx-08-sample-assembly) and delivers received samples to CMTS-RX.
+[TX-08 output](#tx-08-sample-assembly) and delivers received samples to CMTS-US-RX.
 Its initial mode is exact unity, independent of whether an RxMER file is open.
 The [channel design/checklist](development/features/channel-simulator/design.md)
 tracks all six stage contracts, declared model scope and pending implementation.
@@ -2266,7 +2266,7 @@ flowchart LR
     TX[TX-08 emitted samples] --> C1[CH-01 admission]
     C1 --> C2[CH-02 unity transport]
     C2 --> C6[CH-06 output and observations]
-    C6 --> RX[CMTS-RX received samples]
+    C6 --> RX[CMTS-US-RX received samples]
     INPUT[RxMER input] -. derived residual powers, later .-> C4[CH-04 residual error]
     C2 -. future enabled order .-> C3[CH-03 channel response]
     C3 -.-> C4
@@ -2434,7 +2434,7 @@ already included in that input. Controlled AWGN is a separate selection until
 an explicit independent-power composition contract is designed.
 
 Channel truth, chosen powers, seeds and applied H/C stay in channel/planning
-and independent diagnostics. Normal CMTS-RX receives waveform/configuration
+and independent diagnostics. Normal CMTS-US-RX receives waveform/configuration
 and estimates effective C×H from received pilots. Input targets do not become
 receiver noise estimates, observed RxMER, decoded BER or FEC results. Reusing
 probe statistics for scheduled data requires declared normalization/role and
@@ -2818,12 +2818,12 @@ to the receiver. A fresh isolated burst requires explicit reset after finish or
 abort, with discarded pending state counted in the aborted result.
 
 Channel plan/seed/H/RxMER truth remains in simulation and independent metrics.
-CMTS-RX accepts received samples and its configured grant/timing, never an
+CMTS-US-RX accepts received samples and its configured grant/timing, never an
 injected target or hidden H/C. Tests cover pause/cancel at different drain
 positions, failed observers and unchanged truth separation. Core Rust operations
 precede matching future Python/UI adapters; no channel implementation is added now.
 
-### CMTS-RX stages
+### CMTS-US-RX stages
 
 **Planned code paths (repository-relative).** All receiver adapter/test files
 below are **create (planned)**. The shared PHY files are also planned; the

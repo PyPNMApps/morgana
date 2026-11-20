@@ -6,7 +6,7 @@ See [architecture](../architecture.md) and [foundation design](features/foundati
 
 - [x] FOUNDATION-01: Inspect PDE and record selective adoption decisions.
 - [x] FOUNDATION-02: Inspect MERLIN and document reusable/upstream-specific owners.
-- [x] ARCH-01: Define PRBS → CM-US-TX → unity Channel Simulator → CMTS-RX,
+- [x] ARCH-01: Define PRBS → CM-US-TX → unity Channel Simulator → CMTS-US-RX,
   ordered processing stages and shared QAM/SA observation contracts. This is
   documentation only; see [design](features/upstream-signal-path/design.md).
 - [x] ARCH-PRBS-01: Define the self-contained PRBS-TX/PRBS-RX block, sequence,

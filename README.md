@@ -95,13 +95,13 @@ flowchart LR
     SOURCE[PRBS source] --> TX[CM-US-TX]
     TX --> CHANNEL[Channel Simulator: unity first]
     MER[RxMER input: optional] -. residual model, later .-> CHANNEL
-    CHANNEL --> RX[CMTS-RX]
+    CHANNEL --> RX[CMTS-US-RX]
     RX --> VERIFY[Independent PRBS-RX comparison]
     SOURCE -. expected stream only .-> VERIFY
 ```
 
 CM-US-TX will own grant framing, upstream LDPC, PHY randomization, QAM mapping,
-pilots/interleaving, Pre-Eq, IFFT and burst sample assembly. CMTS-RX will recover
+pilots/interleaving, Pre-Eq, IFFT and burst sample assembly. CMTS-US-RX will recover
 the payload from received samples and accepted configuration, with pilot-derived
 channel correction. Original source bits stay in the independent verifier.
 

@@ -5,7 +5,7 @@ Task: ARCH-01. This request authorizes documentation, not scientific or Qt code.
 
 ## Requirements
 
-- Show PRBS → CM-US-TX → Channel Simulator → CMTS-RX → independent PRBS check.
+- Show PRBS → CM-US-TX → Channel Simulator → CMTS-US-RX → independent PRBS check.
 - Name ordered TX/RX stages and their state/data boundaries.
 - Keep the first channel a genuine unity pass-through; reserve impairment extension points.
 - Add a separate optional upstream RxMER input for later channel residual models,
