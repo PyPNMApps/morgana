@@ -1,0 +1,7 @@
+/target/
+/local/
+/docs/development/local/
+*.whl
+*.tar.gz
+__pycache__/
+.venv/

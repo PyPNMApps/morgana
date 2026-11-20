@@ -1,0 +1,20 @@
+[package]
+name = "morgana-ldpc"
+description = "Bounded DOCSIS upstream QC-LDPC coding without downstream BCH"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+ldpc-toolbox.workspace = true
+serde.workspace = true
+
+[dev-dependencies]
+rand.workspace = true
+rand_chacha.workspace = true
+rand_distr.workspace = true
+
+[lints]
+workspace = true

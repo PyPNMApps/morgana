@@ -1,0 +1,319 @@
+{
+  "schema_version": 1,
+  "source_revision": "6f7197d17b0efc7a4be0d44a517d886b2f03009d",
+  "source": "user-supplied private engineering foundation",
+  "adaptations": [
+    "Local generic wording",
+    "Consumer-local helper and documentation links",
+    "Git workflow rewritten for local all-change saves"
+  ],
+  "files": [
+    {
+      "source": "skills/development-workflow/SKILL.md",
+      "destination": "skills/development-workflow/SKILL.md",
+      "sha256": "8cf092bf9a5faf6153640109891bee91822d3e9cbc8a4a8f6b05ecc91e85140c"
+    },
+    {
+      "source": "skills/development-workflow/references/procedure.md",
+      "destination": "skills/development-workflow/references/procedure.md",
+      "sha256": "c31c2c10b6fae240a33d809e99ab7e2bc8daca97b316d818041c5d3fbba106e3"
+    },
+    {
+      "source": "skills/reuse-first-changes/SKILL.md",
+      "destination": "skills/reuse-first-changes/SKILL.md",
+      "sha256": "b2955c98e08f29c3b8d8df0d1fc12a774d8437fbd1993362d7c61fd169d5fd47"
+    },
+    {
+      "source": "skills/reuse-first-changes/references/procedure.md",
+      "destination": "skills/reuse-first-changes/references/procedure.md",
+      "sha256": "b774b180ee9cb9cfc03547d5531017f91598c20a9db011171c5452c1eff9d572"
+    },
+    {
+      "source": "skills/coding-style/SKILL.md",
+      "destination": "skills/coding-style/SKILL.md",
+      "sha256": "308855d912b9af942209f4cca7a17b14f372c734e8cb6c61b76fa05d0ab0fb97"
+    },
+    {
+      "source": "skills/coding-style/references/contracts-and-domain-types.md",
+      "destination": "skills/coding-style/references/contracts-and-domain-types.md",
+      "sha256": "55b19c9f9e23fa3f4656cbff0a7adb75451248f3276a91d620ac6d4c8cc79a5a"
+    },
+    {
+      "source": "skills/coding-style/references/language-examples.md",
+      "destination": "skills/coding-style/references/language-examples.md",
+      "sha256": "8b83dbdf819c630e952dee3920fa06836b39dce358cb70f09744949e38d5892d"
+    },
+    {
+      "source": "skills/coding-style/references/procedure.md",
+      "destination": "skills/coding-style/references/procedure.md",
+      "sha256": "1f4b11ddbd928687f07553e58ab63e8066764d2927da1d6fa0854d5753fabc5b"
+    },
+    {
+      "source": "skills/build-validation/SKILL.md",
+      "destination": "skills/build-validation/SKILL.md",
+      "sha256": "2e7493f828a8f8c6d65e34e0c1f6961c0d8f9922e40c534064e3115d379aca94"
+    },
+    {
+      "source": "skills/build-validation/references/parallelism-and-cache-evidence.md",
+      "destination": "skills/build-validation/references/parallelism-and-cache-evidence.md",
+      "sha256": "26e9552b5e6d3cfb2170769d41fdd6d92d6f4e6f0107484ea62cacfb8a0be48e"
+    },
+    {
+      "source": "skills/build-validation/references/procedure.md",
+      "destination": "skills/build-validation/references/procedure.md",
+      "sha256": "fec23e2ff1f55d77567fa420cf150f610f64356f122b796499b005f9b18d55df"
+    },
+    {
+      "source": "skills/git-workflow/SKILL.md",
+      "destination": "skills/git-workflow/SKILL.md",
+      "sha256": "c5bf7e590f849f73d808f91e460aa664e01d37810f20694edc9f605860f8e4d1"
+    },
+    {
+      "source": "skills/git-workflow/references/procedure.md",
+      "destination": "skills/git-workflow/references/procedure.md",
+      "sha256": "6d0b19a37049096f8b1b0a7c282fcd5e04cf05b5d2f906a2e74d2b33f5efa4f8"
+    },
+    {
+      "source": "skills/generic-guidance/SKILL.md",
+      "destination": "skills/generic-guidance/SKILL.md",
+      "sha256": "3284d4d2b32ced7e0353daa8f1bd445ef2cddc7ec640a42480583fd473f8d5b5"
+    },
+    {
+      "source": "skills/generic-guidance/references/procedure.md",
+      "destination": "skills/generic-guidance/references/procedure.md",
+      "sha256": "3c9b9a74eb074868ce6abb50a0d5040379de7b5a76066ba86984e73584bd2189"
+    },
+    {
+      "source": "skills/third-party-reuse/SKILL.md",
+      "destination": "skills/third-party-reuse/SKILL.md",
+      "sha256": "ce91b518783a9e01091041ad3506f7aa14d782834b4b0897f6ec58701ba1bea9"
+    },
+    {
+      "source": "skills/third-party-reuse/references/procedure.md",
+      "destination": "skills/third-party-reuse/references/procedure.md",
+      "sha256": "d287080b1ef415b3d695156eb225f3277b38e6e46160c3fef24ab8e6437c4297"
+    },
+    {
+      "source": "skills/api-contracts/SKILL.md",
+      "destination": "skills/api-contracts/SKILL.md",
+      "sha256": "e7b6499c87d3a74ab27d76b8c214eea0a057147488519b4391b06ddd44566817"
+    },
+    {
+      "source": "skills/api-contracts/references/procedure.md",
+      "destination": "skills/api-contracts/references/procedure.md",
+      "sha256": "a0b45b368ad75684caa2c13a648fbdc5eecdb98c81b913be905065000b2a086d"
+    },
+    {
+      "source": "skills/api-contracts/references/saved-data-and-bindings.md",
+      "destination": "skills/api-contracts/references/saved-data-and-bindings.md",
+      "sha256": "a36a17c57a8a85b811ef2d455a6a64a19923beecc90323ce5cc0c854a9d72988"
+    },
+    {
+      "source": "skills/numerical-testing/SKILL.md",
+      "destination": "skills/numerical-testing/SKILL.md",
+      "sha256": "cb2d8ae35013af8e26a978c69b6ddaa99b8486ff13aa505b7586610d53a0707b"
+    },
+    {
+      "source": "skills/numerical-testing/references/procedure.md",
+      "destination": "skills/numerical-testing/references/procedure.md",
+      "sha256": "3184faf43d6178ecc51857a442235afa25a698d0f97b8bc96d9471d89e8d07a0"
+    },
+    {
+      "source": "skills/data-fixture-hygiene/SKILL.md",
+      "destination": "skills/data-fixture-hygiene/SKILL.md",
+      "sha256": "6b8aedc3891cae7542749403b115647352460c2ff6919881cb93b10879e4b25f"
+    },
+    {
+      "source": "skills/data-fixture-hygiene/references/procedure.md",
+      "destination": "skills/data-fixture-hygiene/references/procedure.md",
+      "sha256": "0841a3912be60c5d6d34bd6a53ec68832d171a9965f17913c95507f6eee90d45"
+    },
+    {
+      "source": "skills/knowledge-freshness/SKILL.md",
+      "destination": "skills/knowledge-freshness/SKILL.md",
+      "sha256": "be34f8ffadf31410ec5bf69556654fdd29a47e85348e7abd2d0fa43a166923dc"
+    },
+    {
+      "source": "skills/knowledge-freshness/references/procedure.md",
+      "destination": "skills/knowledge-freshness/references/procedure.md",
+      "sha256": "5e13fe2f6c35ae59a5814f7c45168103f043b52b27449687b83663d91115232c"
+    },
+    {
+      "source": "skills/external-change-review/SKILL.md",
+      "destination": "skills/external-change-review/SKILL.md",
+      "sha256": "0b281da7088c1e8f15eeae6e2344c9321f9f2d1675af1262a71673c6067b7a5e"
+    },
+    {
+      "source": "skills/external-change-review/references/procedure.md",
+      "destination": "skills/external-change-review/references/procedure.md",
+      "sha256": "904ee4d88dd427ac0ef9872dc03fbe45cf6348dd3a85f175f2d1ef83df7ff5b7"
+    },
+    {
+      "source": "skills/software-facts/SKILL.md",
+      "destination": "skills/software-facts/SKILL.md",
+      "sha256": "8684665656f782c70d33c53fbd62d165f77942974e8abe037c8dd7ca97dc1907"
+    },
+    {
+      "source": "skills/software-facts/references/procedure.md",
+      "destination": "skills/software-facts/references/procedure.md",
+      "sha256": "db5354fd856e2dc8feb30bf74cbc24610a4df9646df179c27fd80889f78f7490"
+    },
+    {
+      "source": "skills/knowledge-maintenance/SKILL.md",
+      "destination": "skills/knowledge-maintenance/SKILL.md",
+      "sha256": "e3a1e844a998d27812f960fabe095b8d4c2c1b2adff29e79fcabe7170196861a"
+    },
+    {
+      "source": "skills/knowledge-maintenance/references/procedure.md",
+      "destination": "skills/knowledge-maintenance/references/procedure.md",
+      "sha256": "af3144e7c49446ca974ace925b56f54be8ae7a69c3e2ec979e0fdeff26f7eb8f"
+    },
+    {
+      "source": "templates/project/architecture.md",
+      "destination": "templates/project/architecture.md",
+      "sha256": "189ef06dbfde266fc59ce47dc2e50b658637240e5b3744459663940e54444d0b"
+    },
+    {
+      "source": "templates/project/checklist.md",
+      "destination": "templates/project/checklist.md",
+      "sha256": "024ea33bbdb2883450bd60dc5d995c2c39dbf882e5afa4ea5b8404ff59b3bf68"
+    },
+    {
+      "source": "templates/project/coding-review.md",
+      "destination": "templates/project/coding-review.md",
+      "sha256": "ec0bd2b7cea43dc6d58cb9deeadbc357a20a561bb10e6e6a4464fbcc229a2db9"
+    },
+    {
+      "source": "templates/project/compatibility-matrix.md",
+      "destination": "templates/project/compatibility-matrix.md",
+      "sha256": "80b4aff872fb8c63006a1497c115582bd940989b824a5938379aebe4df4e235b"
+    },
+    {
+      "source": "templates/project/external-change-review.md",
+      "destination": "templates/project/external-change-review.md",
+      "sha256": "298fae45dadd6d105516f14c67466525a08d3d2c69a100c03fa61d6800e5c813"
+    },
+    {
+      "source": "templates/project/fixture-review.md",
+      "destination": "templates/project/fixture-review.md",
+      "sha256": "3be51d0bf35dceec2f9859dd88d06146564f2c733317292d0eb9918cf412e98b"
+    },
+    {
+      "source": "templates/project/freshness-review.md",
+      "destination": "templates/project/freshness-review.md",
+      "sha256": "d1313c50c4435987cf0faa95604ccf2655ac1b015e130edc2f4057b78dfcd745"
+    },
+    {
+      "source": "templates/project/learning-update.md",
+      "destination": "templates/project/learning-update.md",
+      "sha256": "cccde3d4b8b730da88329aee7215fd3713f035dccde78e1871b2850a39d58fa7"
+    },
+    {
+      "source": "templates/project/lesson.md",
+      "destination": "templates/project/lesson.md",
+      "sha256": "451e407a4ecacdf0facb77b52cdc4a1b9b8ffe6444f09d8b3905eccba8586e48"
+    },
+    {
+      "source": "templates/project/requirements.md",
+      "destination": "templates/project/requirements.md",
+      "sha256": "a4972fe328a034cfb2cdbe7ddf90add7bc24d8e40fbd423fef781f3cd93a3bd5"
+    },
+    {
+      "source": "templates/project/software-fact.md",
+      "destination": "templates/project/software-fact.md",
+      "sha256": "edeb3a4eeb69abbf99b225678a26bab99ec460f6d0a84b7e04bf65719728a6c5"
+    },
+    {
+      "source": "templates/project/third-party-notices.md",
+      "destination": "templates/project/third-party-notices.md",
+      "sha256": "1a85c6de63b4a5c2108aea58490f160da1a69e0737af33171ba4bcb059999eef"
+    },
+    {
+      "source": "templates/project/validation-matrix.md",
+      "destination": "templates/project/validation-matrix.md",
+      "sha256": "7b4964df9d5dbf0cb66f62e4da08697cc03057f2d6dc84bed15a7ddb0ec360db"
+    },
+    {
+      "source": "templates/tools/packaging.md",
+      "destination": "templates/tools/packaging.md",
+      "sha256": "28c98ff1871826c9196df9b3a64eb3876d394c306f5e3b11e43a18011c09972a"
+    },
+    {
+      "source": "templates/tools/validation.md",
+      "destination": "templates/tools/validation.md",
+      "sha256": "8d91d8e8d7c48549f927b6f17854908eaebec950a26581a22e0290839de647f1"
+    },
+    {
+      "source_repository": "MERLIN",
+      "source": "skills/docsis-phy-3-1-i20/SKILL.md",
+      "destination": "skills/docsis-phy-3-1-i20/SKILL.md",
+      "sha256": "1b3ac6b36aabfb0a6fae1c870e9cc64c3f5fa82890bdbfadbd5a71a24d80dab7"
+    },
+    {
+      "source_repository": "MERLIN",
+      "source": "skills/docsis-phy-3-1-i20/references/spec-metadata.yaml",
+      "destination": "skills/docsis-phy-3-1-i20/references/spec-metadata.yaml",
+      "sha256": "cf2e99eab41b64ff6f61e26c58cfd957d7817e537de2ed89df1f6b56627efe71"
+    },
+    {
+      "source_repository": "MERLIN",
+      "source": "skills/docsis-phy-3-1-i20/references/topic-map.md",
+      "destination": "skills/docsis-phy-3-1-i20/references/topic-map.md",
+      "sha256": "44e948e4d5292dc3a8619ef366fd3c0d167821a3ea1e0876b1c8502f8ab5c3f7"
+    },
+    {
+      "source_repository": "MERLIN",
+      "source": "skills/docsis-phy-3-1-i20/references/section-index.md",
+      "destination": "skills/docsis-phy-3-1-i20/references/section-index.md",
+      "sha256": "2804229a847f9e3dd3a7827e60073a2f7f352b3faea20fbc58df286112ea62e3"
+    },
+    {
+      "source_repository": "MERLIN",
+      "source": "skills/docsis-phy-4-0-i07/SKILL.md",
+      "destination": "skills/docsis-phy-4-0-i07/SKILL.md",
+      "sha256": "f24c83a4b5f831f0de35c5dafb54a5bb159c73ed696f1a983fccf165c39f1fe7"
+    },
+    {
+      "source_repository": "MERLIN",
+      "source": "skills/docsis-phy-4-0-i07/references/spec-metadata.yaml",
+      "destination": "skills/docsis-phy-4-0-i07/references/spec-metadata.yaml",
+      "sha256": "6a70de23a8c5bec94b0e33cb51748b64e6f2fc31cf1564f15b6603b3680d5d0c"
+    },
+    {
+      "source_repository": "MERLIN",
+      "source": "skills/docsis-phy-4-0-i07/references/topic-map.md",
+      "destination": "skills/docsis-phy-4-0-i07/references/topic-map.md",
+      "sha256": "f56c7af6647931a82d3e370b61969d5f5e161960895afe6c7e9c69dc74719f33"
+    },
+    {
+      "source_repository": "MERLIN",
+      "source": "skills/docsis-phy-4-0-i07/references/section-index.md",
+      "destination": "skills/docsis-phy-4-0-i07/references/section-index.md",
+      "sha256": "56168168a08bf2f556cbe39ec8346130922fd0c8adef0cb1ba56c3491f060815"
+    },
+    {
+      "source_repository": "MERLIN",
+      "source": "skills/docsis-signal-processing/SKILL.md",
+      "destination": "skills/docsis-signal-processing/SKILL.md",
+      "sha256": "1dc044346b2410c391df8bff7ec9d1b6b40f003c3447f8c14580a70af65f478e"
+    },
+    {
+      "source_repository": "MERLIN",
+      "source": "skills/scientific-testing/SKILL.md",
+      "destination": "skills/scientific-testing/SKILL.md",
+      "sha256": "e5eaddf61b5eae2567e752b1725f6a56341dd2404175da37a169a3124ed1fb27"
+    },
+    {
+      "source_repository": "MERLIN",
+      "source": "skills/public-api/SKILL.md",
+      "destination": "skills/public-api/SKILL.md",
+      "sha256": "3fd678ac6bbdcd5fba387928b9baa25eb71d03b5d9c57b009efa167b35146f41"
+    }
+  ],
+  "merlin_revision": "096d5a476194d4f2e016863d723b225257bb6037",
+  "source_state": "working-tree snapshot above the recorded source_revision; hashes identify exact inputs",
+  "modified_source_files": [
+    "skills/git-workflow/SKILL.md",
+    "skills/git-workflow/references/procedure.md"
+  ]
+}
