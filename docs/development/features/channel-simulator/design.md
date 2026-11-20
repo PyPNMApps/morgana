@@ -99,9 +99,9 @@ rand_distr 0.5.1; no dependency or scientific source changes are made here.
 - [ ] RXMER-UI-01: Implement the future input editor/viewer after the shared Rust
   operations exist; no scientific computation belongs in presentation.
 
-All six initial channel stage contracts are defined. The next signal-path
-architecture work is the CMTS-US-RX block and RX-01; implementation still awaits
-the existing approval and prerequisites. Importing existing probe
+All six initial channel stage contracts are defined. The CMTS-US-RX block
+overview is now defined; its next detailed architecture stage is RX-01.
+Implementation still awaits the existing approval and prerequisites. Importing existing probe
 measurements does not implement probe generation, ranging or live device capture.
 
 ## Validation

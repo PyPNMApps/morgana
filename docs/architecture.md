@@ -15,7 +15,7 @@ contains requirements, reuse assessments, evidence, API proposal and milestones.
 - [Deferred burst modes and preambles](#deferred-burst-modes-and-preambles)
 - [Channel Simulator](#channel-simulator-unity-stub-first) and [channel stage index](#channel-stage-sequence)
 - [RxMER input](#rxmer-input)
-- [CMTS-US-RX stages](#cmts-us-rx-stages)
+- [CMTS-US-RX block architecture](#cmts-us-rx-block-architecture) and [RX stage index](#receiver-stage-sequence)
 - [Shared QAM Analyzer and Spectrum Analyzer](#shared-qam-analyzer-and-spectrum-analyzer)
 - [Ownership, results and acceptance](#ownership-results-and-acceptance)
 
@@ -99,13 +99,13 @@ validation and bounded orchestration stay Rust; adapters present owned results.
 | --- | --- | --- |
 | `Cargo.toml` | Extend (existing) | Register the future PHY member/dependency when implemented; update `Cargo.lock` through Cargo. |
 | `crates/phy/Cargo.toml`, `crates/phy/src/lib.rs`, `crates/phy/src/error.rs` | Create (planned) | Rust PHY crate, module declarations/public domain surface and typed stage errors. |
-| `crates/phy/src/configuration/mod.rs` | Create (planned) | Accepted virtual-CMTS/profile/waveform/burst/Pre-Eq configuration and separate channel/RxMER selections. |
+| `crates/phy/src/configuration/mod.rs` | Create (planned) | Accepted virtual-CMTS/profile/waveform/burst/Pre-Eq configuration and separate channel/RxMER/receiver policies. |
 | `crates/phy/src/types/mod.rs` | Create (planned) | Register `bits.rs`, `iq.rs` and `samples.rs` in this directory for bit ranges, complex cells and indexed sample blocks. |
 | `crates/phy/src/source/mod.rs` | Create (planned) | PRBS source and independent verifier. |
 | `crates/phy/src/resources/mod.rs` | Create (planned) | Shared grant grids, pilot roles/patterns, block partitioning and cell permutations. |
 | `crates/phy/src/grant/mod.rs` | Create (planned) | Shared pure capacity/codeword planning. |
 | `crates/phy/src/bit_processing/mod.rs` | Create (planned) | Shared payload randomizer and independent known-pilot sequence. |
-| `crates/phy/src/signal_processing/mod.rs` | Create (planned) | Shared QAM/transform/coefficient-bank arithmetic, cyclic/window/overlap and channel response/noise/timing primitives. |
+| `crates/phy/src/signal_processing/mod.rs` | Create (planned) | Shared QAM/transform/coefficient-bank arithmetic, waveform/channel primitives and received-pilot/correction/soft-demapping numerics. |
 | `crates/phy/src/transmitter/mod.rs` | Create (planned) | Compose the eight TX stage adapters. |
 | `crates/phy/src/channel/mod.rs` | Create (planned) | Unity sample transport and future ordered channel stages. |
 | `crates/phy/src/measurements/mod.rs` | Create (planned) | Register upstream RxMER observation/admission types; future measured inputs retain separate source/reference semantics. |
@@ -2823,51 +2823,118 @@ injected target or hidden H/C. Tests cover pause/cancel at different drain
 positions, failed observers and unchanged truth separation. Core Rust operations
 precede matching future Python/UI adapters; no channel implementation is added now.
 
-### CMTS-US-RX stages
+### CMTS-US-RX block architecture
 
-**Planned code paths (repository-relative).** All receiver adapter/test files
-below are **create (planned)**. The shared PHY files are also planned; the
-explicitly marked LDPC codec is existing reuse. `crates/phy/src/receiver/mod.rs`
-registers these stages. These paths locate work without completing RX design.
+Status: **block overview defined; detailed stage contracts and implementation
+remain planned**. ARCH-RX-00 defines this block and its nine internal stages,
+matching the CM-US-TX presentation structure. The
+[receiver design/checklist](development/features/cmts-us-rx/design.md) tracks
+RX-01..09 separately; a section heading does not complete a stage's design.
 
-| Stage | Planned adapter file | Shared algorithm owner | Planned acceptance file |
-| --- | --- | --- | --- |
-| RX-01 | `crates/phy/src/receiver/framing.rs` | Accepted configuration; no hidden TX acquisition state. | `crates/phy/tests/rx_framing.rs` |
-| RX-02 | `crates/phy/src/receiver/symbols.rs` | Accepted geometry and indexed sample types. | `crates/phy/tests/rx_symbols.rs` |
-| RX-03 | `crates/phy/src/receiver/fft.rs` | `crates/phy/src/signal_processing/transform.rs` shared with TX-07. | `crates/phy/tests/transforms.rs` |
-| RX-04 | `crates/phy/src/receiver/channel_estimation.rs` | Pilot-derived estimate/correction uses configured expectations from `crates/phy/src/resources/pilots.rs` and `crates/phy/src/bit_processing/pilot_sequence.rs`; no injected response input. | `crates/phy/tests/channel_estimation.rs` |
-| RX-05 | `crates/phy/src/receiver/resources.rs` | `crates/phy/src/resources/grid.rs`, `crates/phy/src/resources/permutation.rs` shared with TX-01/05. | `crates/phy/tests/ofdma_framing.rs` |
-| RX-06 | `crates/phy/src/receiver/demapping.rs` | `crates/phy/src/signal_processing/qam.rs` shared with TX-04. | `crates/phy/tests/soft_demapping.rs` |
-| RX-07 | `crates/phy/src/receiver/derandomization.rs` | `crates/phy/src/bit_processing/randomizer.rs` shared with TX-03. | `crates/phy/tests/randomization.rs` |
-| RX-08 | `crates/phy/src/receiver/ldpc.rs` | `crates/ldpc/src/codec.rs` (reuse existing), with no BCH stage. | `crates/phy/tests/rx_ldpc.rs` |
-| RX-09 | `crates/phy/src/receiver/deframing.rs` | `crates/phy/src/grant/plan.rs`; source association remains outside RX. | `crates/phy/tests/deframing.rs` |
+CMTS-US-RX converts received upstream complex samples into decoded information
+decisions and explicit recovery outcomes. Its first planned experiment uses
+scheduled data, independently accepted grant/timing configuration and the unity
+channel. It does not acquire a generic preamble, process ranging/probing or
+implement a downstream PLC/NCP/BCH chain.
 
+**Planned code paths (repository-relative).**
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/receiver/mod.rs` | Create (planned) | Compose/register the nine stage adapters and their separate processing contexts. |
+| `crates/phy/src/receiver/result.rs` | Create (planned) | Owned decoded decisions, coordinates, validity and separate stage/codeword outcomes. |
+| `crates/phy/src/configuration/receiver.rs` | Create (planned) | Receiver-specific timing/confidence/iteration/retention policies and limits, composing accepted shared configuration. |
+| `crates/phy/tests/rx_pipeline.rs` | Create (planned) | Stage-order/identity, chunk/lifecycle and receiver-truth-boundary acceptance. |
+
+**Inputs and ownership.** Normal recovery accepts actual channel-output samples
+with their sample rate, absolute indices, stream/configuration identity and
+availability, plus an immutable receiver configuration. That configuration
+composes the accepted waveform geometry, synthetic grant/profile, resource/
+pilot/loading plan, PHY randomizer seed and independently configured timing.
+The PHY seed is legitimate receiver configuration; the PRBS15 source seed is
+independent comparison truth. Do not pass a whole simulation/channel settings
+object just because it also contains the receiver's required fields.
+
+Original payload bits, source-range ledger, TX carrier/sample snapshots,
+injected H, TX correction bank C, noise seed/power and input RxMER targets are
+not normal receiver inputs. Pilot processing estimates the effective C×H from
+received observations and configured pilot expectations. Channel distortion
+does not automatically retime or correct the receiver using simulator truth.
+Diagnostic comparisons may use truth after recovery, in a separate branch.
+
+**Result and lifecycle.** Rust owns all algorithms and validation. Return owned
+information decisions in grant/codeword coordinates, recovered coverage/gaps,
+stage availability and separate convergence, syndrome, shortening consistency
+and actual decoder-iteration outcomes. Preserve failed decisions with their
+status. Orchestration associates source ranges afterward; PRBS-RX compares
+original/recovered bits without feeding expected values back into decoding.
+
+Configuration/readiness is idle. Start freezes the receiver view; pause/resume
+preserves framing, pilot history, inverse-resource progress, randomizer and
+decoder state where accepted. Configuration changes apply to a new generation.
+Bound input/ready queues, retained samples/cells/LLRs, buffered symbols/codewords,
+iterations and run work before consumption. Do not buffer an entire arbitrary
+burst or fill unavailable input intervals with zeros. Cancellation/failure
+retains completed observations/decisions and explicit incomplete coverage.
+Detailed stage transactions and numeric budgets belong to RX-01..09 expansion.
+Future public Rust operations precede matching native Python/UI adapters.
+
+#### Receiver stage sequence
+
+Every overview/output label links to its local stage section. The sections below
+are explicit placeholders for detailed design, with proposed ownership already
+named. They preserve the existing nine-stage order.
 
 ```mermaid
 flowchart LR
-    C[Channel output samples] --> R1[RX-01 Burst framing and timing]
-    R1 --> R2[RX-02 CP removal and useful-symbol extraction]
-    R2 --> R3[RX-03 FFT]
-    R3 --> R4[RX-04 Pilot CH-EST-RX and equalization]
-    R4 --> R5[RX-05 Resource extraction and deinterleaving]
-    R5 --> R6[RX-06 Soft QAM demapping]
-    R6 --> R7[RX-07 PHY soft derandomization]
-    R7 --> R8[RX-08 Shortening restoration and LDPC decode]
-    R8 --> R9[RX-09 Payload deframing]
-    R9 --> V[Independent PRBS-RX comparison]
+    C[Channel output samples] --> R1
+    CFG[Accepted receiver configuration] -.-> R1
+    subgraph RECEIVER[CMTS-US-RX]
+        R1[RX-01 Burst framing and timing] --> R2[RX-02 Useful-symbol extraction]
+        R2 --> R3[RX-03 FFT]
+        R3 --> R4[RX-04 CH-EST-RX and equalization]
+        R4 --> R5[RX-05 Resources and inverse interleaving]
+        R5 --> R6[RX-06 Soft QAM demapping]
+        R6 --> R7[RX-07 Soft derandomization]
+        R7 --> R8[RX-08 Shortening restoration and LDPC]
+        R8 --> R9[RX-09 Information deframing]
+    end
+    R9 --> ASSOC[Independent source-range association]
+    ASSOC --> V[PRBS-RX comparison and results]
+    EXPECTED[Expected source only] -.-> V
 ```
 
 | Stage | Responsibility and inspectable result |
 | --- | --- |
-| RX-01: burst framing/timing | Accept received samples and configured grant/clock state; retain a bounded burst buffer and explicit validity. Initially use configured epoch, zero frequency offset and accepted ranging. Later acquisition/tracking derives corrections from received observations, not transmitter diagnostics. |
-| RX-02: useful-symbol extraction | Select the valid FFT interval and remove CP/extension overhead according to accepted upstream geometry; preserve raw and useful samples as different taps. Do not attempt to invert a transmit window by arbitrary pointwise division. |
-| RX-03: FFT | Transform received useful samples to the matching physical-bin grid and normalization. Retain raw received bins before correction. |
-| RX-04: Channel Estimation (CH-EST-RX) | Extract known pilot observations, estimate effective `C[k]H[k]` and correct carrier I/Q using that received estimate. Keep estimate, validity/coverage and corrected I/Q separate. Initially the estimated response should approach unity; blind synchronization and adaptive tracking are later extensions. |
-| RX-05: resources/inverse interleaving | Gather only the granted physical cells, preserve known-pilot/complementary-data roles, undo the upstream cell permutation and reconstruct the ordered loaded data cells. Do not turn excluded or absent carriers into fabricated payload. |
-| RX-06: soft demapping | Produce MSB-first natural-log `P(0)/P(1)` LLRs from equalized data/complementary-data I/Q using the selected cell constellation. Positive favors zero. Hard slicing is a diagnostic branch, never the soft decoder input. |
-| RX-07: soft derandomization | Regenerate the configured grant-seeded PHY randomizer and invert LLR signs where its bit is one. Restore encoded-codeword order and remove grant-only padding using the validated grant plan. |
-| RX-08: LDPC recovery | Restore omitted shortening coordinates as known-zero priors, invoke the selected upstream decoder, retain failed decisions/actual iterations and independently check syndrome/shortened-zero consistency. No BCH stage. |
-| RX-09: payload deframing | Remove only fill/padding identified by the accepted framing contract and return information bits in grant/codeword coordinates with status. The orchestration/comparison branch associates meaningful source ranges; the separate PRBS verifier measures bit errors/gaps without silently resynchronizing. |
+| [RX-01: burst framing/timing](#rx-01-burst-framing-and-timing) | Admit indexed received samples and configured burst timing; expose bounded framed intervals and validity. |
+| [RX-02: useful-symbol extraction](#rx-02-useful-symbol-extraction) | Select the configured FFT interval, preserving raw and useful sample references. |
+| [RX-03: FFT](#rx-03-fft) | Produce centered physical bins with the shared unitary convention, before correction. |
+| [RX-04: CH-EST-RX/equalization](#rx-04-channel-estimation-and-equalization) | Estimate effective C×H from received pilots and expose estimate/coverage/corrected I/Q separately. |
+| [RX-05: resources/inverse interleaving](#rx-05-resource-extraction-and-inverse-interleaving) | Recover ordered loaded cells/roles with the shared resource and inverse-visit plan. |
+| [RX-06: soft QAM demapping](#rx-06-soft-qam-demapping) | Produce MSB-first natural-log P(0)/P(1) LLRs; positive favors zero. |
+| [RX-07: soft derandomization](#rx-07-phy-soft-derandomization) | Regenerate the grant mask, reverse LLR signs and separate coded words from grant padding. |
+| [RX-08: LDPC recovery](#rx-08-shortening-restoration-and-ldpc-decoding) | Restore shortening, decode and retain separate decisions/convergence/checks/iterations. |
+| [RX-09: information deframing](#rx-09-information-deframing) | Remove only receiver-known fill and return information decisions/coverage in grant coordinates. |
+
+| Stage output | Retained identity and inspection |
+| --- | --- |
+| [RX-01 framed samples](#rx-01-burst-framing-and-timing) | Actual received intervals, timing basis and gaps; SA on contiguous available samples. |
+| [RX-02 useful samples](#rx-02-useful-symbol-extraction) | One contiguous useful window per symbol with its original sample indices; SA. |
+| [RX-03 physical bins](#rx-03-fft) | Raw received symbol/carrier I/Q, roles and transform convention; QAM. |
+| [RX-04 estimate/corrected cells](#rx-04-channel-estimation-and-equalization) | Received-pilot estimate, validity and corrected I/Q; response diagnostics and QAM. |
+| [RX-05 ordered cells](#rx-05-resource-extraction-and-inverse-interleaving) | Grant/block/cell coordinates and actual per-role loading; QAM. |
+| [RX-06 soft bits](#rx-06-soft-qam-demapping) | Cell bit positions, LLR sign/magnitude and confidence policy; soft-bit inspector. |
+| [RX-07 coded-word LLRs](#rx-07-phy-soft-derandomization) | Actual derandomized word coordinates, omitted shortening and removed pad counts; LLR inspector. |
+| [RX-08 decoded words](#rx-08-shortening-restoration-and-ldpc-decoding) | Actual decisions, code identity, iterations and independent check flags; FEC/bit inspection. |
+| [RX-09 information decisions](#rx-09-information-deframing) | Payload/fill accounting, recovered/missing coordinates and outcomes; independent verifier input. |
+
+The pipeline changes domain from time samples (RX-01/02) to physical/equalized/
+ordered cells (RX-03..05), soft bits (RX-06/07), and decoded information
+(RX-08/09). Bind every boundary to the same accepted run/configuration and
+grant/frame/symbol/codeword coordinates as applicable. Retain existing shared
+tap names; detailed sections add typed taps only for actual produced outputs.
+Sample arrays are not carrier QAM points, FFT bins are not SA waveforms, and
+failed/missing decisions do not become zero-error statistics.
 
 RX-05/06 may be fused if varying cell orders/loading are preserved exactly.
 Derandomization precedes LDPC decoding because the upstream randomizer follows
@@ -2880,6 +2947,179 @@ The receiver does not infer original source length from PRBS truth or strip
 arbitrary decoded values as padding. Start with continuous PRBS filling the
 accepted data capacity. Finite-file payload framing needs an explicit shared
 length/segmentation contract before it can promise recovered original bytes.
+
+Detailed expansion starts with RX-01. Each placeholder below states its scope
+and planned files; none adds a module or completes scientific acceptance.
+
+#### RX-01: Burst framing and timing
+
+[Return to RX stage index](#receiver-stage-sequence).
+
+Status: **placeholder; detailed architecture and implementation planned**.
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/receiver/framing.rs` | Create (planned) | Indexed input admission, configured burst framing and bounded buffering. |
+| `crates/phy/src/configuration/receiver.rs` | Create (planned) | Receiver-owned timing/limits and explicit configured-timing mode. |
+| `crates/phy/src/configuration/burst.rs` | Create (planned) | Shared scheduled-data origin/grant definition, with no channel-truth correction. |
+| `crates/phy/tests/rx_framing.rs` | Create (planned) | Independent origin/range, arbitrary chunk, gap and lifecycle cases. |
+
+Initially frame received samples using the receiver's accepted epoch and grant,
+assuming zero carrier/sample-clock offset. Preserve actual sample indices,
+unavailable ranges and incomplete bursts. Do not acquire a preamble, retime from
+channel delay settings or infer silence across gaps. Detailed buffering,
+completion, failure and acceptance contracts remain ARCH-RX-01 work.
+
+#### RX-02: Useful-symbol extraction
+
+[Return to RX stage index](#receiver-stage-sequence).
+
+Status: **placeholder; detailed architecture and implementation planned**.
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/receiver/symbols.rs` | Create (planned) | Select complete useful receive windows, with explicit sample origin/validity. |
+| `crates/phy/src/configuration/waveform.rs` | Create (planned) | Same accepted upstream N/clock/CP/RP geometry as TX-07/08. |
+| `crates/phy/src/types/samples.rs` | Create (planned) | Shared indexed time blocks; raw/useful intervals retain distinct references. |
+| `crates/phy/tests/rx_symbols.rs` | Create (planned) | Independent useful-window offsets, truncation and CP/overlap boundaries. |
+
+Extract the configured N-sample interval without inserting samples or dividing
+by the transmit window. Keep each useful interval independent for SA; stripping
+CP does not make adjacent useful windows contiguous in absolute time.
+ARCH-RX-02 will define exact interval admission and partial/error handling.
+
+#### RX-03: FFT
+
+[Return to RX stage index](#receiver-stage-sequence).
+
+Status: **placeholder; detailed architecture and implementation planned**.
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/receiver/fft.rs` | Create (planned) | Admit one useful receive window and return raw physical bins/metadata. |
+| `crates/phy/src/signal_processing/transform.rs` | Create (planned) | Same centered unitary forward/inverse numerical owner as TX-07. |
+| `crates/phy/tests/transforms.rs` | Create (planned) | Independent forward convention, tone/impulse, energy and paired-transform checks. |
+
+Apply the matching forward transform to actual received useful samples, retaining
+full physical-bin order and raw I/Q before correction. Reuse TX-07's numerical
+convention with receiver-owned admission/state. ARCH-RX-03 expands metadata,
+failure/bounds and independent forward acceptance; a round trip alone is insufficient.
+
+#### RX-04: Channel estimation and equalization
+
+[Return to RX stage index](#receiver-stage-sequence).
+
+Status: **placeholder; detailed architecture and implementation planned**.
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/receiver/channel_estimation.rs` | Create (planned) | Compose received-pilot estimation, coverage and correction; keep outcomes distinct. |
+| `crates/phy/src/signal_processing/channel_estimation.rs` | Create (planned) | Pure received-pilot estimate/reliability numerical owner. |
+| `crates/phy/src/signal_processing/equalization.rs` | Create (planned) | Complex correction with explicit validity/null/failure behavior. |
+| `crates/phy/src/resources/pilots.rs` | Create (planned) | Same physical role/amplitude expectations as TX-05. |
+| `crates/phy/src/bit_processing/pilot_sequence.rs` | Create (planned) | Shared known pilot sequence; receiver uses its own context. |
+| `crates/phy/tests/channel_estimation.rs` | Create (planned) | Independent pilot sign/gain, coverage, estimate/correction and truth-isolation cases. |
+
+Estimate effective C×H from received known pilots and locally generated
+expectations. Preserve raw observations, estimate, coverage/reliability and
+corrected cells separately. Never divide by injected H/C or relabel an input
+RxMER target as receiver noise. ARCH-RX-04 must define interpolation/history,
+pilot boosting, weak/null response and confidence before implementation.
+
+#### RX-05: Resource extraction and inverse interleaving
+
+[Return to RX stage index](#receiver-stage-sequence).
+
+Status: **placeholder; detailed architecture and implementation planned**.
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/receiver/resources.rs` | Create (planned) | Recover granted loaded cells and logical inverse-visit identities. |
+| `crates/phy/src/resources/grid.rs` | Create (planned) | Same physical grid, roles/loading and coverage plan as TX-01/05. |
+| `crates/phy/src/resources/permutation.rs` | Create (planned) | Shared joint visit/address sequence, applied in the receiver's inverse direction. |
+| `crates/phy/src/resources/interleaving_blocks.rs` | Create (planned) | Same bounded block partition as TX-05. |
+| `crates/phy/tests/ofdma_framing.rs` | Create (planned) | Independent physical/logical association, inverse ordering and conservation cases. |
+
+Gather granted data and data-bearing complementary cells with their exact
+loading. Known pilots, excluded carriers and unavailable resources do not become
+payload. ARCH-RX-05 defines the inverse mapping across blocks/frames and its
+relationship to soft demapping; do not substitute a generic cell-only shuffle.
+
+#### RX-06: Soft QAM demapping
+
+[Return to RX stage index](#receiver-stage-sequence).
+
+Status: **placeholder; detailed architecture and implementation planned**.
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/receiver/demapping.rs` | Create (planned) | Admit loaded corrected cells and expose ordered soft bits/confidence metadata. |
+| `crates/phy/src/signal_processing/demapping.rs` | Create (planned) | Shared soft-metric numerical owner using exact label/scale references. |
+| `crates/phy/src/signal_processing/qam.rs` | Create (planned) | Same constellation lookup/reference owner as TX-04. |
+| `crates/phy/src/signal_processing/qam_tables.rs` | Create (planned) | Same source-indexed constellation labels/scales as TX-04. |
+| `crates/phy/tests/soft_demapping.rs` | Create (planned) | Independent labels, MSB positions, LLR sign/scale and finite/noiseless policy cases. |
+
+Produce natural-log P(0)/P(1) LLRs, positive for zero, in each cell's MSB-first
+order. Use the selected role/loading and explicit confidence policy; finite
+reference confidence is not a noise measurement. Hard decisions are diagnostics,
+not a replacement for soft decoding. ARCH-RX-06 defines metrics, clipping/error
+policy and supported mappings without importing channel noise truth.
+
+#### RX-07: PHY soft derandomization
+
+[Return to RX stage index](#receiver-stage-sequence).
+
+Status: **placeholder; detailed architecture and implementation planned**.
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/receiver/derandomization.rs` | Create (planned) | Grant/offset context, LLR mask reversal, codeword ordering and pad separation. |
+| `crates/phy/src/bit_processing/randomizer.rs` | Create (planned) | Same grant-seeded PHY mask algorithm as TX-03, with independent RX state. |
+| `crates/phy/src/grant/plan.rs` | Create (planned) | Shared retained-word/shortening/grant-pad lengths and order. |
+| `crates/phy/tests/randomization.rs` | Create (planned) | Independent soft-sign inverse, reset/offset/pad and chunk-state cases. |
+
+Regenerate the accepted grant mask and reverse the corresponding LLR signs
+before LDPC. Preserve magnitudes and coded-bit identity, keeping grant padding
+outside codeword decode. Never use the PRBS15 source seed as the PHY mask.
+ARCH-RX-07 expands precise reset/clock/length and failure handling from TX-03.
+
+#### RX-08: Shortening restoration and LDPC decoding
+
+[Return to RX stage index](#receiver-stage-sequence).
+
+Status: **placeholder; detailed architecture and integration planned**.
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/receiver/ldpc.rs` | Create (planned) | Admit ordered retained-word LLRs, restore known-zero shortening and adapt codec outcomes. |
+| `crates/ldpc/src/codec.rs` | Reuse (existing) | Existing upstream standalone codec; independent of QAM/channel/grant orchestration. |
+| `crates/phy/src/grant/plan.rs` | Create (planned) | Same family/length/shortening descriptors used independently by both endpoints. |
+| `crates/phy/tests/rx_ldpc.rs` | Create (planned) | Receiver/codec length/order/known-zero and separate outcome integration cases. |
+
+Use the selected upstream code and exact shortening positions, with no BCH or
+ordinary-data puncturing. Keep convergence, syndrome, known-zero consistency,
+decoded decisions and iterations distinct, including failure outcomes.
+ARCH-RX-08 and LDPC-01/02 remain unchecked; the documented matrix-source issue
+is unresolved and existing codec tests do not establish receiver acceptance.
+
+#### RX-09: Information deframing
+
+[Return to RX stage index](#receiver-stage-sequence).
+
+Status: **placeholder; detailed architecture and implementation planned**.
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/receiver/deframing.rs` | Create (planned) | Receiver-known information/fill accounting and explicit partial information decisions. |
+| `crates/phy/src/grant/plan.rs` | Create (planned) | Shared codeword/information-role plan; no original-source ledger. |
+| `crates/phy/src/receiver/result.rs` | Create (planned) | Shared owned recovery outcome/coverage model for orchestration and adapters. |
+| `crates/phy/tests/deframing.rs` | Create (planned) | Independent fill/length accounting, failed/missing words and no truth-based trimming. |
+
+Return information decisions in grant/codeword coordinates, removing only fill
+identified by receiver-known framing. Do not strip runs of decoded ones/zeros
+or infer original-file length from source truth. Preserve missing/failed coverage;
+source-range association, BER and PRBS comparison belong outside this block.
+ARCH-RX-09 defines the precise framing/result contract before implementation.
 
 ### Shared QAM Analyzer and Spectrum Analyzer
 

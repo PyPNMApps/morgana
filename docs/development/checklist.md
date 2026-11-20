@@ -58,6 +58,19 @@ See [architecture](../architecture.md) and [foundation design](features/foundati
   reference/pilot power, seeded draw order and independent acceptance; architecture only.
 - [x] ARCH-CH-05: Define integer delay and constant phase/CFO, emitted-clock
   state, length/drain rules and independent acceptance; architecture only.
+- [x] ARCH-RX-00: Define CMTS-US-RX block inputs/results, nine-stage processing
+  chart, lifecycle and inspection overview; see [receiver design](features/cmts-us-rx/design.md).
+- [x] ARCH-RX-NAV/PATH: Link all RX overview/output labels to stage sections,
+  with backlinks, planned code/test paths and explicit existing codec reuse.
+- [ ] ARCH-RX-01: Expand burst framing/timing and bounded indexed-sample admission.
+- [ ] ARCH-RX-02: Expand useful-window selection, CP/overlap and validity.
+- [ ] ARCH-RX-03: Expand forward transform admission, metadata and independent vectors.
+- [ ] ARCH-RX-04: Expand pilot estimate/correction, coverage, reliability and nulls.
+- [ ] ARCH-RX-05: Expand exact resource extraction and inverse joint visits.
+- [ ] ARCH-RX-06: Expand MSB-first LLR metrics, labels/scales and confidence policy.
+- [ ] ARCH-RX-07: Expand soft grant mask reversal, word ordering and pad separation.
+- [ ] ARCH-RX-08: Expand shortening/codec integration and separate decode outcomes.
+- [ ] ARCH-RX-09: Expand receiver-known deframing and partial information results.
 - [ ] CH-EXT-02: Detail captured-H reconstruction, fractional timing/clock error,
   stochastic phase noise and broader RxMER/response composition before support.
 - [ ] RXMER-FORMAT-01: Verify upstream format/type/units/null handling and lawful

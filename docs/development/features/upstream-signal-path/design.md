@@ -36,6 +36,11 @@ RxMER input uses the reference selection/power-playback workflow
 with upstream CMTS/user/probe semantics, not downstream DPD/file assumptions.
 The first waveform milestone still requires exact unity without measurements.
 
+The [CMTS-US-RX design](../cmts-us-rx/design.md) defines the receiver block,
+chart, nine linked stage sections, output inspections and per-stage file paths.
+RX-01..09 remain explicit detailed-design placeholders, starting with configured
+burst timing; receiver implementation and source-matrix acceptance remain pending.
+
 Read-only reference inspection: MERLIN architecture, source/PRBS implementation,
 waveform spectrum estimator and QAM/SA instrument adapters at revision
 `096d5a476194d4f2e016863d723b225257bb6037`. Reuse its workbench organization,
