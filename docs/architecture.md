@@ -18,6 +18,8 @@ contains requirements, reuse assessments, evidence, API proposal and milestones.
 - [RxMER](#rxmer-input)
 - [US-Pre-EQ](#us-pre-eq-input)
 
+[High-level Rust and Python APIs](#high-level-rust-and-python-apis)
+
 ## Checkpoint and target overview
 
 | Current owner | Responsibility | Status |
@@ -62,6 +64,8 @@ interleaving, pilot/preamble placement, waveform generation/acquisition, Pre-Eq
 capture import, impairment pipeline, RxMER and full experiment reports are planned.
 Python is a future native wrapper of the same public Rust API; all calculations
 and validation remain Rust. No saved-workbench format or stable C ABI exists.
+The separate [API architecture](#high-level-rust-and-python-apis) defines paired
+interface stubs, placement, lifecycle and delivery gates; it adds no PHY stage.
 
 See the [official checklist](development/checklist.md) for incomplete acceptance,
 especially LDPC-01's source transcription issue. Internal tests share the
@@ -125,6 +129,7 @@ validation and bounded orchestration stay Rust; adapters present owned results.
 | `crates/phy/src/simulation/mod.rs` | Create (planned) | Run lifecycle, source associations and independent comparisons. |
 | `crates/phy/tests/` | Create (planned) | Integration/acceptance files named in each block/stage below. |
 | `crates/morgana/src/lib.rs`, `crates/morgana/src/report.rs` | Extend (existing) | Preserve the FEC API while exposing reviewed experiment operations and versioned results. |
+| `crates/morgana/src/api/mod.rs` | Create (planned) | High-level typed session surface; leaf modules and paired stubs are defined in the [API architecture](#high-level-rust-and-python-apis). |
 | `crates/cli/src/args.rs`, `crates/cli/src/command.rs` | Extend (existing) | Expose accepted facade inputs/results after the Rust capability exists. |
 | `bindings/python/src/lib.rs`, `bindings/python/tests/test_experiment.py` | Create (planned; later API milestone) | Native adapter and Rust/Python contract-parity checks; no Python science. |
 
@@ -4180,3 +4185,205 @@ Figure 5/p50 was checked in the original local PDF; remaining detailed equations
 pilot tables and permutations require their implementation-time PDF checks.
 PHY4.0 I07 §7.2.4 and §7.3.4 delegation was checked in pinned extracted text;
 FDX/FDD extensions remain separate applicability work, not implied full support.
+
+## High-level Rust and Python APIs
+
+Status: separate architecture and paired interface stubs only. The existing
+`Morgana::{new,run_ldpc}`, `LdpcCodec` re-exports and schema-1 `FecReport` are
+implemented. The proposed `morgana::api` module, `Simulation` session, native
+Python extension and Python type stubs do not exist. No new API is callable.
+See the [feature design/checklist](development/features/public-api/design.md).
+
+### API ownership and dependency flow
+
+The high-level surface composes the existing stage architecture rather than
+adding processing stages. Both language APIs support a standalone headless
+library: no CLI process, Qt objects, source checkout or Python sidecar is needed
+by a Rust consumer. Python is an optional native adapter around Rust.
+
+```mermaid
+flowchart TB
+    RUST[Rust caller] --> API[Public Rust API: morgana::api]
+    PY[Python caller: import morgana] --> BIND[Optional native Python adapter]
+    BIND --> API
+    CLI[CLI and future presentation adapters] --> API
+    API --> INPUT[Shared Rust input admission and provenance]
+    API --> CMTS[Shared CMTS configuration and TX/RX projections]
+    API --> SIM[Shared Rust simulation orchestration]
+    SIM --> PATH[PRBS / CM-US-TX / CH-SIM / CMTS-US-RX]
+    SIM --> METRIC[Independent source comparison and QAM/SA collectors]
+    PATH --> OUT[Owned typed results and bounded observations]
+    METRIC --> OUT
+    OUT --> API
+```
+
+Linked owners: [US Configuration](#cmts-configuration-us-configuration-json),
+[PNM RxMER](#rxmer-input), [PNM US-Pre-EQ](#us-pre-eq-input),
+[PRBS](#prbs-block-architecture), [CM-US-TX](#cm-us-tx-block-architecture),
+[CH-SIM](#channel-simulator-unity-stub-first),
+[CMTS-US-RX](#cmts-us-rx-block-architecture),
+[QAM/SA](#shared-qam-analyzer-and-spectrum-analyzer) and
+[results](#ownership-results-and-acceptance). Receiver views still exclude
+simulator truth; public result access does not feed truth back to RX.
+
+Rust owns parsing/materialization, units, profile inventory, measurement
+association, validation, preparation, resource limits, lifecycle and all science.
+Python converts checked arguments and returned snapshots, maps errors and manages
+interpreter interaction. JSON remains one input/export adapter; typed Rust/Python
+models are first-class contracts. Filesystem convenience methods read bounded
+bytes and call the same Rust loaders; the engine accepts typed domain inputs.
+
+### API modules and planned stub paths
+
+Every path is repository-relative. Create entries are planned placement, with
+no source files, manifests or dependencies added during this architecture task.
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/morgana/src/lib.rs` | Extend (existing) | Export `pub mod api`; preserve existing `Morgana`, LDPC re-exports and FEC behavior. |
+| `crates/morgana/src/report.rs` | Reuse (existing) | Schema-1 FEC snapshots; keep separate from future experiment documents. |
+| `crates/morgana/src/api/mod.rs` | Create (planned) | Document/re-export the high-level public contract. |
+| `crates/morgana/src/api/simulation.rs` | Create (planned) | Idle session, atomic configuration/selection and engine dispatch. |
+| `crates/morgana/src/api/configuration.rs` | Create (planned) | Public configuration, run/observation limits, playback requests and readiness projections; reuse PHY validators. |
+| `crates/morgana/src/api/inputs.rs` | Create (planned) | Named bounded input values, typed retained IDs and inventory/provenance projections; delegate decoding to shared input modules. |
+| `crates/morgana/src/api/units.rs` | Create (planned) | Checked units/IDs and public re-exports of canonical PHY types; no duplicate numerical definitions. |
+| `crates/morgana/src/api/error.rs` | Create (planned) | `ApiError`, `ErrorCode`, `ApiResult` and preserved lower-level diagnostic mapping. |
+| `crates/morgana/src/api/control.rs` | Create (planned) | Public shared Rust run-control/progress handles; delegate lifecycle to simulation. |
+| `crates/morgana/src/api/reports.rs` | Create (planned) | Owned experiment/batch entries, outcomes, provenance and bounded QAM/SA access. |
+| `crates/morgana/src/inputs/mod.rs`, `crates/morgana/src/inputs/us_configuration.rs`, `crates/morgana/src/inputs/rxmer.rs`, `crates/morgana/src/inputs/pre_eq.rs` | Create (already planned) | Shared Rust decoding; API input types compose these owners. |
+| `crates/phy/src/simulation/mod.rs`, `crates/phy/src/simulation/job.rs` | Create (already planned) | Sole scientific run/lifecycle owner; API control is an adapter to it. |
+| `bindings/python/Cargo.toml`, `bindings/python/pyproject.toml` | Create (planned) | Separate opt-in PyO3/maturin build, own lockfile when introduced; depend on `morgana`, independent of Qt/CLI. |
+| `bindings/python/src/lib.rs` | Create (planned) | Native extension registration, version and public error mapping. |
+| `bindings/python/src/simulation.rs`, `inputs.rs`, `configuration.rs`, `control.rs`, `reports.rs`, `units.rs` | Create (planned) | Leaf files under `bindings/python/src/`; conversions and dispatch matching the Rust module owners. |
+| `bindings/python/python/morgana/__init__.py`, `__init__.pyi`, `py.typed` | Create (planned) | Thin package exports, typed signature declarations and typing marker; no scientific Python implementation. |
+| `crates/morgana/tests/public_api.rs`, `api_inputs.rs`, `api_lifecycle.rs`, `api_reports.rs` | Create (planned) | Rust contract, atomic state, bounded lifecycle and result ownership checks. |
+| `bindings/python/tests/test_api.py`, `test_experiment.py`, `test_parity.py`, `test_lifecycle.py`, `test_typing.py` | Create (planned) | Native exports, execution, Rust/Python parity, concurrency and declaration checks. |
+| `examples/rust/high_level.rs`, `examples/python/high_level.py` | Create (planned) | Paired configure/preview/run/report examples; add package registration and example indexes when executable. |
+| `docs/user/api/README.md`, `docs/user/python/README.md` | Create (planned) | Maintained language-specific guides once supported. |
+| `Cargo.toml`, `crates/morgana/Cargo.toml`, `scripts/validate.sh` | Extend (existing, later) | Register API/examples and separate native-binding checks when implemented; keep Rust-only validation independent. |
+
+The Python import name is proposed as `morgana`, backed by native
+`morgana._native`; the separate adapter Rust package is proposed as
+`morgana-python`. Distribution name availability, dependency/tool versions,
+interpreter/platform support and wheel publication are future packaging decisions,
+not inferred from another toolkit. No stable C ABI or exposed Rust memory layout
+is promised. Keep application, configuration schema and report versions separate.
+
+### Paired Rust and Python interface stubs
+
+The signatures below are **design declarations**, not compilable Rust, runnable
+Python or installed `.pyi` files. All types and methods in this table are proposed.
+`ApiResult<T>` means typed Rust failure; Python raises `ApiError` with matching
+`code`, `message` and structured details, returning ordinary values on success.
+Declarations will be finalized against implemented domain contracts before export.
+
+| Rust declaration on `Simulation` | Python declaration on `Simulation` | Contract |
+| --- | --- | --- |
+| `new() -> Self` | `__init__(self) -> None` | Empty idle one-CM/one-channel session; no allocation of waveform work. |
+| `load_us_configuration(&mut self, input: NamedInput) -> ApiResult<ConfigurationInventory>` | `load_us_configuration(self, input: NamedInput) -> ConfigurationInventory` | Retain bounded original bytes/provenance and inspect all presets through Rust; no automatic run. |
+| `configuration_inventory(&self) -> ConfigurationInventory` | `configuration_inventory(self) -> ConfigurationInventory` | Owned inventory, including unsupported entries and readiness reasons; empty before load. |
+| `select_configuration(&mut self, id: ConfigurationId) -> ApiResult<()>` | `select_configuration(self, id: ConfigurationId) -> None` | Atomically select a valid preset and recheck retained input compatibility. |
+| `configure(&mut self, config: ExperimentConfig) -> ApiResult<()>` | `configure(self, config: ExperimentConfig) -> None` | Accept a typed synthetic/reference request through the same validators; preserves state on failure. |
+| `add_rxmer(&mut self, input: RxMerInput) -> ApiResult<RxMerId>` | `add_rxmer(self, input: RxMerInput) -> RxMerId` | One typed capture; repeated calls retain multiple captures without guessed pairing. |
+| `add_pre_eq(&mut self, input: PreEqInput) -> ApiResult<PreEqId>` | `add_pre_eq(self, input: PreEqInput) -> PreEqId` | Admit a corrective bank with unchanged provenance; never reinterpret as injected H. |
+| `add_pre_eq_update(&mut self, input: PreEqUpdateInput) -> ApiResult<PreEqUpdateId>` | `add_pre_eq_update(self, input: PreEqUpdateInput) -> PreEqUpdateId` | Retain an explicit update identity/order/time; validate missing/duplicate/ambiguous references. |
+| `set_options(&mut self, options: ExperimentOptions) -> ApiResult<()>` | `set_options(self, options: ExperimentOptions) -> None` | Set bounded run, source, channel, receiver, observation and single/multi playback policies. |
+| `preview(&self) -> ApiResult<ExperimentPreview>` | `preview(self) -> ExperimentPreview` | Pure readiness, resolved selection/association and capacity/resource plan; no engine execution. |
+| `run(&mut self) -> ApiResult<BatchReport>` | `run(self) -> BatchReport` | Explicit bounded blocking execution using a frozen accepted snapshot. |
+| `run_with_control(&mut self, control: &RunControl) -> ApiResult<BatchReport>` | `run_with_control(self, control: RunControl) -> BatchReport` | Same engine with shared cooperative cancellation and bounded progress access. |
+
+Companion planned declarations:
+
+| Rust | Python | Shared meaning |
+| --- | --- | --- |
+| `NamedInput::new(name: String, bytes: Vec<u8>) -> ApiResult<NamedInput>` | `NamedInput(name: str, data: bytes)` | Owned bounded input and descriptive name; no path interpreted by the engine. |
+| `RxMerInput::from_bytes(input: NamedInput) -> ApiResult<Self>` | `RxMerInput.from_bytes(input: NamedInput) -> RxMerInput` | Shared decoded/capture admission only after upstream format verification. |
+| `PreEqInput::from_bytes(input: NamedInput) -> ApiResult<Self>` | `PreEqInput.from_bytes(input: NamedInput) -> PreEqInput` | Same source-format gate for corrective banks. |
+| `PreEqUpdateInput::from_bytes(input: NamedInput) -> ApiResult<Self>` | `PreEqUpdateInput.from_bytes(input: NamedInput) -> PreEqUpdateInput` | Same source-format gate for bank/update references. |
+| `RunControl::new() -> Self` / `cancel(&self) -> ()` | `RunControl()` / `cancel(self) -> None` | Shared cooperative stop token; no forced thread termination. |
+| `RunControl::progress(&self) -> ProgressSnapshot` | `progress(self) -> ProgressSnapshot` | Owned bounded current snapshot, polled independently of a busy session. |
+| `BatchReport::to_json(&self) -> ApiResult<String>` | `to_json(self) -> str` | Versioned export of Rust results; not a saved experiment or replacement for typed access. |
+| `BatchReport::qam(&self, query: QamQuery) -> ApiResult<QamSnapshot>` | `qam(self, query: QamQuery) -> QamSnapshot` | Bounded access to retained selected tap/cell observations, never reruns simulation. |
+| `BatchReport::spectrum(&self, query: SpectrumQuery) -> ApiResult<SpectrumSnapshot>` | `spectrum(self, query: SpectrumQuery) -> SpectrumSnapshot` | Shared Rust SA calculations over retained samples; unavailable taps remain unavailable. |
+
+`ExperimentConfig` composes typed US configuration, source/grant, channel,
+receiver and execution requests; it does not duplicate their PHY definitions.
+`ExperimentOptions` covers runtime policies, not a second mutable configuration
+authority. `configure` replaces the accepted configuration transactionally;
+`set_options` changes only policy. Typed synthetic measurement constructors will
+share the measurement models and validation, without requiring a binary decoder.
+
+One input is a single-shot case; repeated admission plus an explicit existing
+[RxMER](#rxmer-input)/[Pre-EQ](#us-pre-eq-input) policy defines a multi-input run.
+Do not silently form a Cartesian product of captures, presets or update banks.
+Preview identifies selected/unused inputs, effective update boundaries and any
+unresolved association. A preset inventory is not an automatic multi-preset job.
+IDs belong to the retaining session, survive unrelated additions, and reject
+unknown/cross-session references. Replacing a document invalidates its old IDs
+explicitly; a failed replacement changes neither accepted state nor IDs.
+
+### API lifecycle, errors and result contracts
+
+Loading, construction, configuration, selection and preview stay idle. Failed
+admission preserves accepted inputs/options. A run freezes a validated plan;
+configuration changes while running return Busy. Rust requires exclusive mutable
+session access. Python serializes access without holding its session lock through
+native execution, exposes Busy for competing calls and restores its session on
+every exit. Separate sessions can execute independently within their own limits.
+
+Rust bounds bytes, capture count, expanded resources, samples, observations,
+iterations, duration and retained history before work/allocation. Existing input
+budgets remain applicable; final job-wide cumulative budgets must be finalized
+before implementation. Cancellation is checked at documented stage quanta and
+between indivisible LDPC calls. Preserve completed trials and explicit incomplete/
+not-started entries. Progress is a bounded Rust snapshot; no Python callback runs
+inside a core worker or while core locks are held. Python releases the interpreter
+lock for long work; signal handling requests cooperative cancellation and returns
+the partial report under the documented native wrapper policy.
+
+Pause/resume signatures are reserved until the engine defines safe boundaries,
+frozen PRBS/randomizer/interleaver/Pre-EQ/RNG state, paused-time accounting and
+stop-from-paused behavior. They remain unavailable before that lifecycle contract
+and native tests exist. No Python-specific scheduler or polling DSP is introduced.
+
+Proposed error categories: InvalidInput, MissingSetting, UnsupportedFormat,
+UnsupportedVersion, UnsupportedCapability, InvalidIdentifier, IncompatibleGrid,
+AssociationFailed, ResourceLimit, Busy, Io and Engine. Domain errors preserve
+structured context/field paths and lower-level causes. Negative/overflowing
+Python integers and invalid buffers are checked before Rust conversion; native
+Python argument-type errors may use TypeError/OverflowError. Do not parse error
+messages or turn scientific nonconvergence into a loading exception.
+
+Reports independently own configuration/provenance and completed/partial results,
+and remain valid after later calls or session destruction. Keep decoder convergence,
+syndrome, shortened-zero consistency, recovered coverage and independent source
+comparison distinct. Preserve absent samples/null measurements, seeds, original
+hashes/timestamps/grids and explicit zero-error/unbounded metric states. Copy
+conversion is the default; any future zero-copy view needs a proven lifetime and
+layout contract. Optional values are `Option<T>` in Rust and `T | None` in Python.
+
+The existing FEC report schema remains unchanged. Future experiment export and
+US Configuration versions are distinct; no saved-workbench loader is implied.
+If one is introduced, decoding/generated recipes and all supported settings must
+load and run through both language APIs with migration or structured rejection.
+
+### API delivery and validation gates
+
+Deliver in order: paired architecture → approved typed Rust session/input/error
+foundation → source-verified waveform prerequisites → experiment execution/results
+and controls → optional native Python wrapper and real `.pyi` exports → paired
+examples/guides and native parity. An early FEC wrapper may expose only working
+FEC operations; it must not advertise an OFDMA session as ready.
+
+Rust acceptance covers idle loading, atomic rejection, inventory/selection,
+single/multi association, invalid units/IDs/nulls, limits, owned results and
+bounded cancellation. Independently executed native Python runs must match Rust
+on resolved settings, seeds, provenance, statuses, completed word outcomes and
+partial coverage, with declared tolerances for numerical arrays. Exercise
+conversion failures, lock release, Busy, cancellation, result lifetimes and actual
+`.pyi`/extension export agreement. Mock wrappers do not establish parity.
+
+Keep a Rust-only build/test path without Python/PyO3/Qt, and a separate native
+binding build/import/test gate when the adapter exists. Existing workspace tests
+validate the checkpoint, not these proposed contracts. Implementation, native
+runtime, packaging and publication remain unchecked in the official checklist.

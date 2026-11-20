@@ -7,6 +7,12 @@ resource limits, cancellation and outputs. Enumerate promised consumers (library
 CLI, GUI, language bindings). Keep shared validation in one owner and adapters thin.
 Use stable error categories with details rather than matching human error strings.
 
+For a Rust library with a native Python wrapper, define both language signatures
+and planned implementation/type-stub/test paths together. Keep proposed declarations
+distinct from implemented exports. Bind working Rust operations; Python performs
+checked conversions and exception mapping. Verify type stubs against the actual
+extension and run shared fixtures through both consumers before claiming parity.
+
 Example: load_document(bytes, limits) returns an idle validated session; run(session,
 options) starts explicit work. An adapter cannot replace missing inputs with guessed
 values. If a recipe needs reconstruction, that operation belongs in the shared core.

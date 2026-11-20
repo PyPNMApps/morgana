@@ -140,7 +140,19 @@ See [architecture](../architecture.md) and [foundation design](features/foundati
 - [ ] ARCH-RANGING-01: Detail initial/fine-ranging preambles, distinct probing
   waveforms and matching RX acquisition after the scheduled-data unity loop;
   keep these modes unsupported until implemented and validated.
-- [ ] API-01: Complete experiment reports and matching native Python wrapper.
+- [x] ARCH-API-01: Review the reference high-level Rust/native Python structure;
+  define a separate [API architecture](../architecture.md#high-level-rust-and-python-apis),
+  paired design stubs, planned code/test/type-stub paths and local skill rules.
+- [ ] API-RUST/INPUT-01: Implement approved shared Rust session/configuration,
+  inventory, validated inputs and preview while preserving the existing FEC API.
+- [ ] API-RUN-01: Expose bounded execution, owned reports, progress/cancellation
+  and QAM/SA after source-verified waveform prerequisites.
+- [ ] API-PY/STUB-01: Implement optional native Python dispatch plus matching
+  `.pyi`/`py.typed`; keep core-only builds independent of binding dependencies.
+- [ ] API-PARITY/DOCS-01: Validate real native Rust/Python parity, lifecycle,
+  errors and ownership; deliver runnable paired examples and maintained guides.
+- [ ] API-01: Complete all high-level Rust and native Python delivery gates in
+  the [API feature checklist](features/public-api/design.md#dependency-ordered-checklist).
 
 At each completion/commit-msg review, reconcile this checklist, architecture,
 feature records and actual validation evidence. No item implies authorization to

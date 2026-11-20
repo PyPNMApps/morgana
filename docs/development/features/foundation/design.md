@@ -140,11 +140,13 @@ mutable codecs own decoder scratch space and are not concurrently shared.
 Rust errors have typed categories, never console-driven library failures.
 JSON report schema starts at 1 and is not a saved workbench contract.
 
-Proposed future facade: `Morgana::configure(ExperimentConfig)?.run()?`, with
-typed channel, burst profile, synthetic grant, ranging, pre-equalization and
-limits. File parsing stays in adapters. Future Python wraps the same operations
-using PyO3/maturin, maps errors to exceptions, releases the GIL and performs no
-scientific calculations. No waveform or Python method is claimed implemented.
+The original future facade sketch is superseded by the separate
+[high-level Rust/Python architecture](../../../architecture.md#high-level-rust-and-python-apis):
+proposed `morgana::api::Simulation` exposes typed configuration, preview and run,
+with a matching optional native Python wrapper. Preserve `Morgana::new` and
+`run_ldpc` rather than repurposing their FEC contract. The API section owns paired
+signature stubs, concrete paths and delivery gates. No waveform or Python method
+is claimed implemented; parsing, validation and scientific work remain shared Rust.
 
 ## PHY-01 onward: Dependency-ordered plan
 

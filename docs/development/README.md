@@ -31,6 +31,9 @@
   and [receiver design/checklist](features/cmts-us-rx/design.md)
 - [Generic OFDMA JSON design/checklist](features/us-configuration-json/design.md)
   and [MULPI coverage plan](features/us-configuration-json/coverage.md)
+- [High-level Rust and Python API architecture](../architecture.md#high-level-rust-and-python-apis),
+  [paired interface stubs](../architecture.md#paired-rust-and-python-interface-stubs)
+  and [API design/checklist](features/public-api/design.md)
 - [Official checklist](checklist.md)
 - [Foundation design and reuse/specification assessments](features/foundation/design.md)
 - [Checkpoint validation](features/foundation/validation.md)

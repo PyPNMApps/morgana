@@ -10,6 +10,9 @@ Use [api-contracts](../api-contracts/SKILL.md),
 [scientific-testing](../scientific-testing/SKILL.md). Read the current
 [architecture](../../docs/architecture.md) and
 [API proposal](../../docs/development/features/foundation/design.md#foundation-03-workspace-and-public-api).
+The separate [Rust/Python architecture](../../docs/architecture.md#high-level-rust-and-python-apis)
+owns the planned high-level surface. Read the
+[paired API procedure](references/paired-api.md) when defining or extending it.
 
 The current public facade lives in `crates/morgana`; standalone FEC belongs in
 `crates/ldpc`. Rust owns algorithms, validation and result schemas. CLI and future
@@ -44,3 +47,10 @@ both consumers with a bounded deterministic run; manual conversion is not parity
 Acceptance covers valid/invalid boundaries, units, owned results surviving later
 calls, Rust-only independence and actual wrapper parity when a wrapper exists.
 Current FEC API support does not imply full OFDMA experiment support or a stable C ABI.
+
+Keep a paired Rust/Python operation inventory with exact proposed signatures,
+model/error mapping, implementation/test paths and support status. Design stubs
+belong in architecture during planning; do not add empty Cargo members, callable
+no-op implementations or importable Python packages to suggest readiness.
+When implementation is authorized, expose working Rust behavior before binding
+it, and synchronize Python type declarations with the actual native extension.

@@ -25,6 +25,6 @@ Read only applicable skills. Source/adaptation records belong in the
 | [docsis-phy-4-0-i07](docsis-phy-4-0-i07/SKILL.md) | Explicit FDD/FDX requirements and PHY3.1 delegation |
 | [docsis-signal-processing](docsis-signal-processing/SKILL.md) | Rust upstream scientific ownership and reference planes |
 | [scientific-testing](scientific-testing/SKILL.md) | DOCSIS source checks, closed loops and honest decoder outcomes |
-| [public-api](public-api/SKILL.md) | Typed Rust facade and future Python parity |
+| [public-api](public-api/SKILL.md) | Paired Rust/Python contracts, planned stubs, native wrapper and parity |
 
 Specification corpora are local/ignored; see [evidence setup](../docs/reference/specifications.md).

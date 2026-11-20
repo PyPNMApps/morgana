@@ -130,6 +130,12 @@ defines ordered stages, instrument contracts and ownership. The
 [implementation checklist](docs/development/checklist.md) tracks prerequisites
 and progress; the diagram above describes the target rather than current runtime.
 
+A separate [high-level Rust and Python API architecture](docs/architecture.md#high-level-rust-and-python-apis)
+defines paired interface stubs and planned module/test paths. The optional native
+Python wrapper will call the same Rust configuration, validation and simulation
+operations. These are design contracts; the broader Rust API and Python package
+remain unimplemented.
+
 ## Documentation and development guidance
 
 - [Development index](docs/development/README.md): feature plans and validation records.

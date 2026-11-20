@@ -45,6 +45,13 @@ PDFs/extractions/page images belong under ignored `docs/development/local/`.
 Consult [local evidence setup](docs/reference/specifications.md); do not ship
 copyrighted specification corpora or infer missing tables from matching sizes.
 
+The high-level Rust API and optional native Python wrapper have their own
+[architecture section](docs/architecture.md#high-level-rust-and-python-apis).
+Define paired Rust/Python contracts and planned stub paths for new shared
+capabilities. Implement the Rust operation first; Python only converts and
+dispatches. Preserve the existing FEC facade. Architecture stubs are proposals,
+not callable APIs or permission to implement scientific work.
+
 ## Scientific ownership and limits
 
 All FEC, DSP, channel models and orchestration remain Rust, including algorithm
