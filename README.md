@@ -20,26 +20,27 @@ loop from a reproducible test source through transmission, a channel and receive
 recovery, with independent bit comparison and shared signal instruments.
 All scientific processing, FEC and orchestration belong to Rust.
 
-**In development: unfinished foundation and standalone LDPC checkpoint.**
-Further simulation implementation awaits plan approval.
+**In development: source-verified standalone LDPC; waveform backend planned.**
+Implementation follows the accepted backend plan in dependency order.
 
 ## Current capabilities
 
 | Area | Status |
 | --- | --- |
-| Upstream LDPC | Long, medium and short codecs, shortening and bounded soft decoding exist; normative matrix review remains incomplete. |
+| Upstream LDPC | Long, medium and short matrices audited against the original PHY pages; systematic encoding, shortening and bounded soft decoding pass local acceptance. |
 | Rust interface | A facade runs one noiseless FEC trial and returns owned, schema-versioned JSON results. |
 | CLI and example | A deterministic single-codeword CLI trial and a runnable Rust facade example are available. |
 | Development setup | Ubuntu 22.04/24.04 amd64 prerequisite installer with read-only inspection and plan modes; fresh-machine provisioning remains unverified. |
 | Full signal path | PRBS, OFDMA waveform, unity channel, CMTS receiver and QAM/SA instruments are planned. |
 | Adapters and delivery | GUI, Python bindings and published packages are planned. |
 
-The current 23 Rust unit tests pass, but share matrix constants with the
-implementation. A known long-code matrix transcription correction is pending;
-see [LDPC-01 in the official checklist](docs/development/checklist.md).
-Passing round trips do not establish normative table correctness or a validated
-upstream PHY release. Current trials expose decoder convergence, syndrome checks
-and original-bit comparison separately.
+All 38 Rust unit tests pass, including independent source-derived matrix
+fingerprints and frozen parity vectors. The
+[LDPC audit record](docs/development/features/ldpc-source-audit/validation.md)
+documents the corrected long/medium transcription and all-family acceptance.
+These are internal codec results; full OFDMA and external interoperability remain
+unverified. Current trials expose decoder convergence, syndrome, shortened-zero
+consistency and original-bit comparison separately.
 
 ## Getting started
 

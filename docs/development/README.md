@@ -42,6 +42,8 @@
   [requirement coverage](checklist.md#requirement-coverage) and
   [traceability design/validation](features/software-development-checklist/design.md)
 - [Foundation design and reuse/specification assessments](features/foundation/design.md)
+- [All-family LDPC source audit](features/ldpc-source-audit/design.md)
+  and [codec acceptance evidence](features/ldpc-source-audit/validation.md)
 - [Checkpoint validation](features/foundation/validation.md)
 - [Foundation adoption and local overrides](foundation-adoption.md)
 - [Build guide](build.md)

@@ -5,8 +5,8 @@ This is the canonical delivery checklist derived from the
 The [accepted backend decisions](../architecture.md#accepted-backend-delivery-decisions)
 set the milestone order; their [decision record](features/backend-delivery/design.md)
 does not mark scientific implementation complete.
-Current authorization remains documentation/tooling and explicit development
-setup; further scientific implementation awaits plan approval. No task grants
+The user authorized starting backend implementation in the accepted dependency
+order, beginning with the all-family source audit. No task grants
 commit, push, publication, provisioning or GUI implementation authorization.
 
 ## How to use this checklist
@@ -50,16 +50,18 @@ acceptance or justify advertising pause controls prematurely.
 
 ## 1. Source evidence and core admission
 
-First scientific work remains LDPC-01 after implementation authorization. Shared types and supported reference configuration precede waveform stages.
+LDPC-01/02 passed all-family source/codec acceptance. Shared types and supported reference configuration precede waveform stages.
 
-- [ ] LDPC-01: Resolve the recorded matrix discrepancy and independently audit every upstream matrix/order.<br>
+- [x] LDPC-01: Resolve the recorded matrix discrepancy and independently audit every upstream matrix/order.<br>
   Requirements: [REQ-SYS-05](../requirements.md#req-sys-05), [REQ-TX-02](../requirements.md#req-tx-02), [REQ-RX-08](../requirements.md#req-rx-08). Architecture: [design/owner](../architecture.md#tx-02-ldpc-encoding-and-shortening).<br>
   Depends on: none.<br>
-  Acceptance: Original-page fixtures resolve the long matrix fifth-row, zero-based column-20 value (-1 in code versus 12 in the recorded PDF review); every family is checked independently of production constants.
-- [ ] LDPC-02: Complete source-verified standalone codec acceptance.<br>
+  Acceptance: Original-page fixtures resolve the long matrix fifth-row, zero-based column-20 value (-1 in code versus 12 in the recorded PDF review); every family is checked independently of production constants.<br>
+  Evidence: [2026-11-20 audit](features/ldpc-source-audit/validation.md), all 490 cells and every lifted edge; corrected three rows across long/medium, short unchanged.
+- [x] LDPC-02: Complete source-verified standalone codec acceptance.<br>
   Requirements: [REQ-TX-02](../requirements.md#req-tx-02), [REQ-RX-08](../requirements.md#req-rx-08), [REQ-SYS-05](../requirements.md#req-sys-05). Architecture: [design/owner](../architecture.md#tx-02-ldpc-encoding-and-shortening).<br>
   Depends on: LDPC-01.<br>
-  Acceptance: All families pass independent parity/shortening, controlled errors, failed decisions and actual-iteration cases. The existing 23 tests alone do not close source acceptance; no external-interoperability claim.
+  Acceptance: All families pass independent parity/shortening, controlled errors, failed decisions and actual-iteration cases; no external-interoperability claim.<br>
+  Evidence: [2026-11-20 codec acceptance](features/ldpc-source-audit/validation.md), 35 codec and 3 facade tests, including 20 frozen source-derived impulses and independent report outcomes.
 - [ ] DEV-CORE-01: Register the reviewed PHY owners, shared typed boundaries and explicit resource/error contracts using suitable locally adapted reference code.<br>
   Requirements: [REQ-SYS-03](../requirements.md#req-sys-03), [REQ-NFR-01](../requirements.md#req-nfr-01), [REQ-LIFE-01](../requirements.md#req-life-01). Architecture: [design/owner](../architecture.md#planned-code-layout).<br>
   Depends on: LDPC-02.<br>

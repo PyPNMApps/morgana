@@ -7,7 +7,7 @@ description: Validate upstream LDPC and future OFDMA science using pinned normat
 
 Use [numerical-testing](../numerical-testing/SKILL.md),
 [build-validation](../build-validation/SKILL.md), the pinned PHY skills and the
-[current validation record](../../docs/development/features/foundation/validation.md).
+[codec validation record](../../docs/development/features/ldpc-source-audit/validation.md).
 
 1. Identify the claimed behavior and expected-value source. Separate round trips,
    independently transcribed normative arithmetic, independent algorithm oracles
@@ -40,5 +40,7 @@ Run `scripts/validate.sh`; keep independent cases discoverable and work bounded.
 Retain doctests/examples and caches. Record exact command, elapsed time, platform,
 case totals, failures, omissions and scientific evidence gaps. The current
 Gaussian oracle shares production's transcribed matrix data; it cannot detect
-an incorrect source-table cell. Keep that limitation and pending source findings
-visible in the architecture/checklist even when the suite passes.
+an incorrect source-table cell alone. Retain the independently page-derived
+row/edge fingerprints and frozen parity cases under `crates/ldpc/src/tests/`.
+Never regenerate source expectations from production constants. Record new
+source findings in the architecture/checklist even when round trips pass.

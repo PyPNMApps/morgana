@@ -115,13 +115,59 @@ mod tests {
 
     #[test]
     fn accepted_wrong_word_still_reports_truth_errors() {
-        let settings = LdpcSettings::new(DocsisLdpcCode::UpstreamShort, 840, 10).unwrap();
-        let mut codec = morgana_ldpc::LdpcCodec::new(settings).unwrap();
-        let wrong = codec.decode(&vec![20.0; 1120]).unwrap();
-        let report = FecReport::from_decoded(settings, &vec![1; 840], wrong);
-        assert_eq!(report.fec.accepted_codewords, 1);
-        assert_eq!(report.fec.failed_codewords, 0);
-        assert_eq!(report.fec.bit_errors, 840);
-        assert_eq!(report.fec.ber, 1.0);
+        for code in [
+            DocsisLdpcCode::UpstreamLong,
+            DocsisLdpcCode::UpstreamMedium,
+            DocsisLdpcCode::UpstreamShort,
+        ] {
+            let parameters = code.parameters();
+            let settings = LdpcSettings::new(code, parameters.information_bits, 10).unwrap();
+            let mut codec = morgana_ldpc::LdpcCodec::new(settings).unwrap();
+            let wrong = codec.decode(&vec![20.0; parameters.codeword_bits]).unwrap();
+            let report =
+                FecReport::from_decoded(settings, &vec![1; parameters.information_bits], wrong);
+            assert_eq!(report.fec.accepted_codewords, 1);
+            assert_eq!(report.fec.failed_codewords, 0);
+            assert_eq!(report.fec.bit_errors, parameters.information_bits);
+            assert_eq!(report.fec.ber, 1.0);
+            assert_eq!(report.fec.ldpc_iterations, vec![0]);
+        }
+    }
+
+    #[test]
+    fn invalid_shortening_can_have_zero_payload_errors() {
+        for code in [
+            DocsisLdpcCode::UpstreamLong,
+            DocsisLdpcCode::UpstreamMedium,
+            DocsisLdpcCode::UpstreamShort,
+        ] {
+            let parameters = code.parameters();
+            let full_settings = LdpcSettings::new(code, parameters.information_bits, 50).unwrap();
+            let full_codec = morgana_ldpc::LdpcCodec::new(full_settings).unwrap();
+            let mut information = vec![0; parameters.information_bits];
+            information[parameters.information_bits - 1] = 1;
+            let mother = full_codec.encode(&information).unwrap();
+            let retained = parameters.information_bits - 1;
+            let soft: Vec<_> = mother[..retained]
+                .iter()
+                .chain(&mother[parameters.information_bits..])
+                .map(|bit| if *bit == 0 { 50.0 } else { -50.0 })
+                .collect();
+            let settings = LdpcSettings::new(code, retained, 50).unwrap();
+            let mut codec = morgana_ldpc::LdpcCodec::new(settings).unwrap();
+            let decoded = codec.decode(&soft).unwrap();
+            let report = FecReport::from_decoded(settings, &information[..retained], decoded);
+            assert!(report.decoded.converged && report.decoded.parity_valid);
+            assert!(!report.decoded.shortened_zeros_valid);
+            assert_eq!(report.fec.accepted_codewords, 0);
+            assert_eq!(report.fec.failed_codewords, 1);
+            assert_eq!(report.fec.bit_errors, 0);
+            assert_eq!(report.fec.ber, 0.0);
+            assert!((1..=50).contains(&report.fec.ldpc_iterations[0]));
+            let json: serde_json::Value = serde_json::from_str(&report.to_json().unwrap()).unwrap();
+            assert_eq!(json["decoded"]["shortened_zeros_valid"], false);
+            assert_eq!(json["fec"]["accepted_codewords"], 0);
+            assert_eq!(json["schema_version"], 1);
+        }
     }
 }

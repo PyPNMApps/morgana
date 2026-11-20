@@ -1,7 +1,9 @@
 # MORGANA foundation and upstream FEC design
 
-Status: unfinished checkpoint; further scientific implementation awaits plan
-approval. Source inspection and checkpoint review: 2026-11-19.
+Status: the initial checkpoint is preserved below as design/history. Backend
+implementation is now authorized; the [LDPC audit](../ldpc-source-audit/validation.md)
+supersedes its source-table gap and closes isolated-codec acceptance.
+Initial source inspection and checkpoint review: 2026-11-19.
 
 ## FOUNDATION-01: Requirements and PDE assessment
 
@@ -228,8 +230,11 @@ tags or bumps versions; failed validation leaves staged work available. Test thi
 operation only in disposable repositories. The user's actual Git initialization
 is retained; this task prepares, rather than executes, the first commit command.
 
-Known source issue: long-code base row 5, zero-based column 20, currently contains
--1 where PDF p57 shows 12. Round trips and the test Gaussian encoder share table
-constants and cannot detect that transcription. Keep LDPC-01/02 unchecked until
-the approved scientific follow-up corrects and independently verifies the source.
+Recorded checkpoint issue (resolved by the 2026-11-20
+[LDPC audit](../ldpc-source-audit/validation.md)): long-code base row 5,
+zero-based column 20, contained -1 where PDF p57 shows 12. Round trips and the
+test Gaussian encoder shared table constants and could not detect that
+transcription. The approved follow-up corrected long/medium rows and
+independently verified all three sources; LDPC-01/02 are now checked in the
+official checklist.
 See [checkpoint validation](validation.md) for actual checks and their limits.

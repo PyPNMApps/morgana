@@ -1,5 +1,10 @@
 # Accepted backend delivery plan
 
+Subsequent status, 2026-11-20: the user authorized starting this plan. The
+[source audit and standalone codec acceptance](../ldpc-source-audit/validation.md)
+close LDPC-01/02. The original decision-only record follows; remaining runtime
+work stays in the [official checklist](../../checklist.md).
+
 Status: six scope/order decisions accepted; implementation and scientific
 acceptance remain pending. This task records the decisions and reconciles
 architecture → requirements → developer checklist. It adds no source modules,

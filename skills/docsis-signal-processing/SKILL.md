@@ -8,8 +8,9 @@ description: Implement or review upstream DOCSIS FEC and OFDMA signal processing
 Read [architecture](../../docs/architecture.md), the
 [official checklist](../../docs/development/checklist.md) and the applicable
 versioned PHY skill. Follow [scientific-testing](../scientific-testing/SKILL.md)
-and [public-api](../public-api/SKILL.md). Current authorization preserves an
-unfinished checkpoint; it does not approve further scientific implementation.
+and [public-api](../public-api/SKILL.md). Follow the current authorization in
+AGENTS.md and the accepted checklist order. Completed isolated-codec acceptance
+does not complete waveform integration or authorize Git/publication operations.
 
 1. Identify the exact upstream endpoint, code/profile, FDD/FDX applicability,
    revision, section and PDF table. Verify matrices and layout-sensitive values

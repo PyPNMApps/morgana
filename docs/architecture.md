@@ -1,7 +1,8 @@
 # MORGANA architecture
 
-Status: unfinished checkpoint; further scientific implementation awaits plan
-approval. The [foundation design](development/features/foundation/design.md)
+Status: backend implementation authorized; all-family standalone LDPC source audit
+and codec acceptance complete. Waveform integration remains planned.
+The [foundation design](development/features/foundation/design.md)
 contains requirements, reuse assessments, evidence, API proposal and milestones.
 The consolidated [requirements baseline](requirements.md) defines stable behavior
 and acceptance IDs; this document owns their design and planned code/test layout.
@@ -30,7 +31,7 @@ and preserves completed design records separately from scientific completion.
 
 | Current owner | Responsibility | Status |
 | --- | --- | --- |
-| `crates/ldpc` | Upstream QC matrices, sparse systematic encoder, shortening, bounded layered soft decoder | Implemented; normative table review incomplete |
+| `crates/ldpc` | Upstream QC matrices, sparse systematic encoder, shortening, bounded layered soft decoder | Source-audited and locally accepted for all three families; waveform integration planned |
 | `crates/morgana` | Configure/run/report facade for one noiseless FEC trial; schema-1 owned results | Implemented; broader API planned |
 | `crates/cli` | Arguments, deterministic fixture source and JSON stdout | Implemented; no waveform processing |
 | `skills/` | Canonical engineering/PHY guidance and operational references | Adopted for this checkpoint |
@@ -73,14 +74,16 @@ and validation remain Rust. No saved-workbench format or stable C ABI exists.
 The separate [API architecture](#high-level-rust-and-python-apis) defines paired
 interface stubs, placement, lifecycle and delivery gates; it adds no PHY stage.
 
-See the [official checklist](development/checklist.md) for incomplete acceptance,
-especially LDPC-01's source transcription issue. Internal tests share the
-transcribed table data and cannot establish its correctness by round trip alone.
+See the [official checklist](development/checklist.md) for remaining work and the
+[LDPC audit](development/features/ldpc-source-audit/validation.md) for completed
+source/codec acceptance. Independent page-derived fingerprints and frozen parity
+supplement shared-data round trips; neither is external interoperability evidence.
 
 ## Accepted backend delivery decisions
 
 The six decisions below were accepted during the backend review. They define
-implementation scope/order, not completed science or a request to start coding.
+implementation scope/order. The user subsequently authorized starting this plan;
+completion remains tied to each task's evidence in the official checklist.
 See the [decision/validation record](development/features/backend-delivery/design.md)
 and [developer checklist](development/checklist.md). Existing stage contracts
 remain the detailed design; all corresponding runtime gates remain pending.
@@ -797,11 +800,16 @@ separate applicability review; this section does not claim full FDD/FDX support.
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/ldpc/src/definitions.rs` | Reuse (existing) | Existing upstream families, dimensions and matrix construction; source audit remains pending. |
+| `crates/ldpc/src/definitions.rs` | Edit/reuse (existing) | Source-audited upstream families/dimensions and matrix construction; corrected long row 5 and medium rows 4/5. |
 | `crates/ldpc/src/sparse_encoder.rs` | Reuse (existing) | Existing sparse systematic parity owner; preserve notices. |
 | `crates/ldpc/src/codec.rs` | Reuse (existing) | Existing append/encode/omit shortening and syndrome operations. |
-| `crates/ldpc/src/tests.rs` | Reuse (existing) | Existing family/shortening checks; these do not complete the source-table audit. |
+| `crates/ldpc/src/tests.rs` | Edit/reuse (existing) | Family/shortening/noise/failure/invalid-state checks; source acceptance is in the focused audit module. |
 | `crates/ldpc/src/tests/oracle.rs` | Reuse (existing) | Existing independent arithmetic oracle; matrix data is still shared. |
+| `crates/ldpc/src/tests/source_audit.rs` | Added/implemented | Check independent source fingerprints, every lifted edge, frozen impulse parity and decoder boundaries for each family. |
+| `crates/ldpc/src/tests/source_fixtures.rs` | Added/implemented | Compact source-derived row/edge fingerprints and impulse parity expectations; no production-data generation. |
+| `tools/validation/ldpc_source_reference.rs` | Added/implemented | Development-only Rust reference deriving compact fixtures from a separately reviewed local transcription. No runtime dependency or specification corpus is shipped. |
+| `crates/ldpc/Cargo.toml` | Edit (existing) | Register the source-reference tool as a compile/Clippy-checked example. |
+| `crates/morgana/src/report.rs` | Edit (existing) | All-family report tests preserve separate payload, parity and shortened-zero outcomes without changing schema 1. |
 | `crates/phy/src/transmitter/ldpc.rs` | Create (planned) | Encode validated descriptors and assemble ordered words plus grant pad; no duplicated parity algorithm. |
 | `crates/phy/tests/tx_ldpc.rs` | Create (planned) | Grant-integrated codeword lengths/order, bit roles, chunking and failures. |
 
@@ -809,8 +817,9 @@ separate applicability review; this section does not claim full FDD/FDX support.
 [Return to TX stage overview](#internal-stage-sequence).
 
 Status: **architecture defined; transmitter integration remains planned**.
-ARCH-TX-02 uses the existing standalone codec as the numerical owner. It does
-not complete LDPC-01/02 or claim that a complete transmitter already exists.
+ARCH-TX-02 uses the existing standalone codec as the numerical owner.
+LDPC-01/02 are complete for the isolated codec; this does not complete TX-02 grant
+integration or claim that a complete transmitter already exists.
 
 **Purpose and boundary.** Convert each TX-01 information block into its selected
 upstream systematic LDPC codeword, omit its known shortening coordinates and
@@ -849,13 +858,13 @@ column `b_c` and local row `r`, a shift `s` contributes an edge at row
 `b_r*L + r`, column `b_c*L + ((r+s) mod L)`. Check every source-table entry and
 this orientation independently before declaring a code family source-validated.
 
-Current source review is incomplete. In particular, the long table's fifth row,
-zero-based column 20, remains `-1` in the checkpoint where PDF p57 shows `12`.
-This documentation task does not correct the matrix. Existing unit tests and
-the Gaussian test encoder share transcribed tables, so matching parity and
-successful round trips cannot resolve that finding. A future validated TX-02
-path must require the applicable code's source checks to pass; current codec
-availability is not a substitute for that acceptance.
+The 2026-11-20 source audit checked every cell of all three original tables and
+corrected long row 5 and medium rows 4/5, including the long column-20 value 12.
+Independent row/expanded-edge fingerprints and 20 frozen impulse vectors now
+pass alongside Gaussian parity, shortening, noise and failed-decision checks.
+See the [audit evidence](development/features/ldpc-source-audit/validation.md).
+Grant integration remains a separate acceptance gate; codec acceptance is not a
+complete upstream waveform claim.
 
 **Encoding and shortening coordinates.** Let `I` be the retained information
 count supplied by TX-01, including any information-fill ones, and let
@@ -926,7 +935,7 @@ Use the existing local owners:
 
 | Owner | Reuse and boundary |
 | --- | --- |
-| `crates/ldpc/src/definitions.rs` | Upstream family/dimensions and matrix construction; pending source review stays visible. |
+| `crates/ldpc/src/definitions.rs` | Source-audited upstream family/dimensions and matrix construction; retain independent source regression fixtures. |
 | `crates/ldpc/src/sparse_encoder.rs` | Sparse parity dependencies and encoding; preserve its existing copyright/adaptation notices. |
 | `crates/ldpc/src/codec.rs` | Reuse `LdpcCodec::encode` and `valid_syndrome`; the latter restores shortened zero coordinates internally. |
 | `crates/phy/src/transmitter/ldpc.rs` (planned) | Validate TX-01 descriptors, call the codec and assemble ordered output/pad; no matrix or parity arithmetic here. |
@@ -4026,11 +4035,11 @@ word boundaries. Assert no aliasing/mutation of caller LLRs and owned outcomes
 survive the next decode. Existing codec unit tests are reuse evidence only.
 
 PHY I20 §7.4.3–7.4.3.3, PDF pp52–58, Table 8 and the source matrices control
-the code/shortening boundary. LDPC-01/02 remain unresolved: the long matrix's
-fifth row, zero-based column 20 is currently -1 while PDF p57 shows 12. No
-scientific code is corrected by this architecture task; source transcription
-and independent regression remain prerequisites for validated receiver claims.
-Internal round trips that share these tables do not resolve the issue.
+the code/shortening boundary. LDPC-01/02 source and isolated-codec acceptance
+passed on 2026-11-20, including corrected long/medium tables and independent
+regression fixtures. See the [audit record](development/features/ldpc-source-audit/validation.md).
+The receiver adapter and waveform acceptance remain planned; standalone codec
+acceptance does not close those integration tasks.
 
 #### RX-09: Information deframing
 

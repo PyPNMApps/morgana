@@ -169,6 +169,8 @@ impl LdpcCodec {
     /// # Returns
     /// Owned final decisions, including on nonconvergence; input remains unchanged.
     /// Finite inputs saturate to ±50; omitted zeros receive a +50 prior.
+    /// Zero is an erasure; an engine tie decision may pass parity at iteration zero.
+    /// Erasures are excluded from hard-decision changes; actual decisions are kept.
     /// Decoder scratch state is reused but reset by the engine per call.
     /// # Errors
     /// Rejects wrong size and nonfinite LLRs before changing decoder state.

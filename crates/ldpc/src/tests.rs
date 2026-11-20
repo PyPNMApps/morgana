@@ -4,6 +4,7 @@
  */
 //! Independent normative arithmetic, closed loops and bounded failure cases.
 mod oracle;
+mod source_audit;
 
 use super::*;
 use rand::{Rng, SeedableRng};
@@ -145,6 +146,16 @@ fn failure(code: DocsisLdpcCode) {
     assert_eq!(result.mother_codeword.len(), parameters.codeword_bits);
     assert_eq!(result.information_bits.len(), parameters.information_bits);
     assert!(result.mother_codeword.iter().all(|bit| *bit <= 1));
+    let retained_failure = result.clone();
+    let recovered = codec.decode(&vec![20.0; parameters.codeword_bits]).unwrap();
+    assert!(recovered.converged && recovered.parity_valid && recovered.shortened_zeros_valid);
+    assert_eq!(
+        recovered.information_bits,
+        vec![0; parameters.information_bits]
+    );
+    assert_eq!(recovered.iterations, 0);
+    assert_eq!(result, retained_failure);
+    assert_eq!(codec.decode(&soft).unwrap(), retained_failure);
 }
 
 fn shortening(code: DocsisLdpcCode) {
@@ -216,6 +227,10 @@ macro_rules! code_cases {
             fn trailing_zero_shortening_boundaries() {
                 shortening(CODE);
             }
+            #[test]
+            fn invalid_inputs_preserve_decoder_and_borrowed_values() {
+                invalid_calls(CODE);
+            }
         }
     };
 }
@@ -274,37 +289,56 @@ fn normative_dimensions_shift_direction_and_selected_cells() {
     );
 }
 
-#[test]
-fn invalid_calls_preserve_reusable_decoder_and_slices() {
-    let code = DocsisLdpcCode::UpstreamShort;
+fn invalid_calls(code: DocsisLdpcCode) {
+    let retained = 420;
+    let transmitted =
+        retained + code.parameters().codeword_bits - code.parameters().information_bits;
     for iterations in [0, 101, usize::MAX] {
         assert_eq!(
-            LdpcSettings::new(code, 840, iterations),
+            LdpcSettings::new(code, retained, iterations),
             Err(LdpcError::IterationLimit)
         );
     }
-    let mut codec = fixture(code, 420, 10);
-    assert!(matches!(
-        codec.encode(&[]),
-        Err(LdpcError::InputLength { .. })
-    ));
-    assert!(matches!(
-        codec.encode(&vec![0; 421]),
-        Err(LdpcError::InputLength { .. })
-    ));
-    assert_eq!(codec.encode(&vec![2; 420]), Err(LdpcError::NonBinary));
-    assert!(codec.decode(&vec![0.0; 699]).is_err());
-    assert!(codec.decode(&vec![0.0; 701]).is_err());
+    let mut codec = fixture(code, retained, 10);
+    let original = information(retained);
+    let encoded = codec.encode(&original).unwrap();
+    let mut valid = llrs(&encoded, 8.0);
+    valid[0] *= -0.0625;
+    let baseline = codec.decode(&valid).unwrap();
+    assert!(baseline.converged && baseline.parity_valid && baseline.shortened_zeros_valid);
+    assert_eq!(baseline.information_bits, original);
+    for length in [0, retained - 1, retained + 1] {
+        assert_eq!(
+            codec.encode(&vec![0; length]),
+            Err(LdpcError::InputLength {
+                expected: retained,
+                actual: length
+            })
+        );
+    }
+    assert_eq!(codec.encode(&vec![2; retained]), Err(LdpcError::NonBinary));
+    for length in [0, transmitted - 1, transmitted + 1] {
+        assert_eq!(
+            codec.decode(&vec![0.0; length]),
+            Err(LdpcError::InputLength {
+                expected: transmitted,
+                actual: length
+            })
+        );
+    }
     for invalid in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
-        let mut soft = vec![20.0; 700];
-        soft[699] = invalid;
-        assert_eq!(codec.decode(&soft), Err(LdpcError::NonFiniteLlr));
+        for position in [0, retained, transmitted - 1] {
+            let mut soft = valid.clone();
+            soft[position] = invalid;
+            assert_eq!(codec.decode(&soft), Err(LdpcError::NonFiniteLlr));
+            assert_eq!(soft[position].to_bits(), invalid.to_bits());
+        }
     }
     assert!(!codec.valid_syndrome(&[]));
-    assert!(!codec.valid_syndrome(&vec![2; 700]));
-    let result = codec.decode(&vec![20.0; 700]).unwrap();
-    assert!(result.converged && result.parity_valid && result.shortened_zeros_valid);
-    assert_eq!(result.information_bits, vec![0; 420]);
+    assert!(!codec.valid_syndrome(&vec![2; transmitted]));
+    assert!(!codec.valid_syndrome(&vec![0; transmitted - 1]));
+    assert!(!codec.valid_syndrome(&vec![0; transmitted + 1]));
+    assert_eq!(codec.decode(&valid).unwrap(), baseline);
 }
 
 #[test]

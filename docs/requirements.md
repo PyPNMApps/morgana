@@ -76,7 +76,7 @@ Compact delivery notation such as `WAVE-TX/CH/RX-01` refers to the separate
 
 | Area | Current evidence / delivery boundary |
 | --- | --- |
-| Standalone LDPC, FEC facade and CLI | Implemented checkpoint with existing tests; source-table acceptance remains incomplete. |
+| Standalone LDPC, FEC facade and CLI | All-family source audit and standalone codec acceptance pass locally; waveform integration remains separate. |
 | Development setup and save tooling | Implemented; mock/read-only checks exist; fresh provisioning and hosted/platform evidence remain incomplete. |
 | PRBS, TX-01..08, CH-01..06, RX-01..09 | Architecture defined; integrated waveform implementation and scientific acceptance planned. |
 | US Configuration JSON and PNM inputs | Architecture defined; exhaustive configuration audit, schemas, upstream capture formats and runtime support pending. |
@@ -225,7 +225,7 @@ requirement IDs and deferred delivery obligations are retained.
 
 | Milestone | Required evidence / scope | Pending prerequisites |
 | --- | --- | --- |
-| Source-verified codec | REQ-SYS-05 and LDPC portion of REQ-TX-02/REQ-RX-08; independent matrix/shortening/parity and decoder outcome checks. | LDPC-01/02 remain incomplete. The recorded long-matrix row-five, zero-based column-20 discrepancy is unresolved; existing tests sharing table data do not settle it. |
+| Source-verified codec | REQ-SYS-05 and LDPC portion of REQ-TX-02/REQ-RX-08; independent matrix/shortening/parity and decoder outcome checks. | LDPC-01/02 complete: [source audit and codec evidence](development/features/ldpc-source-audit/validation.md). Full TX/RX integration remains pending. |
 | Reference unity loop | REQ-SYS-01..04, REQ-PRBS-01..04, REQ-TX-01..08, REQ-CH-01/02/06, REQ-RX-01..09 and applicable lifecycle/resource requirements. | Typed configuration/resource planning, source, all waveform stages and independent stage/source acceptance. No measurement import or external implementation is a prerequisite. |
 | Instruments and experiment reports | REQ-OBS-01/02 with bounded retained taps and independent source/decoder accounting. | Actual waveform/results and owned observation contracts; presentation implementation is separate. |
 | Measurement/impairment extensions | REQ-PNM-01..04 and REQ-CH-03..05 in their declared compatibility scope. | Source-verified capture formats, whole-schedule association, approved numerical implementation and model-specific independent tests. |

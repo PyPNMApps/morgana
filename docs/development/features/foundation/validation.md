@@ -1,5 +1,9 @@
 # Foundation checkpoint validation
 
+Historical checkpoint record. The 2026-11-20
+[all-family audit and codec acceptance](../ldpc-source-audit/validation.md)
+supersedes the source-table gap and paused-implementation status below.
+
 Date: 2026-11-19. Scope: preserve existing code, adopt skills/instructions and
 prepare a local save command. Scientific implementation remains paused.
 

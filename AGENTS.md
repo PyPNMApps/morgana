@@ -7,10 +7,11 @@ it does not implement a full MAC, scheduler, service group or downstream wavefor
 
 ## Current authorization and status
 
-The current scientific implementation is an unfinished checkpoint. Further
-simulation implementation requires explicit approval of the plan. Saving this
-checkpoint and adopting skills/instructions are authorized. A request for
-`commit-msg` means prepare the local save-helper command, not execute it.
+The user has approved starting the accepted backend plan in dependency order,
+beginning with the all-family LDPC source audit and codec acceptance. Follow the
+official checklist and retain explicit evidence for each completed milestone.
+A request for `commit-msg` means prepare the local save-helper command, not
+execute it.
 After each completed section, include the reviewed `commit-msg`
 command in the handoff automatically; the user does not need to ask again.
 Development-installer implementation and its generic foundation guidance update
