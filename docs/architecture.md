@@ -80,6 +80,184 @@ positions; source bits/seed do not enter receiver recovery or equalization.
 PRBS15 is the test payload. The separate upstream PHY randomizer is the
 grant-seeded 23-bit process required by PHY3.1 §7.4.4.
 
+### PRBS block architecture
+
+Status: **designed, not implemented**. ARCH-PRBS-01 expands the first block in
+the signal path; SOURCE-01 remains the implementation milestone. The existing
+CLI still generates a seeded ChaCha8 fixture. Selecting that fixture is not
+selecting PRBS15. The design below is complete within this repository and has
+no dependency on reference-project documentation or source checkouts.
+
+The block has two independently owned roles: **PRBS-TX** supplies continuous
+test payload bits, and **PRBS-RX** compares recovered payload decisions after
+CMTS-RX. Both use the accepted source seed, with separate mutable registers and
+counters. Only the comparison branch receives expected PRBS truth; neither
+the PRBS seed nor expected bits enter the receiver's decoding/equalization API.
+
+```mermaid
+flowchart TB
+    SETTINGS[Accepted PRBS15 settings] --> GENERATOR[PRBS-TX generator]
+    GENERATOR --> CHUNK[Bounded payload bits and absolute range]
+    CHUNK --> TRANSPORT[CM-US-Tx then channel then CMTS-RX]
+    CHUNK -. range metadata only .-> LEDGER[Orchestration source-range ledger]
+    TRANSPORT --> RECOVERED[Decoded bits and grant/codeword coordinates]
+    RECOVERED --> ASSOCIATE[Associate recovered payload range]
+    LEDGER --> ASSOCIATE
+    SETTINGS --> EXPECTED[Independent PRBS-RX expected stream]
+    ASSOCIATE --> COMPARE[Compare actual recovered decisions]
+    EXPECTED --> COMPARE
+    COMPARE --> RESULTS[Compared bits, errors and verification coverage]
+```
+
+#### Sequence and bit representation
+
+The selected sequence is defined by the recurrence
+`s[n+15] = s[n+14] XOR s[n]`, with sequence polynomial `x^15 + x^14 + 1`.
+The recurrence and emission order are authoritative for this test source;
+polynomial names alone do not settle reciprocal or hardware shift conventions.
+
+| Property | Contract |
+| --- | --- |
+| Kind | Continuous PRBS15; other polynomials are unsupported in this stage. |
+| Seed | Nonzero 15-bit integer, 1–32767 inclusive; proposed initial draft value 32767 (`0x7fff`). Explicit Apply/run acceptance is still required. |
+| Initial bits | Seed bits 0 through 14 are `s[0]` through `s[14]`, least-significant bit first. |
+| Register step | Emit old bit 0; shift right; insert old bit 14 XOR old bit 0 into bit 14. |
+| Period | 32767 bits for every allowed seed; the absolute source position continues across periods. |
+| Position | Checked `u64` absolute index of the next bit; a fresh run begins at zero. |
+| Bit storage | One binary `u8` value per bit in transmission order; no implicit byte packing or QAM bit reordering. |
+| Per-operation bound | At most 1,048,576 generated or compared bits. This is a proposed application work/allocation limit, not a DOCSIS requirement. Larger streams use repeated bounded calls. |
+
+For seed `0x7fff`, the first 32 emitted bits are:
+
+```text
+11111111111111101010101010101001
+```
+
+This vector and the period are mathematical test-source properties, not external
+DOCSIS interoperability evidence. The generator uses no host entropy and shares
+no state with channel noise. PRBS15 is separate from the post-FEC upstream PHY
+randomizer; a grant resets the latter according to its own contract while PRBS
+continues. Fixed waveform symbol sizes, downstream BCH payload sizes and
+downstream randomizer reset intervals do not belong in this block.
+
+#### Rust owners and stage interfaces
+
+The proposed `crates/phy` source owner contains focused generator, verifier and
+source-range types. Orchestration owns acceptance, the grant/source ledger and
+job lifecycle. TX grant framing requests exactly the meaningful information-bit
+count from a validated upstream grant/codeword plan. It adds coding fill,
+shortened zeros and grant padding separately; those bits never advance PRBS or
+enter its BER denominator. Idle/guard resources consume no source bits.
+
+Bound the pending source ledger by the configured in-flight grant/codeword
+budget. Retire completed associations into cumulative counters and bounded
+diagnostics; continuous operation must not retain the full source or range
+history. If the pipeline cannot accept a payload, apply backpressure before
+generating it rather than advancing PRBS for discarded work.
+
+| Proposed contract | Inputs and result | State/ownership |
+| --- | --- | --- |
+| `Prbs15Config` | Kind and validated seed; fixed recurrence/period are descriptive metadata. | Immutable accepted settings, frozen per run. |
+| `Prbs15` | Validated seed; `generate(count)` returns the next bounded binary chunk, and `position()` reports the next absolute index. | Owns its register and position; no shared mutable state with observers or the verifier. |
+| `SourceChunk` | Owned bits with `first_bit`; its checked half-open range is `[first_bit, first_bit + len)`. | Immutable output handed to TX; diagnostic copies are bounded. |
+| Source-range ledger | Run/configuration identity and meaningful source ranges associated with accepted grant/codeword payload coordinates. | Orchestration metadata only; no original bits or PRBS seed are injected into CMTS-RX. |
+| Recovered association | Actual decoded information decisions and grant/codeword coordinates, mapped to a source range outside RX. | Validate run identity, length and expected next range before comparison. |
+| `PrbsVerifier` | Same accepted seed and independently owned expected stream; compares ordered binary decisions. | Advances through mismatches without correcting decisions or searching for another PRBS phase. |
+| `PrbsComparison` | First compared position, bits tested, bit errors and optional absolute first-error position, per window and cumulatively. | Owned result snapshots remain valid after later operations. |
+
+Generation and comparison accept zero-length calls as no-ops. Invalid seeds,
+excessive work, nonbinary decisions, counter overflow or invalid recovered-range
+association return typed errors before changing the affected source/verifier
+state or totals. Preview uses a fresh independent generator, never the active
+source or expected stream. A disabled/full diagnostic buffer cannot advance,
+rewind or reseed either stream.
+
+The future public Rust facade exposes this source selection and its results;
+CLI, Qt and native Python adapters consume the same validation. Future Python
+seed/count inputs are range-checked before narrowing to Rust integers, and
+binary buffers preserve one 0/1 value per bit. Rust returns typed errors and
+owned snapshots; Python raises corresponding domain exceptions and returns
+equivalent values, with absent first error/BER represented as `None`.
+These are proposed contracts, not currently callable Rust/Python APIs. No
+PRBS source selector is added to the current FEC-only CLI by this document.
+
+#### Independent comparison and incomplete recovery
+
+Compare meaningful decisions even when the LDPC decoder reports a failure, if
+it returns a complete binary decision range. Keep decoder convergence, parity,
+shortened-zero consistency and source mismatch counts separate. A valid but
+wrong codeword can pass parity and still produce PRBS errors; a failure flag
+must not suppress those actual decisions.
+
+The first verifier accepts a contiguous ordered stream. Before comparison,
+orchestration checks each recovered association against the next expected
+absolute source range. Missing, duplicated, reordered, wrong-run or wrong-length
+payload produces an explicit incomplete/discontinuous verification outcome.
+Retain all prior comparisons; stop contiguous comparison at the first unresolved
+gap, while receiver results may continue to be collected. Never silently skip a
+gap, count it as zero errors, infer alignment from decoded values or resynchronize
+by searching the PRBS period. Explicit gap-aware continuation would be a later
+contract, not an assumed feature of `compare`.
+
+Report generated meaningful bits, compared bits, unverified generated bits,
+coverage and run completion separately from the comparison totals. For `N > 0`
+compared bits and `E` mismatches, BER is `E/N`; for `N = 0`, BER is unavailable
+(`null` in future JSON), not zero. A null first-error index only means no
+mismatch was observed in the compared data. Error-free complete source recovery
+requires a completed/drained run, matching expected/generated/recovered counts,
+full contiguous coverage and zero mismatches. No-payload, cancelled, truncated
+or discontinuous runs cannot claim that acceptance from a zero error count.
+Report export/schema changes require their own versioned API compatibility work.
+
+#### Lifecycle and PRBS-TX / PRBS-RX presentation
+
+| Event | Source, verifier and presentation behavior |
+| --- | --- |
+| Edit/open | Stage a draft; do not construct an active stream or consume bits. |
+| Apply | Rust validates a candidate and atomically accepts it for the next run. Invalid drafts preserve the previous accepted settings/readiness. |
+| Cancel/close | Discard drafts and preserve accepted settings. |
+| Start a fresh run | Freeze accepted source/run/grant settings; create independent generator/verifier state at position zero with a new run identity. Bound run duration/work separately from the continuous source. |
+| Generate next payload | Consume only the requested meaningful bits, preserving continuity across grants, codewords, chunks and sequence periods. |
+| Pause/resume | Retain registers, positions, pending payload associations and comparison totals; no reseeding. |
+| Stop/cancel | Stop admitting new work; retain completed comparisons and report queued/unrecovered ranges and partial status. Drain versus discard follows the accepted job policy. |
+| Restart/reconfigure | Begin a new run at position zero; invalidate old observations by run/configuration identity. Settings never mutate an active run. |
+
+The future **PRBS-TX** editor follows a Parameter/Value layout with contextual
+descriptions and Apply/Cancel. Show Continuous PRBS15, editable decimal seed,
+read-only recurrence/polynomial, period, initial bit order and continuous operation.
+Duration/trial limits belong in run settings. An optional bounded Rust preview
+shows the first bits without affecting readiness or runtime state. File input,
+file fill, repeat modes and other PRBS polynomials require their own later design;
+do not expose them as working source choices in this first block.
+
+PRBS-TX readiness means a valid source was explicitly accepted. PRBS-RX readiness
+means independent verification is configured for that accepted source; it does
+not require an earlier successful run. Source acceptance alone does not make the
+transmitter, receiver or whole experiment ready. Pending/ready/invalid states
+must have text labels as well as color. The PRBS-RX results view displays actual
+coverage, errors, first mismatch and complete/partial/discontinuous status; it
+does not change receiver decisions or convert missing data into successful BER.
+QAM/SA open on their waveform/cell taps, not on the PRBS bit array.
+
+#### Reference assessment and acceptance
+
+The reference inspection covered MERLIN's PRBS generator/verifier, literal-vector
+and period tests, source-selection adapter and source editor at revision
+`096d5a476194d4f2e016863d723b225257bb6037`. Reuse the sequence/seed contract,
+independent verification, bounded chunking and draft/accepted UI pattern.
+Replace its fixed downstream payload adapter with upstream grant-driven lengths;
+defer its file/fill modes. This design is written locally; no implementation or
+presentation source is copied in this task. Future actual code reuse must retain
+the applicable copyright, Apache license and adaptation notices.
+
+Required implementation checks are literal recurrence vectors for multiple
+seeds, period/nonzero-state coverage, chunk/grant/codeword continuity, independent
+error counts across boundaries, empty/no-observation behavior, rejected-call
+invariance, checked counter limits, source-gap detection, pause/resume/restart,
+observer neutrality and Rust/future Python contract parity. The feature record
+maps these requirements to owners and planned checks:
+[PRBS block design](development/features/prbs-source/design.md).
+
 ### CM-US-Tx stages
 
 ```mermaid

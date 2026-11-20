@@ -9,6 +9,9 @@ See [architecture](../architecture.md) and [foundation design](features/foundati
 - [x] ARCH-01: Define PRBS → CM-US-Tx → unity Channel Simulator → CMTS-RX,
   ordered processing stages and shared QAM/SA observation contracts. This is
   documentation only; see [design](features/upstream-signal-path/design.md).
+- [x] ARCH-PRBS-01: Define the self-contained PRBS-TX/PRBS-RX block, sequence,
+  interfaces, lifecycle, readiness and independent comparison contracts;
+  see [PRBS design](features/prbs-source/design.md). Implementation stays planned.
 - [x] SETUP-01..03: Adopt generic installer guidance and implement/test explicit
   development setup. Nineteen setup tests and Ubuntu 22.04 read-only modes pass;
   see [design/checklist](features/development-setup/design.md).
@@ -26,7 +29,9 @@ See [architecture](../architecture.md) and [foundation design](features/foundati
   LLRs, nonconvergence and shortening. They share source table constants, so they
   do not resolve LDPC-01. External vectors are unavailable; no external claim.
 - [ ] PHY-01: Validate grant/codeword selection and virtual CMTS configuration.
-- [ ] SOURCE-01: Reuse the explicit continuous PRBS15 source and independent verifier.
+- [ ] SOURCE-01: Implement the explicit continuous PRBS15 source and independent
+  verifier against the [PRBS block contract](../architecture.md#prbs-block-architecture),
+  including upstream grant lengths, incomplete-recovery accounting and bounds.
 - [ ] WAVE-TX-01: Implement one specification-verified upstream data burst.
 - [ ] WAVE-CH-01: Implement the bounded exact unity channel stub and input/output
   sample observations; no impairments in the first full waveform path.
