@@ -6,7 +6,9 @@ The [accepted backend decisions](../architecture.md#accepted-backend-delivery-de
 set the milestone order; their [decision record](features/backend-delivery/design.md)
 does not mark scientific implementation complete.
 The user authorized starting backend implementation in the accepted dependency
-order through the bounded synthetic stages, JSON and native adapter. No task grants
+order through the bounded synthetic stages, JSON and native adapter. Subsequent
+continuation includes source-verified capture prerequisites and idle Rust/native
+inspection. Measured association/model admission remain separate gates. No task grants
 commit, push, publication, provisioning or GUI implementation authorization.
 
 ## How to use this checklist
@@ -298,22 +300,28 @@ These extensions do not become prerequisites for a typed synthetic reference exp
   Depends on: US-CONFIG-FORMAT-01.<br>
   Acceptance: Exact source-derived headers, message/nested lengths, duplicate/unknown preservation, offset errors, allocation caps, unsupported multipart and independent actual Rust/Python consumer parity pass; no simulation mutation.<br>
   Evidence: [UCD source/fixture acceptance](features/capture-formats/validation.md).
-- [ ] RXMER-FORMAT-01: Verify upstream RxMER format/reference/units/nulls.<br>
+- [x] RXMER-FORMAT-01: Verify upstream RxMER format/reference/units/nulls.<br>
   Requirements: [REQ-PNM-01](../requirements.md#req-pnm-01). Architecture: [design/owner](../architecture.md#rxmer-input).<br>
   Depends on: none.<br>
-  Acceptance: Pinned upstream format/type/units evidence and lawful independent fixtures precede binary/decoded capture support.
+  Acceptance: Pinned upstream format/type/units evidence and lawful independent fixtures precede binary/decoded capture support.<br>
+  Evidence: [major2 source/profile acceptance](features/rxmer-capture/validation.md); explicit byte-order/flag interpretation limits remain visible, measured association stays pending.
 - [ ] PREEQ-FORMAT-01: Verify upstream corrective bank/update formats and base/probe semantics.<br>
   Requirements: [REQ-PNM-01](../requirements.md#req-pnm-01), [REQ-PNM-03](../requirements.md#req-pnm-03). Architecture: [design/owner](../architecture.md#us-pre-eq-input).<br>
   Depends on: none.<br>
   Acceptance: Pinned format/scale/control evidence and lawful fixtures establish bank/update identity, reset and adjustment interpretation.
+- [x] RXMER-INSPECT-01: Decode bounded upstream CCAP RxMER files through Rust and native Python.<br>
+  Requirements: [REQ-PNM-01](../requirements.md#req-pnm-01), [REQ-PNM-02](../requirements.md#req-pnm-02), [REQ-API-03](../requirements.md#req-api-03), [REQ-API-06](../requirements.md#req-api-06), [REQ-NFR-01](../requirements.md#req-nfr-01). Architecture: [RxMER capture boundary and paths](../architecture.md#rxmer-input).<br>
+  Depends on: RXMER-FORMAT-01.<br>
+  Acceptance: Literal header offsets/values, all raw quarter-dB/null encodings, exact subgrid/extent limits, original bytes/hash and native ownership/error/Rust-process parity pass. Unknown metadata interpretations remain explicit; no simulation mutation.<br>
+  Evidence: [RxMER decoder acceptance](features/rxmer-capture/validation.md).
 - [ ] US-CONFIG-INPUT-01: Associate/project captured UCDs into source configuration with full source validation.<br>
   Requirements: [REQ-PNM-01](../requirements.md#req-pnm-01), [REQ-CFG-05](../requirements.md#req-cfg-05). Architecture: [capture boundary](../architecture.md#upstream-configuration-capture-inspection).<br>
   Depends on: US-CONFIG-INSPECT-01.<br>
   Acceptance: Complete supported channel/burst semantics, explicit external timing/grant/CM/bandwidth association, multipart reassembly and legitimate endpoint views pass independent cases before any simulation acceptance.
 - [ ] RXMER-INPUT-01: Implement original-preserving typed RxMER admission, association and single/multiple power playback.<br>
   Requirements: [REQ-PNM-01](../requirements.md#req-pnm-01), [REQ-PNM-02](../requirements.md#req-pnm-02). Architecture: [design/owner](../architecture.md#rxmer-input).<br>
-  Depends on: DEV-LOOP-01, RXMER-FORMAT-01.<br>
-  Acceptance: Independent power/weight/null/time-boundary cases preserve original bytes/hash/grid/time and explicit synthetic schedule; additional captures never silently multiply trials.
+  Depends on: DEV-LOOP-01, RXMER-FORMAT-01, RXMER-INSPECT-01.<br>
+  Acceptance: Source-confirmed metadata/flag semantics, CM/channel/grid/time association and independent power/weight/null/time-boundary cases preserve originals and explicit synthetic schedule; additional captures never silently multiply trials.
 - [ ] PREEQ-INPUT-01: Implement fixed banks, multiple snapshots and explicitly based bounded updates.<br>
   Requirements: [REQ-PNM-01](../requirements.md#req-pnm-01), [REQ-PNM-03](../requirements.md#req-pnm-03), [REQ-TX-06](../requirements.md#req-tx-06). Architecture: [design/owner](../architecture.md#us-pre-eq-input).<br>
   Depends on: DEV-LOOP-01, PREEQ-FORMAT-01.<br>
@@ -463,8 +471,8 @@ completion; deferred UI/wider-mode work remains subject to its explicit gates.
 | [REQ-RX-07](../requirements.md#req-rx-07) | DEV-RX-07, WAVE-RX-01 |
 | [REQ-RX-08](../requirements.md#req-rx-08) | LDPC-01, LDPC-02, DEV-RX-08, WAVE-RX-01 |
 | [REQ-RX-09](../requirements.md#req-rx-09) | DEV-RX-09, WAVE-RX-01 |
-| [REQ-PNM-01](../requirements.md#req-pnm-01) | US-CONFIG-FORMAT-01, RXMER-FORMAT-01, PREEQ-FORMAT-01, RXMER-INPUT-01, PREEQ-INPUT-01, US-CONFIG-INSPECT-01, US-CONFIG-INPUT-01 |
-| [REQ-PNM-02](../requirements.md#req-pnm-02) | RXMER-SYNTHETIC-01, RXMER-INPUT-01 |
+| [REQ-PNM-01](../requirements.md#req-pnm-01) | US-CONFIG-FORMAT-01, RXMER-FORMAT-01, PREEQ-FORMAT-01, RXMER-INPUT-01, PREEQ-INPUT-01, US-CONFIG-INSPECT-01, US-CONFIG-INPUT-01, RXMER-INSPECT-01 |
+| [REQ-PNM-02](../requirements.md#req-pnm-02) | RXMER-SYNTHETIC-01, RXMER-INPUT-01, RXMER-INSPECT-01 |
 | [REQ-PNM-03](../requirements.md#req-pnm-03) | PREEQ-FORMAT-01, PREEQ-INPUT-01 |
 | [REQ-PNM-04](../requirements.md#req-pnm-04) | DEV-COMPOSE-01, WAVE-CH-02, CH-EXT-02 |
 | [REQ-OBS-01](../requirements.md#req-obs-01) | INSTRUMENTS-01 |
@@ -473,14 +481,14 @@ completion; deferred UI/wider-mode work remains subject to its explicit gates.
 | [REQ-OBS-04](../requirements.md#req-obs-04) | DEV-UI-PLAN-01 |
 | [REQ-API-01](../requirements.md#req-api-01) | API-RUST/INPUT-01, API-RUN-01, API-01 |
 | [REQ-API-02](../requirements.md#req-api-02) | API-PY/STUB-01, API-01 |
-| [REQ-API-03](../requirements.md#req-api-03) | API-RUST/INPUT-01, API-RUN-01, API-PY/STUB-01, API-PARITY/DOCS-01, API-01, DEV-PAUSE-01, US-CONFIG-INSPECT-01 |
+| [REQ-API-03](../requirements.md#req-api-03) | API-RUST/INPUT-01, API-RUN-01, API-PY/STUB-01, API-PARITY/DOCS-01, API-01, DEV-PAUSE-01, US-CONFIG-INSPECT-01, RXMER-INSPECT-01 |
 | [REQ-API-04](../requirements.md#req-api-04) | API-PY/STUB-01, API-PARITY/DOCS-01, API-01 |
 | [REQ-API-05](../requirements.md#req-api-05) | API-PY/STUB-01, API-PARITY/DOCS-01, API-01 |
-| [REQ-API-06](../requirements.md#req-api-06) | DEV-RESULTS-01, USJSON-FORMAT/PRESETS-01, USJSON-CORE/PROJECTION/PARITY-01, API-PARITY/DOCS-01, API-01, US-CONFIG-INSPECT-01 |
+| [REQ-API-06](../requirements.md#req-api-06) | DEV-RESULTS-01, USJSON-FORMAT/PRESETS-01, USJSON-CORE/PROJECTION/PARITY-01, API-PARITY/DOCS-01, API-01, US-CONFIG-INSPECT-01, RXMER-INSPECT-01 |
 | [REQ-LIFE-01](../requirements.md#req-life-01) | DEV-CORE-01, DEV-RUN-01, DEV-LOOP-01, API-RUN-01 |
 | [REQ-LIFE-02](../requirements.md#req-life-02) | DEV-RUN-01, DEV-LOOP-01, API-RUN-01 |
 | [REQ-LIFE-03](../requirements.md#req-life-03) | DEV-RUN-01, API-RUN-01, DEV-PAUSE-01 |
-| [REQ-NFR-01](../requirements.md#req-nfr-01) | DEV-CORE-01, DEV-RUN-01, US-CONFIG-INSPECT-01 |
+| [REQ-NFR-01](../requirements.md#req-nfr-01) | DEV-CORE-01, DEV-RUN-01, US-CONFIG-INSPECT-01, RXMER-INSPECT-01 |
 | [REQ-NFR-02](../requirements.md#req-nfr-02) | DEV-LICENSE-01, FOUNDATION-03 |
 | [REQ-NFR-03](../requirements.md#req-nfr-03) | SETUP-04, FOUNDATION-03 |
 | [REQ-NFR-04](../requirements.md#req-nfr-04) | FOUNDATION-03, DEV-HANDOFF-01 |

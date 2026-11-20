@@ -37,9 +37,10 @@ flowchart LR
 | Waveform | 2K/50 kHz and 4K/25 kHz scheduled data, source-audited upstream LDPC, QAM through 4096 including non-square orders, all 14 pilot patterns, exact CP/rolloff/overlap. |
 | Receiver | Configured timing and received-pilot frame-flat or bounded linear-frequency correction; actual failed decisions, iterations, parity and source coverage stay separate. |
 | Channel | Exact unity, causal synthetic FIR, sample AWGN, integer delay, constant phase/CFO and restricted synthetic RxMER residual waveform. |
-| Side inputs | Explicit synthetic RxMER single/average/hold/interpolation; Pre-EQ fixed banks/snapshots/probe-based updates at symbol boundaries. Binary PNM import remains pending. |
+| Side inputs | Explicit synthetic RxMER single/average/hold/interpolation; Pre-EQ fixed banks/snapshots/probe-based updates at symbol boundaries. Measured-file association/playback remains pending. |
 | Configuration | Versioned generic US Configuration JSON with named inventory/selection, source-field audit, strict bounded parsing and atomic shared endpoint projections. |
 | Capture inspection | Offline unfragmented Type51/version5 UCD header/TLV inspection through Rust/native Python, retaining exact originals, hashes and error offsets. Full captured-channel projection remains pending. |
+| Measured RxMER inspection | Bounded CCAP upstream major2 file decoding through Rust/native Python, preserving metadata, raw/quarter-dB values and missing subcarrier positions. Measured association/playback remains pending. |
 | APIs and controls | High-level Rust and optional native Python; preview/run, progress, pause/resume/cancel and owned complete/partial reports. |
 | Instruments | Bounded actual QAM/SA taps and independent matched-data MER; no invented history, calibrated RF power or target-to-RX shortcut. |
 
@@ -47,7 +48,7 @@ The [validation record](docs/development/features/backend-stages/validation.md)
 separates independent source/numerical cases, internal closed-loop results and
 actual native/wheel checks. There is no external interoperability, live MAC,
 modem-certification or installed-platform claim. Ranging/probe/testing waveform
-execution, binary PNM import/full captured-configuration projection, GUI and wider platforms remain
+execution, measured-file simulation/full captured-configuration projection, GUI and wider platforms remain
 explicitly pending in the [checklist](docs/development/checklist.md).
 
 ## Run an experiment

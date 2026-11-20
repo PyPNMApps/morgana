@@ -1,6 +1,7 @@
 # MORGANA user guides
 
 - [Offline UCD capture inspection](capture-inspection.md)
+- [Upstream RxMER file inspection](rxmer-captures.md)
 
 - [Upstream experiments](upstream-experiments.md): supported stages, limits,
   generic configuration, CLI, Rust/native Python, controls and actual reports.

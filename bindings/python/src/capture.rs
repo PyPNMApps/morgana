@@ -47,5 +47,73 @@ impl PyUcdCapture {
 
 pub(crate) fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<PyUcdCapture>()?;
+    module.add_class::<PyRxmerCapture>()?;
     Ok(())
+}
+
+#[pyclass(from_py_object, frozen, module = "morgana", name = "RxmerCapture")]
+#[derive(Clone)]
+pub(crate) struct PyRxmerCapture(api::RxmerCapture);
+
+#[pymethods]
+impl PyRxmerCapture {
+    /// Decodes one exact major2 CCAP upstream RxMER file through shared Rust.
+    ///
+    /// Returns an immutable owned observation; bounds/errors retain source offsets.
+    /// No Python parsing, identity association or simulation work occurs.
+    #[staticmethod]
+    fn from_pnm(py: Python<'_>, bytes: &[u8]) -> PyResult<Self> {
+        py.detach(|| api::RxmerCapture::from_pnm(bytes))
+            .map(Self)
+            .map_err(error)
+    }
+
+    /// Copies exact original file bytes into an independently owned bytes object.
+    ///
+    /// Includes all raw metadata/padding and survives this capture object's life.
+    fn original_bytes(&self, py: Python<'_>) -> Py<PyBytes> {
+        PyBytes::new(py, self.0.original_bytes()).unbind()
+    }
+
+    /// Hashes the exact retained file using shared Rust SHA-256.
+    ///
+    /// Returns owned lowercase hexadecimal without replacing original bytes.
+    fn original_sha256(&self, py: Python<'_>) -> String {
+        py.detach(|| self.0.original_sha256())
+    }
+
+    /// Copies all original data octets in exact contiguous physical-grid order.
+    ///
+    /// Missing0xff entries remain present and are never compacted or substituted.
+    fn raw_readings(&self, py: Python<'_>) -> Py<PyBytes> {
+        PyBytes::new(py, self.0.raw_readings()).unbind()
+    }
+
+    /// Copies bounded Rust-decoded dB values, preserving missing readings as None.
+    ///
+    /// Returns an owned list; no Python arithmetic or power/noise model is applied.
+    fn readings_db(&self) -> Vec<Option<f64>> {
+        self.0.readings_db().to_vec()
+    }
+
+    /// Copies optional UTF-8 rendering of the NUL-terminated raw CCAP identifier.
+    ///
+    /// Returns None for unrenderable bytes; raw metadata remains authoritative.
+    fn ccap_id_text(&self) -> Option<String> {
+        self.0.ccap_id_text().map(str::to_owned)
+    }
+
+    /// Returns optional object-model0/1 rendering of the preserved raw PreEq flag.
+    ///
+    /// Unknown flag values return None, never a guessed false or SNMP conversion.
+    fn pre_eq_enabled(&self) -> Option<bool> {
+        self.0.pre_eq_enabled()
+    }
+
+    /// Exports shared versioned decoded-observation JSON with interpretation limits.
+    ///
+    /// Returns owned bounded text; full raw provenance remains independently usable.
+    fn to_json(&self, py: Python<'_>) -> PyResult<String> {
+        py.detach(|| self.0.to_json()).map_err(error)
+    }
 }

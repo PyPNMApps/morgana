@@ -3,6 +3,7 @@
 """Native Rust upstream simulation; this module only re-exports the extension."""
 from ._native import (
     UcdCapture,
+    RxmerCapture,
     ConfigurationDocument, ApiError, BatchReport, ChannelConfig, ExperimentConfig, ExperimentOptions,
     ExperimentPreview, Minislot, PreEqBank, Profile, QamSnapshot, ReceiverConfig,
     RunControl, Simulation, SpectrumSnapshot, SyntheticGrant, UsConfiguration,
@@ -11,6 +12,7 @@ from ._native import (
 
 __all__ = [
     "UcdCapture",
+    "RxmerCapture",
     "ConfigurationDocument", "ApiError", "BatchReport", "ChannelConfig", "ExperimentConfig",
     "ExperimentOptions", "ExperimentPreview", "Minislot", "PreEqBank", "Profile",
     "QamSnapshot", "ReceiverConfig", "RunControl", "Simulation", "SpectrumSnapshot",

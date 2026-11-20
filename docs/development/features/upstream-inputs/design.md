@@ -5,6 +5,8 @@ and native APIs are recorded in the [backend validation](../backend-stages/valid
 The [capture-format milestone](../capture-formats/design.md) adds bounded raw
 Type51 UCD inspection; captured-channel projection and PNM formats retain
 separate delivery gates.
+The [upstream RxMER decoder](../rxmer-capture/design.md) now preserves bounded
+major2 binary observations; measured association/playback remains pending.
 The design history below is retained; capture/import, broader PHY and presentation
 items do not gain runtime acceptance from completed design checkboxes.
 

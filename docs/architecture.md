@@ -7,7 +7,7 @@ Source-valid generic configuration JSON, synthetic RxMER/Pre-EQ replay,
 pause/resume/cancellation and actual QAM/SA reports are implemented.
 Offline Type51 UCD inspection preserves raw originals/header/TLVs separately from
 executable configuration; see the [capture boundary](#upstream-configuration-capture-inspection).
-Binary PNM capture import, GUI and broader receiver/MAC modes remain pending.
+Measured-file simulation, Pre-EQ binary import, GUI and broader receiver/MAC modes remain pending.
 See [current validation and limits](development/features/backend-stages/validation.md).
 The [foundation design](development/features/foundation/design.md)
 contains requirements, reuse assessments, evidence, API proposal and milestones.
@@ -223,7 +223,7 @@ validation and bounded orchestration stay Rust; adapters present owned results.
 | `crates/phy/tests` | Add (implemented) | Independent stage/source cases, not only TX/RX round trips. |
 | `crates/morgana/tests` | Add (implemented) | Actual reference API, controls, documents, failures and ownership. |
 | `bindings/python/tests/test_experiment.py` | Add (implemented) | Actual native execution, parity, signals, Busy and signature checks. |
-| `crates/morgana/src/inputs/rxmer.rs` | Create (planned) | Verified upstream binary capture adapter, distinct from synthetic inputs. |
+| `crates/morgana/src/inputs/rxmer.rs` | Add (implemented) | Bounded major2 capture decoding; measured association remains RXMER-INPUT-01. |
 | `crates/morgana/src/inputs/pre_eq.rs` | Create (planned) | Verified corrective capture/update adapter and explicit associations. |
 
 Module directories above use their named `mod.rs`; their leaf files are specified
@@ -2635,7 +2635,7 @@ errors, partial status and sample ordering after the public Rust operations exis
 
 [Return to channel stages](#channel-stage-sequence).
 
-Status: **typed synthetic input/power playback implemented; binary capture import and UI remain pending**.
+Status: **typed synthetic playback and bounded major2 binary decoding are implemented; measured association/playback and UI remain pending**.
 Use the reference workbench's separate RxMER input concept: select one or more
 local inputs, inspect original/combined values, choose policy, then Apply an
 accepted immutable draft. A future focused editor/viewer opens from this input;
@@ -2659,6 +2659,51 @@ expose the same collection and failures. [US-Pre-EQ](#us-pre-eq-input) is an
 independent collection, with optional explicit capture/probe association only;
 file order or similar timestamps never pair the two inputs automatically.
 
+**CCAP RxMER capture decoding boundary.** The bounded idle
+`RxmerCapture::from_pnm(bytes)` operation accepts the exact `0x504e4e69` file,
+major2, with the 297-byte header defined by CCAP-OSSI I18 §7.3.5.5.7 Table410.
+Its raw vendor minor byte is retained. PNN versioned headers are distinct from
+legacy PNM headers; no downstream decoder or layout guessing is used. The
+[source/fixture plan](development/features/rxmer-capture/design.md) owns the byte
+offset audit and independent acceptance recorded before implementation.
+
+The decoder SHALL retain original bytes/hash, all256 CCAP-ID bytes, raw PreEq
+flag, CM/CCAP/RPD/ifIndex/epoch metadata and every raw reading. It SHALL decode
+0..254 as quarter-dB and255 as missing, retaining every contiguous subcarrier
+slot without packing or interpolating gaps. It SHALL validate exact declared
+extent, null-terminated CCAP ID, supported25/50kHz spacing and subgrid bounds.
+The byte cap is4393 (297+4096); limits precede owned allocation. An empty data
+extent remains an inspectable observation with no invented coverage. Errors
+reuse capture categories, field names and absolute zero-based offsets.
+
+Binary numeric fields use the declared most-significant-octet-first adapter
+profile of the ordered hexadecimal fields; there is no endian autodetection.
+The file copies a Boolean attribute but does not independently define an octet
+truth encoding. Raw flag preservation is authoritative: optional0/1 Boolean
+rendering follows the object-model convention; all other flags remain unknown,
+never guessed from SNMP TruthValue. CCAP-ID UTF-8 text is optional rendering;
+arbitrary bytes and padding remain recoverable. These interpretation limits
+remain explicit in metadata and do not become simulation readiness.
+
+Rust owns the immutable header/readings and versioned decoded-observation JSON;
+Python only dispatches/converts and exposes matching getters. Loading SHALL NOT
+select a residual model, retime a capture or configure/run simulation. Measured
+CM/channel/grid/time association and single/multiple power playback remain
+RXMER-INPUT-01. The PHY reference is the CMTS equalized upstream probe relative
+to ideal BPSK (PHY I20 §9.4.8), separate from injected channel/noise truth.
+
+| Capture path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/morgana/src/inputs/rxmer.rs` | Add (implemented) | Immutable bounded major2 decoder and provenance/views. |
+| `crates/morgana/src/inputs/mod.rs`, `crates/morgana/src/api/mod.rs` | Edit (existing) | Preserve existing exports; expose RxmerCapture/RxmerHeader. |
+| `crates/morgana/tests/rxmer_capture.rs` | Add (implemented) | Frozen source-derived metadata/dB/nulls and invalid/boundary fixtures. |
+| `examples/measurements/rxmer/` | Add (implemented) | Authored hex fixtures, hashes and exact source offsets. |
+| `crates/morgana/examples/inspect_rxmer.rs` | Add (implemented) | Independent Rust consumer of both fixtures. |
+| `bindings/python/src/capture.rs`, `bindings/python/src/lib.rs`, `bindings/python/python/morgana/__init__.py`, `bindings/python/python/morgana/__init__.pyi` | Edit (existing) | Native conversion/exports and exact runtime declarations. |
+| `bindings/python/tests/test_rxmer_capture.py` | Add (implemented) | Actual native consumer, errors, ownership and Rust-process parity. |
+| `tools/python/check_native.py`, `tools/python/build_wheel.py` | Edit (existing) | Reuse actual native/artifact gates and add independent RxMER reference. |
+| `docs/user/rxmer-captures.md` | Add (implemented) | Paired API usage, provenance, limits and pending associations. |
+
 **Code paths and pending adapters (repository-relative).**
 
 | Path | Disposition | Responsibility |
@@ -2668,7 +2713,7 @@ file order or similar timestamps never pair the two inputs automatically.
 | `crates/morgana/src/inputs/synthetic.rs` | Add (implemented) | Versioned synthetic target JSON materialization. |
 | `crates/phy/tests/measurement_playback.rs` | Add (implemented) | Independent power/weights/offsets/null/duplicate/budget cases. |
 | `crates/phy/tests/rxmer_channel.rs` | Add (implemented) | Physical-bin draw-order, actual useful outputs and chunk invariance. |
-| `crates/morgana/src/inputs/rxmer.rs` | Create (planned) | Original-preserving verified upstream binary capture admission and association. |
+| `crates/morgana/src/inputs/rxmer.rs` | Add (implemented) | Original-preserving major2 decoding; future extension supplies measured association. |
 
 The existing planned measurement/configuration/signal-processing/channel roots
 register the PHY leaves. Future facade registration extends
@@ -2712,9 +2757,9 @@ Binary support is conditional on a verified upstream type/version/scale/null
 contract and decoder fixtures. Do not reuse downstream file-type numbers,
 DPD/PLC metadata or receiver identities. Rust typed inputs come first; decoded
 JSON needs an explicit versioned schema and the same validation. Unsupported
-binary/JSON types fail clearly. Actual upstream capture format support remains
-RXMER-FORMAT-01 work, not a capability implied by this input diagram. No live
-SNMP/TFTP/device acquisition is introduced.
+binary/JSON types fail clearly. Major2 upstream binary inspection now passes
+RXMER-FORMAT-01/RXMER-INSPECT-01; original-preserving association and measured
+playback remain RXMER-INPUT-01. No live SNMP/TFTP/device acquisition is introduced.
 
 **Selection and temporal policy.** Define dimensionless error-power ratio
 `rho[k] = 10^(-mer_db[k]/10)` at the declared equalized probe reference.
@@ -4346,6 +4391,7 @@ are re-exported by `crates/morgana/src/api/mod.rs`; Rust ownership is canonical.
 | `RunControl::new/pause/resume/cancel/progress` | `RunControl()`, `pause/resume/cancel/progress_json` | Shared bounded control; acknowledged pause retains stack and excludes paused time. |
 | `ConfigurationDocument::from_json/to_json/inventory` | Same names | Full retained named inventory; unknown versions/fields reject. |
 | `UcdCapture::from_mac_management/original_bytes/original_sha256/to_json` | Same names | Bounded offline structural inspection; raw Rust header/TLV getters and equivalent native JSON, immutable originals and zero-based error offsets. No configuration/run side effects. |
+| `RxmerCapture::from_pnm/header/raw_readings/readings_db/ccap_id_text/pre_eq_enabled/original_bytes/original_sha256/to_json` | Same query names except raw header via JSON | Immutable bounded CCAP major2 decoded observation, explicit raw/optional metadata, units/nulls/source offsets; measured association remains pending. |
 | `ConfigurationDocument::original_bytes/original_sha256` | Same names | Exact admitted source bytes and SHA-256, distinct from canonical serialization. |
 | `PreEqBank::unity/normalized/coefficients/generation` | Same names/property | One numerical normalization/application owner; full physical indices retained. |
 | `SyntheticRxmer::new(config,id,db)` | `SyntheticRxmer(config,id,mer_db)` | Explicit synthetic unit-probe-reference input; nulls stay null. |

@@ -54,7 +54,10 @@ def main() -> None:
     capture = subprocess.run(["scripts/cargo-local.sh", "run", "-p", "morgana", "--example", "inspect_ucd", "--locked"], cwd=ROOT, stdin=subprocess.DEVNULL, capture_output=True, check=True, timeout=60)
     capture_path = ROOT / "target/python-runtime/rust-ucd.json"
     capture_path.write_bytes(capture.stdout)
-    env = dict(os.environ, MORGANA_RUST_UCD_JSON=str(capture_path), MORGANA_RUST_SYNTHETIC_JSON=str(synthetic_path), MORGANA_RUST_DOCUMENT_JSON=str(document_path), MORGANA_RUST_MEASUREMENTS_JSON=str(measurement_path), PYTHONPATH=str(package.parent), MORGANA_RUST_REFERENCE_JSON=str(reference_path))
+    rxmer = subprocess.run(["scripts/cargo-local.sh", "run", "-p", "morgana", "--example", "inspect_rxmer", "--locked"], cwd=ROOT, stdin=subprocess.DEVNULL, capture_output=True, check=True, timeout=60)
+    rxmer_path = ROOT / "target/python-runtime/rust-rxmer.json"
+    rxmer_path.write_bytes(rxmer.stdout)
+    env = dict(os.environ, MORGANA_RUST_RXMER_JSON=str(rxmer_path), MORGANA_RUST_UCD_JSON=str(capture_path), MORGANA_RUST_SYNTHETIC_JSON=str(synthetic_path), MORGANA_RUST_DOCUMENT_JSON=str(document_path), MORGANA_RUST_MEASUREMENTS_JSON=str(measurement_path), PYTHONPATH=str(package.parent), MORGANA_RUST_REFERENCE_JSON=str(reference_path))
     subprocess.run([sys.executable, "-B", "-m", "unittest", "discover", "-s", "bindings/python/tests", "-v"], cwd=ROOT, env=env, stdin=subprocess.DEVNULL, check=True, timeout=120)
 
 

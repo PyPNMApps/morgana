@@ -37,3 +37,8 @@ original rendered pages and authored fixture provenance are recorded there.
 This wire format is controlled by MULPI, independently from PHY numerology and
 OSSI PNM file formats. Private PDFs remain excluded; no source checkout is needed
 to use the implemented inspector or its tracked fixtures.
+
+[Upstream RxMER source/fixture evidence](../development/features/rxmer-capture/design.md)
+pins CCAP-OSSIv3.1-I18-200610 §7.3.2.5, Table397 and Table410 for the bounded
+major2 decoder. It records exact file offsets, source/reference limits and
+raw metadata interpretation separately from measured-model association.

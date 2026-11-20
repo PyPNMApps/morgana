@@ -215,6 +215,13 @@ Those declarations remain design stubs until implemented and validated.
 
 ## Accepted backend staging
 
+RxMER capture inspection refines REQ-PNM-01/02, REQ-API-03/06 and REQ-NFR-01:
+the [binary observation boundary](architecture.md#rxmer-input) SHALL retain
+original bytes, full raw metadata and contiguous raw/decoded readings, including
+nulls, through the same bounded Rust/native Python decoder. Header interpretation
+limits SHALL remain explicit. Loading MUST NOT imply measured association or
+simulation readiness; those gates remain RXMER-INPUT-01.
+
 Capture inspection refines REQ-PNM-01, REQ-API-01/03/06 and REQ-NFR-01:
 the [UCD inspection boundary](architecture.md#upstream-configuration-capture-inspection)
 SHALL retain exact originals and offsets, enforce byte/record budgets and expose

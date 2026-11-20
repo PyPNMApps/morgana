@@ -72,7 +72,8 @@ bytes are returned separately. It is not `morgana.us-configuration` or a saved
 workbench and cannot be loaded as either.
 
 See the [source/fixture audit](../development/features/capture-formats/design.md)
-and [fixture record](../../examples/measurements/ucd/README.md). RxMER/Pre-EQ PNM
-binary decoders, captured-UCD projection, multipart assembly and transport
-unwrapping remain pending. After crate testing, follow the
+and [fixture record](../../examples/measurements/ucd/README.md). Separate
+[RxMER file decoding](rxmer-captures.md) is available for bounded inspection.
+Pre-EQ binary decoding, measured association/playback, captured-UCD projection,
+multipart assembly and transport unwrapping remain pending. After crate testing, follow the
 [cleanup commands](../development/build.md) once dependent checks finish.

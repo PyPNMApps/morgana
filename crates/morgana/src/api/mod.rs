@@ -7,8 +7,8 @@ mod error;
 mod reports;
 mod session;
 pub use crate::inputs::{
-    ConfigurationDocument, ConfigurationPreset, RunSettings, UcdBurst, UcdCapture, UcdHeader,
-    UcdTlv,
+    ConfigurationDocument, ConfigurationPreset, RunSettings, RxmerCapture, RxmerHeader, UcdBurst,
+    UcdCapture, UcdHeader, UcdTlv,
 };
 pub use error::{ApiError, ApiResult, CaptureFailure};
 pub use morgana_phy::channel::ChannelConfig;
