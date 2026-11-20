@@ -11,6 +11,7 @@ contains requirements, reuse assessments, evidence, API proposal and milestones.
 | `crates/cli` | Arguments, deterministic fixture source and JSON stdout | Implemented; no waveform processing |
 | `skills/` | Canonical engineering/PHY guidance and operational references | Adopted for this checkpoint |
 | `scripts/` and `tools/git/` | Local validation and guarded local save | Checkpoint tooling |
+| `install.sh` and `scripts/bootstrap/` | Explicit development dispatcher, host/package admission, pinned local Rust and locked source setup | Inspection/mock validation; clean provisioning unverified |
 
 The current executable path is information bits → upstream LDPC encode →
 noiseless LLRs → soft decode → separate syndrome/source comparison. Decoder

@@ -10,6 +10,7 @@ Read only applicable skills. Source/adaptation records belong in the
 | [reuse-first-changes](reuse-first-changes/SKILL.md) | Trace and extend existing owners before adding implementations |
 | [coding-style](coding-style/SKILL.md) | Public banners, domain types, errors and justified complexity |
 | [build-validation](build-validation/SKILL.md) | Reproducible meaningful checks and honest environment evidence |
+| [modular-bootstrap](modular-bootstrap/SKILL.md) | Explicit development installer, read-only modes and pinned local tools |
 | [git-workflow](git-workflow/SKILL.md) | Review and prepare guarded local save commands |
 | [generic-guidance](generic-guidance/SKILL.md) | Self-contained skills, procedures, templates and dependency closure |
 | [third-party-reuse](third-party-reuse/SKILL.md) | Permission, attribution, modification and distribution records |

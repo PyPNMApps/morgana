@@ -15,6 +15,7 @@ until plan approval. No OFDMA waveform, GUI or Python binding is implemented.
 - [PDE adoption and skill sources](docs/development/foundation-adoption.md)
 - [Agent instructions](AGENTS.md) and [skill catalog](skills/README.md)
 - [Build and validation](docs/development/build.md)
+- [Development installer and inspection modes](docs/development/setup.md)
 - [Local Git save workflow](docs/git.md)
 - [Specification setup and evidence limits](docs/reference/specifications.md)
 - [Notices and redistribution gaps](NOTICE)

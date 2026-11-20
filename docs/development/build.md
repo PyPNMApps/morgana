@@ -1,8 +1,12 @@
 # Build and validation
 
 Use Rust 1.85.1 with rustfmt/Clippy, a native linker/C build prerequisites required
-by Rust's host toolchain, Bash and Python 3.11+ for development-only checks.
+by Rust's host toolchain, Bash and Python 3.10+ for development-only checks.
 Scientific code and tests are Rust; Python is used only for repository tooling.
+
+Use the [development installer](setup.md) to inspect/prepare the Ubuntu baseline:
+`./install.sh --development --check` and `./install.sh --development --dry-run`
+are read-only. Only `./install.sh --development` applies prerequisite changes.
 
 `scripts/cargo-local.sh` prefers an existing isolated `local/cargo`/`local/rustup`
 installation; otherwise it uses Cargo on PATH. No other source checkout is needed.

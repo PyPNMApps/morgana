@@ -308,12 +308,33 @@
       "source": "skills/public-api/SKILL.md",
       "destination": "skills/public-api/SKILL.md",
       "sha256": "3fd678ac6bbdcd5fba387928b9baa25eb71d03b5d9c57b009efa167b35146f41"
+    },
+    {
+      "source": "skills/modular-bootstrap/SKILL.md",
+      "destination": "skills/modular-bootstrap/SKILL.md",
+      "sha256": "1084e5449ccd7ba55f7ea074eff325f9253b4798f0b72c8ebb3342cddf6d009d",
+      "adoption": "explicit generic development-setup update, working-tree input 2026-11-19"
+    },
+    {
+      "source": "skills/modular-bootstrap/references/procedure.md",
+      "destination": "skills/modular-bootstrap/references/procedure.md",
+      "sha256": "d0d446e1a1d6f70ce8df3cc59138a7b62f7743ef42f936928365f1054cd1d201",
+      "adoption": "explicit generic development-setup update, working-tree input 2026-11-19"
+    },
+    {
+      "source": "templates/tools/development-setup.md",
+      "destination": "templates/tools/development-setup.md",
+      "sha256": "2167179799b4a1fedc95367d76c28cc31bbc4fe9e3b932a4bb5fd210298ac515",
+      "adoption": "explicit generic development-setup update, working-tree input 2026-11-19"
     }
   ],
   "merlin_revision": "096d5a476194d4f2e016863d723b225257bb6037",
   "source_state": "working-tree snapshot above the recorded source_revision; hashes identify exact inputs",
   "modified_source_files": [
     "skills/git-workflow/SKILL.md",
-    "skills/git-workflow/references/procedure.md"
+    "skills/git-workflow/references/procedure.md",
+    "skills/modular-bootstrap/SKILL.md",
+    "skills/modular-bootstrap/references/procedure.md",
+    "templates/tools/development-setup.md"
   ]
 }

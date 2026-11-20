@@ -1,6 +1,7 @@
 # MORGANA upstream DOCSIS simulation toolkit
 
-Work in this repository. Source repositories used for inspection remain read-only.
+Work in this repository. Source repositories used for inspection remain read-only
+unless the user explicitly authorizes a scoped update to their canonical guidance.
 MORGANA owns Rust upstream OFDMA science for one CM and a simulated CMTS receiver;
 it does not implement a full MAC, scheduler, service group or downstream waveform.
 
@@ -10,6 +11,8 @@ The current scientific implementation is an unfinished checkpoint. Further
 simulation implementation requires explicit approval of the plan. Saving this
 checkpoint and adopting skills/instructions are authorized. A request for
 `commit-msg` means prepare the local save-helper command, not execute it.
+Development-installer implementation and its generic foundation guidance update
+are authorized; executing system installation is a separate action.
 Do not commit, push, tag, publish or install system packages without an explicit
 request to execute that operation. Tests may use disposable Git repositories.
 
@@ -28,6 +31,9 @@ reuse-first-changes, coding-style, build-validation and third-party-reuse where
 applicable. Use generic-guidance for skill changes; preserve complete local
 procedures, examples, failure cases and link dependencies. See the
 [foundation adoption record](docs/development/foundation-adoption.md).
+Apply [modular-bootstrap](skills/modular-bootstrap/SKILL.md) for `install.sh`
+and development-setup changes. The root dispatcher stays thin; package/toolchain
+implementation lives in focused modules under `scripts/bootstrap/`.
 
 Apply docsis-signal-processing, scientific-testing and the relevant pinned
 docsis-phy-3-1-i20 / docsis-phy-4-0-i07 skills for PHY/FEC changes. Apply public-api
@@ -69,7 +75,7 @@ Review architecture/checklist at completion and every commit-msg request. Keep
 partial or source-unverified work unchecked. Do not edit solely to log a review.
 
 Run `scripts/validate.sh`; use `scripts/cargo-local.sh` for individual Cargo calls.
-The gate checks local guidance/navigation, Git tooling, formatting, workspace
+The gate checks local guidance/navigation, setup/Git tooling, formatting, workspace
 tests and Clippy. Preserve Cargo/toolchain caches. Do not install prerequisites
 incidentally; see [build guide](docs/development/build.md). Hosted/platform runs,
 external interoperability and publication require separate actual evidence.

@@ -1,11 +1,15 @@
 # Official implementation checklist
 
-Current authorization: preserve this checkpoint and adopt local guidance/tooling;
-further scientific implementation awaits plan approval.
+Current authorization: preserve this checkpoint, adopt local guidance/tooling and
+implement development setup; further scientific implementation awaits plan approval.
 See [architecture](../architecture.md) and [foundation design](features/foundation/design.md).
 
 - [x] FOUNDATION-01: Inspect PDE and record selective adoption decisions.
 - [x] FOUNDATION-02: Inspect MERLIN and document reusable/upstream-specific owners.
+- [x] SETUP-01..03: Adopt generic installer guidance and implement/test explicit
+  development setup. Nineteen setup tests and Ubuntu 22.04 read-only modes pass;
+  see [design/checklist](features/development-setup/design.md).
+- [ ] SETUP-04: Validate actual fresh-machine provisioning on declared targets.
 - [ ] FOUNDATION-03: Complete independent workspace foundation. Rust workspace,
   lock, local skills/instructions, notices and save tooling exist; hosted CI,
   release preparation, public API/user guides and full distribution review remain.
