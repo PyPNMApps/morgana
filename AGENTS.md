@@ -29,6 +29,11 @@ The official checklist SHALL link every active task to exact requirement and
 architecture targets, list dependency IDs and define acceptance. Preserve stable
 IDs/status and complete requirement coverage; completed design is not runtime
 acceptance. Follow the development-workflow traceability procedure.
+Apply the [accepted backend delivery decisions](docs/architecture.md#accepted-backend-delivery-decisions):
+all-family codec audit, standalone local reuse, stage-by-stage independent cases,
+typed synthetic Rust API loop with cancellation first, then loaders/native Python
+and separately accepted pause/resume. Decisions record scope/order; no scientific
+task is complete until its own implementation and acceptance pass.
 
 ## Skills and source evidence
 

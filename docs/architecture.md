@@ -23,7 +23,8 @@ and preserves completed design records separately from scientific completion.
 - [RxMER](#rxmer-input)
 - [US-Pre-EQ](#us-pre-eq-input)
 
-[High-level Rust and Python APIs](#high-level-rust-and-python-apis)
+[High-level Rust and Python APIs](#high-level-rust-and-python-apis) ·
+[Backend delivery decisions](#accepted-backend-delivery-decisions)
 
 ## Checkpoint and target overview
 
@@ -75,6 +76,50 @@ interface stubs, placement, lifecycle and delivery gates; it adds no PHY stage.
 See the [official checklist](development/checklist.md) for incomplete acceptance,
 especially LDPC-01's source transcription issue. Internal tests share the
 transcribed table data and cannot establish its correctness by round trip alone.
+
+## Accepted backend delivery decisions
+
+The six decisions below were accepted during the backend review. They define
+implementation scope/order, not completed science or a request to start coding.
+See the [decision/validation record](development/features/backend-delivery/design.md)
+and [developer checklist](development/checklist.md). Existing stage contracts
+remain the detailed design; all corresponding runtime gates remain pending.
+
+| Decision | Accepted contract | Architecture / delivery |
+| --- | --- | --- |
+| BACKEND-01 | Audit and validate all three LDPC families before dependent waveform implementation. Resolve the recorded matrix discrepancy using independent source checks. | [TX-02](#tx-02-ldpc-encoding-and-shortening), [RX-08](#rx-08-shortening-restoration-and-ldpc-decoding); LDPC-01/02. |
+| BACKEND-02 | Keep MORGANA standalone while adapting suitable reviewed MERLIN code into locally owned modules. Retain origin/revision/licenses and independently validate upstream behavior. No MERLIN crate, checkout or runtime dependency is introduced. | [Code layout](#planned-code-layout), [scientific ownership](#ownership-results-and-acceptance); DEV-CORE-01, DEV-LICENSE-01. |
+| BACKEND-03 | Deliver bounded execution, cooperative cancellation and completed/partial results first. Pause/resume follows the accepted reference loop and its own state/time-accounting tests. | [API lifecycle](#api-lifecycle-errors-and-result-contracts); DEV-RUN-01, DEV-PAUSE-01. |
+| BACKEND-04 | Prepare independent source-checked expected inputs/outputs before implementing each stage. Build the catalog stage by stage; a complete upfront vector catalog or external interoperability dataset is not a prerequisite. | [TX stages](#internal-stage-sequence), [RX stages](#receiver-stage-sequence); each stage task and LDPC-01/02. |
+| BACKEND-05 | Use typed synthetic US Configuration for the first unity loop. Add versioned JSON loading and verified RxMER/Pre-EQ capture import afterward. Full applicable MULPI coverage remains required delivery work. | [US Configuration](#us-configuration), [CMTS JSON](#cmts-configuration-us-configuration-json), [PNM RxMER](#rxmer-input), [PNM Pre-EQ](#us-pre-eq-input); phase 7 after DEV-LOOP-01. |
+| BACKEND-06 | Develop the high-level Rust API alongside the backend and accept the reference loop through it. Add the native Python wrapper only after the Rust unity loop passes. An early FEC-only Python wrapper is outside the selected first milestone. | [API delivery](#api-delivery-and-validation-gates); API-RUST/INPUT-01, API-RUN-01, DEV-LOOP-01, API-PY/STUB-01. |
+
+The first milestone is the typed, Rust-driven PRBS → CM-US-TX → exact unity
+CH-SIM → configured-timing CMTS-US-RX → independent comparison loop, with finite
+work limits and cancellation/partial results. Unsupported pause controls,
+configuration/capture loaders and native Python remain unavailable until their
+later acceptance gates pass. Full later requirements are retained.
+Per-stage pause/resume descriptions remain the later continuity contract; their
+pause-specific acceptance belongs to DEV-PAUSE-01. Initial stage gates cover the
+declared bounded/cancellable reference scope, without claiming paused execution.
+
+**File ownership for these decisions.** No source files are added here. Detailed
+stage/API tables remain authoritative for all leaf files and tests.
+
+| Path | Disposition at implementation | Responsibility |
+| --- | --- | --- |
+| `crates/ldpc/src/definitions.rs`, `crates/ldpc/src/codec.rs`, `crates/ldpc/src/tests.rs`, `crates/ldpc/src/tests/oracle.rs` | Edit/reuse existing after audit | Source-verified matrices, codec behavior and independent acceptance. |
+| `crates/phy/src/signal_processing/mod.rs` | Add (already planned) | Focused local numerical owners; inspect each reuse candidate and its upstream applicability. |
+| `crates/phy/src/simulation/job.rs` | Add (already planned) | Bounded cancellation/partial results first; later verified pause/resume state. |
+| `crates/morgana/src/api/simulation.rs` | Add (already planned) | Rust session integration developed with the backend and exercised by reference acceptance. |
+| `bindings/python/src/simulation.rs` | Add (already planned; later milestone) | Native adapter after the accepted Rust unity loop. |
+
+Concrete cumulative job budgets, per-primitive reuse/dependency choices, exact
+schema fields and capture formats still require their implementation-time
+review. Borrowing code does not establish compatibility by itself. Existing
+independent pinned Rust dependencies remain valid; this decision selects no new
+external numerical library or shared cross-project crate. MERLIN inspection
+remains read-only. Preserve every actual copied/adapted notice and modification.
 
 ## Planned upstream signal path and workbenches
 
@@ -140,9 +185,11 @@ validation and bounded orchestration stay Rust; adapters present owned results.
 
 Module directories above use their named `mod.rs`; their leaf files are specified
 in the corresponding sections below. The module roots and `crates/phy/src/lib.rs`
-register those leaves when implemented. Numerical dependency selection and actual
-Qt application file placement remain open decisions for their implementation/UI
-plans; this layout does not introduce a new numerical dependency or UI crate.
+register those leaves when implemented. The accepted numerical strategy is
+[standalone local adaptations](#accepted-backend-delivery-decisions); each primitive
+and dependency still needs source/license/upstream review before adoption. Actual
+Qt file placement remains for its separate UI plan. No numerical dependency or
+UI crate is introduced by this layout.
 
 ### US Configuration
 
@@ -4156,7 +4203,9 @@ module roots; the per-stage tables above name their implementation/test files.
 These remain planned responsibilities, not empty files to create now.
 `crates/morgana` exposes their typed Rust facade
 and reports; the CLI and future Python wrapper consume it. Numerical reuse from
-the reference toolkit requires a reviewed shared-code plan and preserved licenses.
+the reference toolkit follows a reviewed local-adaptation plan with preserved
+licenses and independently checked upstream behavior; no project dependency
+is introduced by the accepted reuse strategy.
 Actual GPL Qt presentation reuse requires a separate compatible application
 adapter; it does not change the Apache scientific-core boundary.
 
@@ -4349,7 +4398,9 @@ the partial report under the documented native wrapper policy.
 Pause/resume signatures are reserved until the engine defines safe boundaries,
 frozen PRBS/randomizer/interleaver/Pre-EQ/RNG state, paused-time accounting and
 stop-from-paused behavior. They remain unavailable before that lifecycle contract
-and native tests exist. No Python-specific scheduler or polling DSP is introduced.
+and native tests exist. BACKEND-03 schedules them after the accepted bounded/
+cancellable reference loop; they are not a first-loop prerequisite. No
+Python-specific scheduler or polling DSP is introduced.
 
 Proposed error categories: InvalidInput, MissingSetting, UnsupportedFormat,
 UnsupportedVersion, UnsupportedCapability, InvalidIdentifier, IncompatibleGrid,
@@ -4377,8 +4428,9 @@ load and run through both language APIs with migration or structured rejection.
 Deliver in order: paired architecture → approved typed Rust session/input/error
 foundation → source-verified waveform prerequisites → experiment execution/results
 and controls → optional native Python wrapper and real `.pyi` exports → paired
-examples/guides and native parity. An early FEC wrapper may expose only working
-FEC operations; it must not advertise an OFDMA session as ready.
+examples/guides and native parity. BACKEND-06 develops the Rust session with the
+backend and accepts the unity loop through that API before Python work begins.
+An early FEC-only Python wrapper is outside the selected delivery order.
 
 Rust acceptance covers idle loading, atomic rejection, inventory/selection,
 single/multi association, invalid units/IDs/nulls, limits, owned results and

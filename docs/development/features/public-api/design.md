@@ -4,6 +4,12 @@ Status: architecture and paired interface stubs defined; implementation remains
 planned. Current callable support is the FEC-only Rust facade. This task creates
 no Rust modules, Cargo members, native extension or installed Python type stubs.
 
+The [accepted backend order](../../../architecture.md#accepted-backend-delivery-decisions)
+develops the Rust session alongside typed configuration, integrates its run API
+before unity-loop acceptance and adds native Python afterward. An early FEC-only
+Python wrapper is outside that milestone order. Bounded cancellation/partial
+results come first; pause/resume has a separate later acceptance task.
+
 ## Requirements and acceptance
 
 | ID | Requirement | Planned acceptance |

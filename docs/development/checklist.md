@@ -2,6 +2,9 @@
 
 This is the canonical delivery checklist derived from the
 [requirements](../requirements.md) and [architecture](../architecture.md).
+The [accepted backend decisions](../architecture.md#accepted-backend-delivery-decisions)
+set the milestone order; their [decision record](features/backend-delivery/design.md)
+does not mark scientific implementation complete.
 Current authorization remains documentation/tooling and explicit development
 setup; further scientific implementation awaits plan approval. No task grants
 commit, push, publication, provisioning or GUI implementation authorization.
@@ -22,8 +25,13 @@ choices into mandatory behavior or an explicit excluded/deferred decision before
 dependent work. Preserve task IDs and requirement links across refinements.
 
 The deferred section tracks design gates, not a promise of immediate support.
-Core synthetic inputs do not require all later PNM formats. Shared contracts
+Before each stage implementation, record independent source-checked expected
+inputs/outputs; the full catalog grows stage by stage. Core synthetic inputs do
+not require later JSON/PNM loaders. Shared contracts
 MUST still be source-audited within their declared supported scope before use.
+Initial stage gates cover the bounded/cancellable reference scope. Pause-specific
+stage cases remain pending under DEV-PAUSE-01 and do not block initial loop
+acceptance or justify advertising pause controls prematurely.
 
 **Contents**
 
@@ -52,14 +60,19 @@ First scientific work remains LDPC-01 after implementation authorization. Shared
   Requirements: [REQ-TX-02](../requirements.md#req-tx-02), [REQ-RX-08](../requirements.md#req-rx-08), [REQ-SYS-05](../requirements.md#req-sys-05). Architecture: [design/owner](../architecture.md#tx-02-ldpc-encoding-and-shortening).<br>
   Depends on: LDPC-01.<br>
   Acceptance: All families pass independent parity/shortening, controlled errors, failed decisions and actual-iteration cases. The existing 23 tests alone do not close source acceptance; no external-interoperability claim.
-- [ ] DEV-CORE-01: Register the reviewed PHY owners, shared typed boundaries and explicit resource/error contracts.<br>
+- [ ] DEV-CORE-01: Register the reviewed PHY owners, shared typed boundaries and explicit resource/error contracts using suitable locally adapted reference code.<br>
   Requirements: [REQ-SYS-03](../requirements.md#req-sys-03), [REQ-NFR-01](../requirements.md#req-nfr-01), [REQ-LIFE-01](../requirements.md#req-life-01). Architecture: [design/owner](../architecture.md#planned-code-layout).<br>
   Depends on: LDPC-02.<br>
-  Acceptance: Rust-only checks cover units, finite/index/size bounds, checked arithmetic and run/configuration identities; no Python/Qt dependency, duplicate scientific owner or empty executable placeholder.
+  Acceptance: Rust-only checks cover units, finite/index/size bounds, checked arithmetic and run/configuration identities; no Python/Qt/MERLIN project dependency, duplicate scientific owner or empty executable placeholder. Review each adaptation, retain provenance/licenses and independently verify upstream applicability; no new external numerical library is selected by this plan.
 - [ ] US-CONFIG-01: Implement the supported typed reference configuration, inventory/selection and legitimate TX/RX projections.<br>
   Requirements: [REQ-CFG-01](../requirements.md#req-cfg-01), [REQ-CFG-02](../requirements.md#req-cfg-02), [REQ-CFG-05](../requirements.md#req-cfg-05), [REQ-SYS-04](../requirements.md#req-sys-04). Architecture: [design/owner](../architecture.md#us-configuration).<br>
   Depends on: DEV-CORE-01.<br>
   Acceptance: Audit each reference-scope field before use; invalid settings preserve accepted state, all retained entries are discoverable, and normal RX excludes simulator truth. Full JSON/MULPI coverage stays separately pending.
+
+- [ ] API-RUST/INPUT-01: Implement the typed idle Rust session/configuration/input/inventory/preview surface.<br>
+  Requirements: [REQ-API-01](../requirements.md#req-api-01), [REQ-API-03](../requirements.md#req-api-03), [REQ-SYS-03](../requirements.md#req-sys-03). Architecture: [design/owner](../architecture.md#paired-rust-and-python-interface-stubs).<br>
+  Depends on: US-CONFIG-01.<br>
+  Acceptance: Initial typed reference configuration/session/preview tests pass while existing FEC calls and schema-1 reports stay compatible. Add verified importer operations with their later input milestones; no unverified importer or empty successful run stub is advertised.
 
 ## 2. Source and grant planning
 
@@ -67,7 +80,7 @@ These tasks use the accepted shared resource/configuration contract; source veri
 
 - [ ] PHY-01: Implement TX-01 resource capacity, grant/codeword selection and fill/pad accounting.<br>
   Requirements: [REQ-TX-01](../requirements.md#req-tx-01), [REQ-CFG-05](../requirements.md#req-cfg-05), [REQ-SYS-02](../requirements.md#req-sys-02). Architecture: [design/owner](../architecture.md#tx-01-grant-framing-and-fec-selection).<br>
-  Depends on: US-CONFIG-01.<br>
+  Depends on: US-CONFIG-01, API-RUST/INPUT-01.<br>
   Acceptance: Independent capacity/threshold/borrowing/byte-residue cases conserve source/fill/shortening/parity/pad counts; RX independently derives the same plan and invalid planning does not consume source.
 - [ ] SOURCE-01: Implement continuous PRBS15, independent verification and source associations.<br>
   Requirements: [REQ-PRBS-01](../requirements.md#req-prbs-01), [REQ-PRBS-02](../requirements.md#req-prbs-02), [REQ-PRBS-03](../requirements.md#req-prbs-03), [REQ-PRBS-04](../requirements.md#req-prbs-04). Architecture: [design/owner](../architecture.md#prbs-block-architecture).<br>
@@ -184,7 +197,7 @@ Passive taps accompany stage work. These aggregate tasks prove lifecycle and com
 - [ ] DEV-RUN-01: Implement frozen run settings, identities, cumulative budgets and cancellation with retained completed science.<br>
   Requirements: [REQ-LIFE-01](../requirements.md#req-life-01), [REQ-LIFE-02](../requirements.md#req-life-02), [REQ-LIFE-03](../requirements.md#req-life-03), [REQ-NFR-01](../requirements.md#req-nfr-01). Architecture: [design/owner](../architecture.md#ownership-results-and-acceptance).<br>
   Depends on: WAVE-RX-01.<br>
-  Acceptance: Resolve job-wide limits/safe boundaries before execution; test bounded cancellation, pending tails/ranges and reproducibility. Pause/resume stays unavailable until state/time/stop semantics pass actual tests.
+  Acceptance: Resolve job-wide limits/safe boundaries before execution; test bounded cancellation, pending tails/ranges and reproducibility. Pause/resume is outside the first-loop milestone; later state/time/stop acceptance belongs to DEV-PAUSE-01.
 - [ ] INSTRUMENTS-01: Implement shared bounded QAM/SA collectors and queryable matched taps.<br>
   Requirements: [REQ-OBS-01](../requirements.md#req-obs-01), [REQ-CH-06](../requirements.md#req-ch-06). Architecture: [design/owner](../architecture.md#shared-qam-analyzer-and-spectrum-analyzer).<br>
   Depends on: WAVE-RX-01.<br>
@@ -193,10 +206,19 @@ Passive taps accompany stage work. These aggregate tasks prove lifecycle and com
   Requirements: [REQ-OBS-02](../requirements.md#req-obs-02), [REQ-PRBS-03](../requirements.md#req-prbs-03), [REQ-PRBS-04](../requirements.md#req-prbs-04), [REQ-API-06](../requirements.md#req-api-06). Architecture: [design/owner](../architecture.md#ownership-results-and-acceptance).<br>
   Depends on: DEV-RUN-01, INSTRUMENTS-01.<br>
   Acceptance: Reports retain failed/partial science, true iterations, generated/compared/unverified coverage, provenance and explicit unavailable/unbounded metric states; configuration and report schemas remain distinct.
+- [ ] API-RUN-01: Expose accepted bounded execution, owned reports, progress/cancellation and QAM/SA access.<br>
+  Requirements: [REQ-API-01](../requirements.md#req-api-01), [REQ-API-03](../requirements.md#req-api-03), [REQ-LIFE-01](../requirements.md#req-life-01), [REQ-LIFE-02](../requirements.md#req-life-02), [REQ-LIFE-03](../requirements.md#req-life-03). Architecture: [design/owner](../architecture.md#api-lifecycle-errors-and-result-contracts).<br>
+  Depends on: API-RUST/INPUT-01, DEV-RESULTS-01.<br>
+  Acceptance: Frozen snapshots, limits, Busy, cancellation/partial results and report query/lifetimes pass; pause remains unavailable in the first loop and is delivered separately by DEV-PAUSE-01.
 - [ ] DEV-LOOP-01: Accept the complete source-to-recovered-bits reference unity experiment.<br>
   Requirements: [REQ-SYS-01](../requirements.md#req-sys-01), [REQ-SYS-02](../requirements.md#req-sys-02), [REQ-SYS-04](../requirements.md#req-sys-04), [REQ-LIFE-01](../requirements.md#req-life-01), [REQ-LIFE-02](../requirements.md#req-life-02). Architecture: [design/owner](../architecture.md#ownership-results-and-acceptance).<br>
-  Depends on: DEV-RESULTS-01.<br>
-  Acceptance: Completed/drained runs have exact meaningful-bit counts, full contiguous coverage and zero mismatches; destructive/truncated/cancelled/no-payload cases cannot claim recovery from zero errors alone.
+  Depends on: API-RUN-01.<br>
+  Acceptance: Runs invoked through the high-level Rust API have exact meaningful-bit counts when completed/drained, full contiguous coverage and zero mismatches; destructive/truncated/cancelled/no-payload cases cannot claim recovery from zero errors alone.
+
+- [ ] DEV-PAUSE-01: Add pause/resume after the accepted bounded/cancellable reference loop.<br>
+  Requirements: [REQ-LIFE-03](../requirements.md#req-life-03), [REQ-API-03](../requirements.md#req-api-03). Architecture: [lifecycle design](../architecture.md#api-lifecycle-errors-and-result-contracts), [delivery decision](../architecture.md#accepted-backend-delivery-decisions).<br>
+  Depends on: DEV-LOOP-01, DEV-RUN-01.<br>
+  Acceptance: Resolve safe boundaries, paused-time accounting and stop-from-paused behavior; independently verify retained source/mask/interleaver/Pre-EQ/RNG/history/pending output. Public controls remain unavailable until those tests pass; native Python controls additionally require actual matching parity tests. This extension is not a dependency of the initial loop, loaders or first Python wrapper.
 
 ## 7. Complete configuration JSON and PNM admission
 
@@ -212,7 +234,7 @@ These extensions do not become prerequisites for a typed synthetic reference exp
   Acceptance: Examples cover 25/50 kHz, mixed/zero loading and honestly unsupported optional modes; versions/defaults/nulls/unknown fields are independently exercised.
 - [ ] USJSON-CORE/PROJECTION/PARITY-01: Implement bounded configuration JSON admission and accepted CMTS/TX/RX views.<br>
   Requirements: [REQ-CFG-01](../requirements.md#req-cfg-01), [REQ-CFG-02](../requirements.md#req-cfg-02), [REQ-CFG-03](../requirements.md#req-cfg-03), [REQ-CFG-05](../requirements.md#req-cfg-05), [REQ-API-06](../requirements.md#req-api-06). Architecture: [design/owner](../architecture.md#cmts-configuration-us-configuration-json).<br>
-  Depends on: USJSON-FORMAT/PRESETS-01, US-CONFIG-01.<br>
+  Depends on: DEV-LOOP-01, USJSON-FORMAT/PRESETS-01, US-CONFIG-01.<br>
   Acceptance: Round trips, all-field conditional validation, inventory, atomic replacement and source-preserving projections pass in shared Rust; native Python parity closes under API-PARITY/DOCS-01.
 - [ ] US-CONFIG-FORMAT-01: Verify any claimed upstream configuration/profile capture format before adding its importer.<br>
   Requirements: [REQ-PNM-01](../requirements.md#req-pnm-01), [REQ-CFG-05](../requirements.md#req-cfg-05). Architecture: [design/owner](../architecture.md#us-configuration).<br>
@@ -262,19 +284,13 @@ Keep unsupported composition rejected. Captured-H reconstruction, fractional tim
 
 ## 9. High-level Rust and native Python delivery
 
-Shared Rust API foundation can be developed after typed core admission, but full waveform execution depends on the accepted experiment. Python consumes working Rust operations.
+The Rust foundation/run tasks are integrated with phases 1 and 6. Native Python
+starts only after DEV-LOOP-01 accepts the Rust-driven experiment; an early FEC-only
+Python wrapper is outside this delivery order. Python consumes working Rust operations.
 
-- [ ] API-RUST/INPUT-01: Implement the typed idle Rust session/configuration/input/inventory/preview surface.<br>
-  Requirements: [REQ-API-01](../requirements.md#req-api-01), [REQ-API-03](../requirements.md#req-api-03), [REQ-SYS-03](../requirements.md#req-sys-03). Architecture: [design/owner](../architecture.md#paired-rust-and-python-interface-stubs).<br>
-  Depends on: US-CONFIG-01.<br>
-  Acceptance: Direct Rust valid/invalid/atomic-state/lifetime tests pass while existing FEC calls and schema-1 reports stay compatible; no unverified importer is advertised.
-- [ ] API-RUN-01: Expose accepted bounded execution, owned reports, progress/cancellation and QAM/SA access.<br>
-  Requirements: [REQ-API-01](../requirements.md#req-api-01), [REQ-API-03](../requirements.md#req-api-03), [REQ-LIFE-01](../requirements.md#req-life-01), [REQ-LIFE-02](../requirements.md#req-life-02), [REQ-LIFE-03](../requirements.md#req-life-03). Architecture: [design/owner](../architecture.md#api-lifecycle-errors-and-result-contracts).<br>
-  Depends on: API-RUST/INPUT-01, DEV-LOOP-01.<br>
-  Acceptance: Frozen snapshots, limits, Busy, cancellation/partial results and report query/lifetimes pass; pause remains unavailable until its full control contract passes.
 - [ ] API-PY/STUB-01: Implement native Python conversion/dispatch and runtime-matching type declarations.<br>
   Requirements: [REQ-API-02](../requirements.md#req-api-02), [REQ-API-03](../requirements.md#req-api-03), [REQ-API-04](../requirements.md#req-api-04), [REQ-API-05](../requirements.md#req-api-05). Architecture: [design/owner](../architecture.md#api-modules-and-planned-stub-paths).<br>
-  Depends on: API-RUN-01.<br>
+  Depends on: API-RUN-01, DEV-LOOP-01.<br>
   Acceptance: Actual native import checks structured errors/None/integer-buffer conversion, interpreter release, Busy/session restoration and matching .pyi/py.typed exports; core builds remain independent.
 - [ ] API-PARITY/DOCS-01: Validate independent Rust/native-Python parity and deliver runnable paired examples/guides.<br>
   Requirements: [REQ-API-03](../requirements.md#req-api-03), [REQ-API-04](../requirements.md#req-api-04), [REQ-API-05](../requirements.md#req-api-05), [REQ-API-06](../requirements.md#req-api-06). Architecture: [design/owner](../architecture.md#api-delivery-and-validation-gates).<br>
@@ -377,13 +393,13 @@ completion; deferred UI/wider-mode work remains subject to its explicit gates.
 | [REQ-OBS-04](../requirements.md#req-obs-04) | DEV-UI-PLAN-01 |
 | [REQ-API-01](../requirements.md#req-api-01) | API-RUST/INPUT-01, API-RUN-01, API-01 |
 | [REQ-API-02](../requirements.md#req-api-02) | API-PY/STUB-01, API-01 |
-| [REQ-API-03](../requirements.md#req-api-03) | API-RUST/INPUT-01, API-RUN-01, API-PY/STUB-01, API-PARITY/DOCS-01, API-01 |
+| [REQ-API-03](../requirements.md#req-api-03) | API-RUST/INPUT-01, API-RUN-01, API-PY/STUB-01, API-PARITY/DOCS-01, API-01, DEV-PAUSE-01 |
 | [REQ-API-04](../requirements.md#req-api-04) | API-PY/STUB-01, API-PARITY/DOCS-01, API-01 |
 | [REQ-API-05](../requirements.md#req-api-05) | API-PY/STUB-01, API-PARITY/DOCS-01, API-01 |
 | [REQ-API-06](../requirements.md#req-api-06) | DEV-RESULTS-01, USJSON-FORMAT/PRESETS-01, USJSON-CORE/PROJECTION/PARITY-01, API-PARITY/DOCS-01, API-01 |
 | [REQ-LIFE-01](../requirements.md#req-life-01) | DEV-CORE-01, DEV-RUN-01, DEV-LOOP-01, API-RUN-01 |
 | [REQ-LIFE-02](../requirements.md#req-life-02) | DEV-RUN-01, DEV-LOOP-01, API-RUN-01 |
-| [REQ-LIFE-03](../requirements.md#req-life-03) | DEV-RUN-01, API-RUN-01 |
+| [REQ-LIFE-03](../requirements.md#req-life-03) | DEV-RUN-01, API-RUN-01, DEV-PAUSE-01 |
 | [REQ-NFR-01](../requirements.md#req-nfr-01) | DEV-CORE-01, DEV-RUN-01 |
 | [REQ-NFR-02](../requirements.md#req-nfr-02) | DEV-LICENSE-01, FOUNDATION-03 |
 | [REQ-NFR-03](../requirements.md#req-nfr-03) | SETUP-04, FOUNDATION-03 |

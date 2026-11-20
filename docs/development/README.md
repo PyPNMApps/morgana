@@ -1,6 +1,8 @@
 # Development
 
 - [Architecture](../architecture.md)
+- [Accepted backend delivery decisions](../architecture.md#accepted-backend-delivery-decisions)
+  and [milestone/validation record](features/backend-delivery/design.md)
 - [Requirements baseline](../requirements.md) and
   [consolidation/validation record](features/requirements/design.md)
 - [Planned code layout](../architecture.md#planned-code-layout) and

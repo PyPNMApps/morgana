@@ -51,9 +51,10 @@ Paths below are relative to that repository; it is not a build dependency.
 `docs/user/simulation/README.md`, manifests, lockfile and NOTICE were inspected.
 No dependency on MERLIN's GPL Qt application, optional Python adapter or BCH code.
 The temporary small Apache encoder adaptation is documented, not a fork of the
-downstream stack. A future neutral shared Rust crate may own matrix-independent
-codec/numerical primitives; MERLIN and MORGANA would both depend on it. Migration
-requires an approved plan, preserved re-exports and unchanged downstream tests.
+downstream stack. The [accepted backend decisions](../../../architecture.md#accepted-backend-delivery-decisions)
+select standalone local adaptations with independent upstream acceptance and
+preserved provenance/licenses. A shared cross-project crate is not selected;
+such a migration would require a separate decision and compatibility plan.
 No circular dependency or MERLIN modification is authorized here.
 
 ## LDPC-01: Normative evidence and engine feasibility
