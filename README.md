@@ -96,8 +96,9 @@ flowchart LR
     TX --> CHANNEL[CH-SIM: unity first]
     MER[RxMER: single-shot or multi-input] -. residual model, later .-> CHANNEL
     PRE[US-Pre-EQ: banks and multiple updates] -. coefficient plan, later .-> TX
-    CFG[US Configuration] -. accepted settings .-> TX
-    CFG -. accepted settings .-> RX
+    JSON[US Configuration JSON: planned] -. validate and Apply .-> CFG[CMTS configuration plan]
+    CFG -. accepted TX settings .-> TX
+    CFG -. accepted RX settings .-> RX
     CHANNEL --> RX[CMTS-US-RX]
     RX --> VERIFY[Independent PRBS-RX comparison]
     SOURCE -. expected stream only .-> VERIFY
@@ -114,7 +115,10 @@ observations at TX, channel and RX test points. Impairments follow the unity
 closed loop. A full MAC, scheduler and downstream waveform are outside scope.
 The planned [US Configuration](docs/architecture.md#us-configuration) input
 provides channel geometry, profile inventory/selection and synthetic grants to
-both endpoints. **PNM Files** contains [RxMER](docs/architecture.md#rxmer-input)
+both endpoints. Its generic JSON delivery plan is recorded in the
+[CMTS-US-RX configuration subsection](docs/architecture.md#cmts-configuration-us-configuration-json),
+with separate accepted TX/RX views and a pending MULPI field-coverage audit.
+**PNM Files** contains [RxMER](docs/architecture.md#rxmer-input)
 and [US-Pre-EQ](docs/architecture.md#us-pre-eq-input). Both cover single-shot and
 multi-input selection: RxMER offers power averaging and scheduled playback;
 Pre-EQ offers a fixed bank, multiple snapshots or explicit update replay into

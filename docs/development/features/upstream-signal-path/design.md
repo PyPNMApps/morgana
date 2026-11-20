@@ -10,7 +10,8 @@ Task: ARCH-01. This request authorizes documentation, not scientific or Qt code.
 - Keep the first channel a genuine unity pass-through; reserve impairment extension points.
 - Add a separate optional upstream RxMER input for later channel residual models,
   preserving original observations and distinct input/derived/receiver results.
-- Add US Configuration as a shared channel/profile/grant input to TX/RX.
+- Add US Configuration as a shared channel/profile/grant input to TX/RX,
+  with a generic JSON admission/CMTS control plan and separate endpoint views.
 - Group RxMER and US-Pre-EQ under PNM Files; define single-shot/multi-input
   selection and multiple explicit Pre-EQ updates into TX-06.
 - Specify the same shared QAM Analyzer and Spectrum Analyzer interaction model
@@ -42,6 +43,10 @@ The [input extension](../upstream-inputs/design.md) defines US Configuration,
 single-shot/multi-input PNM selection and multiple Pre-EQ updates separately
 from RxMER power playback. Configuration supplies legitimate common settings;
 Pre-EQ feeds TX-06, and neither C nor model targets become normal RX truth.
+The [CMTS JSON plan](../us-configuration-json/design.md) is now a
+[receiver-block configuration subsection](../../../architecture.md#cmts-configuration-us-configuration-json).
+A configuration document is validated/Applied before Start, producing separate
+TX and RX views. It is not a tenth stage in the nine-stage receiver.
 
 The [CMTS-US-RX design](../cmts-us-rx/design.md) defines the receiver block,
 chart, nine linked stage sections, output inspections and per-stage file paths.

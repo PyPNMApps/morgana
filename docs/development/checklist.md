@@ -57,6 +57,17 @@ See [architecture](../architecture.md) and [foundation design](features/foundati
 - [x] ARCH-PNM-02: Define single-shot/multi-input RxMER and US-Pre-EQ,
   bounded bank/update replay, explicit bases/events and joint-model compatibility;
   see [input design](features/upstream-inputs/design.md). Implementation planned.
+- [x] ARCH-USJSON-01: Record generic OFDMA JSON as the CMTS configuration
+  subsection of CMTS-US-RX; define shared TX/RX projections, support states,
+  version/coverage plan, planned paths and flows.
+  See [JSON design](features/us-configuration-json/design.md). Architecture only.
+- [ ] USJSON-COVERAGE-01: Complete all applicable pinned MULPI OFDMA fields,
+  values/conditional rules and independent fixture mappings;
+  [source-area inventory](features/us-configuration-json/coverage.md) is not full coverage.
+- [ ] USJSON-FORMAT/PRESETS-01: Finalize/create the versioned configuration
+  schema, generic JSON presets and usage guide after field-coverage review.
+- [ ] USJSON-CORE/PROJECTION/PARITY-01: Implement shared Rust JSON admission and
+  CMTS TX/RX views; validate atomicity, bounds, round trips and future bindings.
 - [ ] US-CONFIG-01: Implement shared configuration/profile admission and inventory.
 - [ ] US-CONFIG-FORMAT-01: Verify upstream configuration/profile capture formats
   against pinned source evidence and fixtures before exposing import support.

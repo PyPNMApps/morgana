@@ -44,8 +44,9 @@ flowchart LR
     MER[RxMER: single or multiple captures] -. accepted residual model, later .-> CH
     PRE[US-Pre-EQ: banks and multiple updates] -. accepted coefficient plan, later .-> TX
     CH --> RX[CMTS-US-RX]
-    CFG[US Configuration] -. configuration .-> TX
-    CFG -. configuration .-> RX
+    JSON[US Configuration JSON: planned] -. load and validate .-> CFG[CMTS configuration plan]
+    CFG -. accepted TX settings .-> TX
+    CFG -. accepted RX settings .-> RX
     PRBS -. expected stream only .-> TRUTH[Independent PRBS-RX comparison]
     RX --> TRUTH
     TRUTH --> REPORT
@@ -85,6 +86,10 @@ not enable its model or start processing. [US Configuration](#us-configuration)
 provides accepted common settings to TX/RX. Each main block retains its own
 stage index; the contents keeps the four processing blocks, US Configuration
 and the two PNM inputs.
+The generic JSON plan is owned by the CMTS control/configuration boundary,
+documented under [CMTS-US-RX configuration](#cmts-configuration-us-configuration-json).
+Configuration is accepted before scientific execution; it is not an extra RX
+signal-processing stage. The public input name remains **US Configuration**.
 The direction changes to CM transmission and CMTS reception; upstream FEC,
 framing, pilot and interleaving rules determine the actual stage order.
 
@@ -139,6 +144,10 @@ waveform configuration remain planned**. This is the upstream counterpart to
 the reference modulation-profile input/editor concept. Use the name **US
 Configuration**, including diagram labels; it supplies accepted common channel,
 profile and grant settings to both endpoints. It does not implement a CMTS MAC.
+The [CMTS configuration subsection](#cmts-configuration-us-configuration-json)
+owns the versioned generic JSON plan, MULPI coverage requirement, acceptance flow
+and endpoint-specific projections. Keep numerical configuration validation in
+the shared Rust configuration owners below, independent of receiver algorithms.
 
 **Planned code paths (repository-relative).**
 
@@ -184,7 +193,9 @@ separate from edited/derived settings. A manually entered configuration is
 labeled synthetic. A future captured upstream descriptor/profile importer needs
 its own pinned type/version/units and OSSI/MULPI fixtures; downstream DPD file
 types, PLC/NCP fields and downstream timing/interleaving are not inherited.
-No new wire format or saved-workbench schema is defined here.
+The planned standalone configuration JSON has its own format/version contract;
+its schema and parser are not implemented. It is not a raw UCD/P-MAP wire format
+or an existing saved-workbench schema.
 
 **Single-profile and multiple-profile selection.** Retain a bounded inventory
 with unique IDs and explicit IUC associations. Single-shot selects exactly one
@@ -3079,6 +3090,9 @@ decisions and explicit recovery outcomes. Its first planned experiment uses
 scheduled data, independently accepted grant/timing configuration and the unity
 channel. It does not acquire a generic preamble, process ranging/probing or
 implement a downstream PLC/NCP/BCH chain.
+Its [CMTS configuration subsection](#cmts-configuration-us-configuration-json)
+contains the generic OFDMA JSON/control plan. It supplies accepted endpoint
+settings before RX-01 and also configures CM-US-TX through a separate view.
 
 **Planned code paths (repository-relative).**
 
@@ -3132,6 +3146,156 @@ Future public Rust operations precede matching native Python/UI adapters; both
 share the same modes, errors, availability and owned outcomes. No callable
 experiment API or saved schema is introduced by this architecture.
 
+#### CMTS configuration: US Configuration JSON
+
+[Return to CMTS-US-RX](#cmts-us-rx-block-architecture) ·
+[US Configuration input](#us-configuration) ·
+[RX stage index](#receiver-stage-sequence).
+
+Status: **architecture/JSON delivery plan recorded; full MULPI field audit,
+schema, example JSON files, parser and execution integration remain planned**.
+This subsection places configuration ownership with the simulated CMTS, beside
+its receiver. It is a control boundary, not a tenth RX stage or a full MAC/
+service-group scheduler. The common US Configuration remains usable by Rust
+and future CLI/Python/UI consumers without depending on receiver processing.
+
+**Planned code and artifact paths (repository-relative).**
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/configuration/mod.rs` | Create (planned) | Shared typed US Configuration, atomic admission and immutable accepted generation. |
+| `crates/phy/src/configuration/profile.rs`, `crates/phy/src/configuration/waveform.rs`, `crates/phy/src/configuration/burst.rs` | Create (planned) | Existing planned owners for profile/IUC/loading/pilots, geometry and burst-mode validation. |
+| `crates/phy/src/configuration/grant.rs`, `crates/phy/src/configuration/receiver.rs` | Create (planned) | Separate synthetic grant and receiver policy views; no channel/source truth projection. |
+| `crates/phy/src/configuration/cmts.rs` | Create (planned) | Compose CMTS configuration/preset selection and derive distinct accepted TX/RX projections; reuse the shared validators. |
+| `crates/phy/src/configuration/probing.rs` | Create (planned) | Typed future probe-control options and explicit representation/validation/execution support states. |
+| `crates/morgana/src/inputs/us_configuration.rs` | Create (planned) | Bounded JSON/batch decoding, source preservation, generic preset inventory and shared Rust admission. |
+| `crates/morgana/src/inputs/mod.rs` | Create (planned) | Register configuration import independently of PNM measurement inputs. |
+| `crates/morgana/src/lib.rs` | Extend (existing) | Expose the future typed configuration/inventory/preview through the public Rust facade before Python/UI bindings. |
+| `schemas/us-configuration-v1.schema.json` | Create (planned) | Versioned configuration-document structure and source-backed conditional constraints. |
+| `examples/cli/us-configuration/README.md`, `examples/cli/us-configuration/reference-25khz.json`, `examples/cli/us-configuration/reference-50khz.json`, `examples/cli/us-configuration/mixed-loading.json`, `examples/cli/us-configuration/zero-valued-minislots.json`, `examples/cli/us-configuration/ranging-probing.json` | Create (planned) | Explained generic presets and optional-mode documents with honest execution support. |
+| `crates/phy/tests/cmts_configuration.rs`, `crates/phy/tests/configuration.rs` | Create (planned) | Cross-field/domain admission, TX/RX projections and failure atomicity. |
+| `crates/morgana/tests/us_configuration_json.rs` | Create (planned) | Schema/version, bounded import, source preservation, round trips and malformed/unsupported inputs. |
+| `docs/user/us-configuration.md` | Create (planned) | Maintained format, preset-selection and support-state guide after schema delivery. |
+
+Register the additional leaves through the planned configuration/facade module
+roots. The [JSON feature record](development/features/us-configuration-json/design.md)
+tracks delivery; its [coverage plan](development/features/us-configuration-json/coverage.md)
+must be completed before claiming all applicable MULPI options are covered.
+No empty Rust modules, schema or example JSON artifacts are created by this update.
+
+**Generic document structure.** Propose the format marker
+`morgana.us-configuration` with its own `schema_version`, distinct from existing
+schema-1 FEC reports. Pin `CM-SP-MULPIv3.1-I25-230419` and
+`CM-SP-PHYv3.1-I20-230419` in specification metadata. Future editions require an
+explicit coverage/migration decision; do not silently merge DOCSIS 4.0 options.
+
+The document retains a bounded `presets` inventory and an explicit `selection`.
+Each generic preset has a stable ID/name, provenance and the groups below. One
+selected preset describes one CM and one upstream channel; retaining multiple
+presets does not start multiple trials or imply multi-CM operation. An optional
+vendor/template reference is metadata, not a normative profile ID or IUC.
+
+| Proposed preset group | Coverage / ownership |
+| --- | --- |
+| `channel` | Applicable UCD channel options: physical grid, CP/RP, spacing, frequency origin, exclusions/unused carriers, frame size, PHY seed and applicable preamble/ranging/class controls. |
+| `burst_profiles` | Applicable per-IUC burst attributes, ranging lengths/offsets/Nir/Nfr/power control and data modulation/pilot assignments per minislot/group. |
+| `cm_assignment` | Applicable assigned upstream data IUCs and profile-testing SID settings; preserve assignment context separately from the profile catalog. |
+| `probe_configuration` | Applicable P-MAP/P-IE options, including allocation references, measurement/power/equalizer controls, staggering, symbol and carrier selection. Probes are not another data IUC. |
+| `configuration_state` | Applicable UCD identity/change fields, timestamp/minislot snapshot and MAP association. Preserve exact integer bitfields and original units. |
+| `simulation` | MORGANA-only synthetic grant/timing/selection/work limits, clearly outside the MULPI-defined field namespace. No hidden H/C, source bits or target noise is projected to normal RX. |
+
+The final field names/defaults/enums require the field-level coverage review;
+these group names specify architecture, not a complete working schema. Use
+explicit unit-bearing fields and exact integer admission, not vendor CLI text.
+Distinguish omitted optional settings, explicit zero, unavailable measurements
+and inapplicable options. JSON does not encode arbitrary nonfinite numbers.
+
+**Coverage and conditional validity.** Inventory every OFDMA-applicable option
+in the pinned UCD channel/burst tables and required-burst rules, relevant
+MAP/P-MAP controls and OUDP assignment/testing provisions. For each source field,
+record revision/section/page/TLV, endpoint/normative force, required/optional/
+conditional status, type/units/enums/bounds, JSON pointer, shared Rust owner,
+cross-field rules and independent positive/negative/boundary fixtures. Audit
+legacy-only and reserved fields as inapplicable/rejected rather than copying
+A-TDMA/Reed-Solomon settings into OFDMA presets. Unresolved entries stay pending.
+
+The data-profile domain includes IUCs 5, 6, 9, 10, 11, 12 and 13, independent of
+generic preset IDs. Validate legal modulation/loading, all applicable pilot IDs,
+zero-valued-minislot rules, channel-family compatibility, frame-length variants,
+ordered physical-minislot coverage and unambiguous exclusions/unused bands.
+Keep profile groups compact until bounded expansion is admitted; normative
+group/length limits and application budgets are separate checks. Ranging/probe
+options can be represented without claiming their waveform/MAC implementation.
+
+For this pin, source boundaries are MULPI §6.4.3, Tables 28/29, pp107–118;
+§6.4.3.3–4.1, p120–121; §6.4.4, Tables 32/33, pp121–128;
+§10.5.1–10.5.1.3, pp454–456; and Annex C §C.1.5.1.11–12, p658.
+PHY owns the actual waveform/pilot/reset conventions already cited in TX/RX.
+These are audit boundaries, not a completed full-specification conformance claim.
+
+**Admission, execution and endpoint views.** Keep original bytes/hash and
+provenance in the importer. Decode a candidate, check format/version/structure,
+then run shared Rust domain/cross-field validation. Return separate documented
+representation validity, domain validity and execution support. A valid document
+using an unimplemented mode remains inspectable with explicit readiness reasons;
+Start rejects unsupported execution rather than ignoring its settings.
+
+Proposed format policy rejects unknown versions and unknown typed fields, with
+only explicitly schema-defined bounded extension metadata permitted. Unsupported
+reserved/legacy values cannot become executable through that extension path.
+Future migrations preserve meaning/provenance or return structured rejection.
+The standalone configuration format is not a raw UCD/P-MAP encoder or a complete
+saved workbench; any future embedding must preserve the same version and shared
+Rust/Python validation semantics.
+
+On Apply, atomically publish the immutable CMTS plan and endpoint projections.
+TX receives its accepted waveform/profile/grant/pilot/seed settings; RX receives
+only its legitimate corresponding geometry/resource/grant/timing/PHY-seed view
+plus receiver policies. PNM measurements, Pre-EQ banks/updates, injected channel
+models and PRBS truth remain separately owned. Changes revalidate dependent
+PNM selections without rewriting their originals or silently changing model mode.
+Failed/cancelled loads and rejected Apply retain the prior accepted generation;
+preview and loading never start a job or consume RNG/source state. Start freezes
+one compatible generation; edits during a run apply to a future accepted run.
+
+```mermaid
+flowchart LR
+    DOC[US Configuration JSON] --> LOAD[Bounded decode and shared Rust validation]
+    LOAD --> DRAFT[Candidate preset and compatibility preview]
+    DRAFT --> APPLY[Atomic Apply to CMTS configuration plan]
+    APPLY --> TXVIEW[Accepted TX projection]
+    APPLY --> RXVIEW[Accepted RX projection]
+    TXVIEW -. configuration .-> TX[CM-US-TX]
+    RXVIEW -. configuration .-> RX[CMTS-US-RX RX-01 to RX-09]
+    PNM[Separate RxMER and US-Pre-EQ inputs] -. association checks .-> DRAFT
+```
+
+| Flow owner | Canonical contract |
+| --- | --- |
+| [US Configuration document/input](#us-configuration) | Public configuration entrypoint and original preset inventory. |
+| [CMTS decode, preview and Apply](#cmts-configuration-us-configuration-json) | Shared admission, immutable plan and endpoint projections defined in this subsection. |
+| [CM-US-TX](#cm-us-tx-block-architecture) | Accepted transmitter configuration before TX-01. |
+| [CMTS-US-RX stages](#receiver-stage-sequence) | Accepted receiver view before RX-01; unchanged nine-stage sequence. |
+| [RxMER](#rxmer-input) / [US-Pre-EQ](#us-pre-eq-input) | Independently owned PNM inputs checked for compatibility. |
+
+Retain the US Configuration budgets: 16 MiB per file, 64 MiB original bytes per
+batch, bounded preset/profile inventories and at most 1,048,576 retained expanded
+carrier assignments. Check nested list lengths, compact-range expansion, derived
+work, integer widths and combined memory before allocation; exact schema limits
+must agree with source constraints and the shared domain budget. A preset
+inventory is separate from each channel's legal IUC inventory and a CM's assigned
+IUC count. No arbitrary all-profile expansion or unbounded raw-extension cache.
+
+**Delivery and acceptance.** Complete the coverage matrix → finalize schema and
+generic presets → implement typed Rust admission/parser → integrate CMTS plan/
+TX/RX views → expose matching Python/UI consumers. Test valid/invalid source
+boundaries, duplicates/holes/overlaps, reserved choices, optional/default meaning,
+multiple presets/IUCs, byte/provenance retention, schema round trips/migrations,
+stale generations, atomic failures, work limits and truth-isolated projections.
+Every applicable source entry needs a JSON mapping and fixture before the
+coverage milestone is checked. This task records the plan and updates flows;
+it does not create JSON/schema code or enable a deferred waveform mode.
+
 #### Receiver stage sequence
 
 Every overview/output label links to its completed local stage contract. All nine
@@ -3141,7 +3305,9 @@ files and scientific processing remain unimplemented. Preserve this stage order.
 ```mermaid
 flowchart LR
     C[Channel output samples] --> R1
-    CFG[Accepted receiver configuration] -.-> R1
+    DOC[US Configuration JSON: planned] -. decode and validate .-> CMTS[CMTS configuration owner]
+    CMTS -. accepted TX settings .-> TX[CM-US-TX]
+    CMTS -. accepted RX settings .-> R1
     subgraph RECEIVER[CMTS-US-RX]
         R1[RX-01 Burst framing and timing] --> R2[RX-02 Useful-symbol extraction]
         R2 --> R3[RX-03 FFT]

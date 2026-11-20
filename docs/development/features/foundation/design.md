@@ -171,7 +171,9 @@ This supports FEC applicability only, not complete FDX/FDD waveform support.
 
 ```mermaid
 flowchart LR
-  V[US Configuration] --> TX[CM OFDMA TX]
+  J[US Configuration JSON: planned] -. validate and Apply .-> V[CMTS configuration plan]
+  V -. accepted TX settings .-> TX[CM OFDMA TX]
+  V -. accepted RX settings .-> RX
   TX --> C[Upstream channel and noise]
   C --> RX[CMTS receiver: received pilots only]
   RX --> R[Versioned report]
@@ -186,7 +188,11 @@ flowchart LR
 The diagram describes planned integration. The first executable covers only
 information bits → upstream LDPC encode → LLRs → decode → independent bit compare.
 The expanded [PRBS/TX/unity-channel/RX and QAM/SA architecture](../../../architecture.md#planned-upstream-signal-path-and-workbenches)
-is the current stage/observation plan. The first future full waveform path keeps
+is the current stage/observation plan. Its
+[CMTS configuration subsection](../../../architecture.md#cmts-configuration-us-configuration-json)
+records the generic OFDMA JSON delivery/coverage plan, with shared typed Rust
+admission and separate TX/RX projections; schema/parser implementation is pending.
+The first future full waveform path keeps
 the Channel Simulator as an exact unity stub; impairment integration is later.
 For future pilots, receiver estimates H_eff = C H from Y/X; injected H and C
 remain outside normal receiver inputs. Inverting measured Pre-Eq is an explicitly

@@ -41,6 +41,18 @@ OSSI/MULPI/format evidence and lawful fixtures before support. No downstream
 decoder type or wire interpretation is assumed. Scheduled synthetic replay
 does not implement CMTS coefficient estimation, live probing or MAC control.
 
+## Generic JSON configuration extension
+
+The [US Configuration JSON feature](../us-configuration-json/design.md) expands
+this input into a generic versioned-document delivery plan owned by the CMTS
+configuration subsection of CMTS-US-RX. Shared Rust configuration remains
+independent of receiver algorithms and provides separate accepted TX/RX views.
+The [MULPI source-area inventory](../us-configuration-json/coverage.md) starts the
+coverage audit; complete field mappings, schema, generic examples and parser
+remain pending. A synthetic configuration JSON is separate from the still-
+unverified PNM binary/decoded capture formats. RxMER/US-Pre-EQ stay independent
+inputs, never serialized as hidden RX configuration truth.
+
 ## Checklist
 
 - [x] Simplify navigation and use US Configuration / PNM Files labels.

@@ -26,8 +26,11 @@
   [RxMER input](../architecture.md#rxmer-input)
   and [channel design/checklist](features/channel-simulator/design.md)
 - [CMTS-US-RX block architecture](../architecture.md#cmts-us-rx-block-architecture),
+  [CMTS configuration / US Configuration JSON](../architecture.md#cmts-configuration-us-configuration-json),
   [RX stage sequence](../architecture.md#receiver-stage-sequence)
   and [receiver design/checklist](features/cmts-us-rx/design.md)
+- [Generic OFDMA JSON design/checklist](features/us-configuration-json/design.md)
+  and [MULPI coverage plan](features/us-configuration-json/coverage.md)
 - [Official checklist](checklist.md)
 - [Foundation design and reuse/specification assessments](features/foundation/design.md)
 - [Checkpoint validation](features/foundation/validation.md)

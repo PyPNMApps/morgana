@@ -14,6 +14,7 @@ and future policies remain planned. Scope is architecture documentation only.
 | RX-INPUT-01 | Recover from received samples and a receiver-specific accepted configuration. | No injected H/C, RxMER target, channel seed, original bits or PRBS truth in normal recovery. |
 | RX-STATE-01 | Bound work/state and preserve completed outcomes on pause/cancel/failure. | Receiver composition; per-stage contexts, partial status, no silent gap filling or restart on inspection. |
 | RX-DOMAIN-01 | Separate samples, physical/equalized cells, soft bits and decoded information. | Stage boundaries and passive SA/QAM/LLR/FEC inspection; source association/comparison outside RX. |
+| RX-CONFIG-01 | Place the generic OFDMA JSON plan in a CMTS configuration subsection before the existing receiver stage index, preserving US Configuration and shared validation. | [Configuration subsection](../../../architecture.md#cmts-configuration-us-configuration-json), separate TX/RX settings, unchanged RX-01..09 and explicit pending schema/coverage/runtime work. |
 | RX-SCOPE-01 | Keep scheduled-data/configured-timing scope and stage design status explicit. | No blind acquisition, ranging/probe processing, downstream BCH/PLC/NCP or implementation claim. |
 | RX-COVERAGE-01 | Preserve missing positions without changing symbol/cell/bit order. | Explicit gap/window/cell outcomes, zero LLR erasures with reasons, no source-based repair or dropped failures. |
 | RX-POLICY-01 | Define actual receiver algorithms and confidence assumptions. | FrameFlatLs / FramePilotLinear, zero-forcing validity and finite ReferenceVariance MaxLog; no hidden measured-noise or fast-tracking capability. |
@@ -55,6 +56,17 @@ The [publisher's pinned PHY I20](https://account.cablelabs.com/server/alfresco/4
 was checked for revision/section identity. Real MAC message parsing needs separate
 MULPI evidence; existing probe RxMER input does not implement a probe receiver.
 
+## CMTS configuration / US Configuration JSON
+
+The [generic JSON plan](../us-configuration-json/design.md) is owned by the
+[CMTS configuration subsection](../../../architecture.md#cmts-configuration-us-configuration-json).
+Its document/preset admission is a control boundary with shared Rust validators;
+it is not an RX algorithm or additional signal-processing stage. The immutable
+CMTS plan produces accepted TX settings and a restricted RX configuration view.
+Original PNM observations, C/update values, injected H/noise and PRBS truth remain
+outside normal RX settings. Schema, complete MULPI coverage, example JSON and
+parser/integration remain pending; all nine RX stage designs retain their status.
+
 ## Stage contract completion
 
 | Stage / canonical section | Defined contract / planned independent validation |
@@ -86,6 +98,8 @@ interoperability evidence or CMTS RF/performance conformance result.
 
 ## Dependency-ordered checklist
 
+- [x] ARCH-USJSON-01: Add the CMTS configuration subsection, planned generic
+  JSON paths/support contract and updated pre-run TX/RX configuration flows.
 - [x] ARCH-RX-00: Define the CMTS-US-RX block, chart, nine stage roles, input/
   result boundaries, lifecycle and inspection overview.
 - [x] ARCH-RX-NAV: Link all nine overview/output rows to local stage sections,
