@@ -78,13 +78,13 @@ validation and bounded orchestration stay Rust; adapters present owned results.
 | --- | --- | --- |
 | `Cargo.toml` | Extend (existing) | Register the future PHY member/dependency when implemented; update `Cargo.lock` through Cargo. |
 | `crates/phy/Cargo.toml`, `crates/phy/src/lib.rs`, `crates/phy/src/error.rs` | Create (planned) | Rust PHY crate, module declarations/public domain surface and typed stage errors. |
-| `crates/phy/src/configuration/mod.rs` | Create (planned) | Accepted virtual-CMTS configuration, profiles and burst modes. |
+| `crates/phy/src/configuration/mod.rs` | Create (planned) | Accepted virtual-CMTS configuration, profiles, burst modes and Pre-Eq banks. |
 | `crates/phy/src/types/mod.rs` | Create (planned) | Register `bits.rs`, `iq.rs` and `samples.rs` in this directory for bit ranges, complex cells and indexed sample blocks. |
 | `crates/phy/src/source/mod.rs` | Create (planned) | PRBS source and independent verifier. |
 | `crates/phy/src/resources/mod.rs` | Create (planned) | Shared grant grids, pilot roles/patterns, block partitioning and cell permutations. |
 | `crates/phy/src/grant/mod.rs` | Create (planned) | Shared pure capacity/codeword planning. |
 | `crates/phy/src/bit_processing/mod.rs` | Create (planned) | Shared payload randomizer and independent known-pilot sequence. |
-| `crates/phy/src/signal_processing/mod.rs` | Create (planned) | Shared QAM and transform algorithms. |
+| `crates/phy/src/signal_processing/mod.rs` | Create (planned) | Shared QAM, transform and coefficient-bank arithmetic. |
 | `crates/phy/src/transmitter/mod.rs` | Create (planned) | Compose the eight TX stage adapters. |
 | `crates/phy/src/channel/mod.rs` | Create (planned) | Unity sample transport and future ordered channel stages. |
 | `crates/phy/src/receiver/mod.rs` | Create (planned) | Compose the nine RX stage adapters without source truth. |
@@ -335,7 +335,7 @@ maps these requirements to owners and planned checks:
 
 
 Status: **planned**. ARCH-TX-00 defines the transmitter block; ARCH-TX-01 through
-ARCH-TX-05 expand its first five stages below. The isolated LDPC codec is a
+ARCH-TX-06 expand its first six stages below. The isolated LDPC codec is a
 dependency; it does not make this transmitter implemented. CM-US-TX converts meaningful
 PRBS source bits and an accepted upstream grant into complex baseband samples
 delivered to the Channel Simulator.
@@ -371,7 +371,7 @@ flowchart LR
 | [TX-03: randomization](#tx-03-grant-seeded-phy-randomization) | Randomize the encoded grant stream, including padding as specified, with accepted upstream seed/state. Reset the PHY randomizer at the grant boundary; never reset PRBS15 because a grant starts. |
 | [TX-04: cell-word/QAM mapping](#tx-04-cell-word-construction-and-qam-mapping) | Group randomized bits in MSB-first cell order; map data and data-bearing complementary-pilot cells using their respective loading and normalized constellation references. |
 | [TX-05: OFDMA framer/interleaver](#tx-05-pilots-ofdma-framing-and-interleaving) | Generate known BPSK pilots and edge/body patterns, apply prescribed role gains, allocate logical grant cells and perform the upstream joint time/frequency interleaving and map to physical carriers with exclusions/unused bins preserved. Export role/order/grid metadata. |
-| [TX-06: CM Pre-Eq](#tx-06-cm-pre-eq) | Apply one complex corrective coefficient per carrier; identity coefficients initially. Keep the correction response distinct from an injected physical channel. |
+| [TX-06: CM Pre-Eq](#tx-06-cm-pre-eq) | Apply one normalized complex corrective coefficient per physical carrier; unity on non-excluded carriers and zero on excluded carriers initially. Keep the correction response distinct from an injected physical channel. |
 | [TX-07: IFFT](#tx-07-ifft) | Convert the complete physical frequency grid into complex baseband useful-symbol samples with explicit transform normalization and bin order. |
 | [TX-08: sample assembly](#tx-08-sample-assembly) | Add configured CP/roll-off extension, apply the specified transmit window/overlap treatment, and emit correctly indexed burst/guard samples. Preserve state across arbitrary output chunk boundaries. |
 
@@ -389,7 +389,7 @@ meaning depends on the selected viewer.
 | [TX-03 randomized grant](#tx-03-grant-seeded-phy-randomization) | Actual post-randomization bits with accepted seed/grant epoch; bounded bit inspector. |
 | [TX-04 mapped cells](#tx-04-cell-word-construction-and-qam-mapping) | Actual symbol values, constellation/loading and logical cell identity; shared QAM Analyzer. |
 | [TX-05 physical grid](#tx-05-pilots-ofdma-framing-and-interleaving) | Role-scaled physical carrier/symbol coordinates with gain, known-pilot, complementary-data, data and excluded/unused roles; shared QAM Analyzer. |
-| [TX-06 Pre-Eq grid](#tx-06-cm-pre-eq) | Actual corrected carrier values and response reference plane; shared QAM Analyzer. |
+| [TX-06 Pre-Eq grid](#tx-06-cm-pre-eq) | Actual corrected carrier values, coefficient generation and response reference plane; shared QAM Analyzer. |
 | [TX-07 useful samples](#tx-07-ifft) | Contiguous complex time samples per symbol, transform normalization and sample rate; shared Spectrum Analyzer. |
 | [TX-08 burst samples](#tx-08-sample-assembly) | Actual windowed/assembled stream with sample indices and burst boundaries; shared Spectrum Analyzer and channel input. |
 
@@ -417,7 +417,7 @@ run and invalidates older observations by generation. Explicit cancellation
 retains completed work and reports partial emission rather than treating
 generated codewords as proof that their waveform was delivered.
 
-Detailed contracts below cover TX-01 through TX-05. TX-06 through TX-08 remain
+Detailed contracts below cover TX-01 through TX-06. TX-07 and TX-08 remain
 overview contracts and will be expanded one at a time in processing order. The local
 [CM-US-TX feature record](development/features/cm-us-tx/design.md) tracks those
 architecture steps separately from implementation.
@@ -1488,19 +1488,252 @@ and no other checkout is linked or required by the design.
 
 #### TX-06: CM Pre-Eq
 
-**Planned code paths (repository-relative).**
+[Return to TX stage overview](#internal-stage-sequence).
+
+Status: **architecture defined; implementation remains planned**. ARCH-TX-06
+applies an accepted corrective frequency response to TX-05's complete physical
+symbol grids. The first scheduled-data reference run uses unity on all
+non-excluded carriers and zero coefficients on excluded carriers. A configured
+correction is not an injected physical-channel response or a receiver estimate.
+
+**Planned code paths (repository-relative).** Every file below is **create
+(planned)**. Module registration follows the
+[planned code layout](#planned-code-layout); no numerical code is introduced here.
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/transmitter/pre_eq.rs` | Create (planned) | Validated carrier correction on the accepted reference plane. |
-| `crates/phy/tests/pre_eq.rs` | Create (planned) | Unity and known-complex coefficient cases with metadata conservation. |
+| `crates/phy/src/configuration/pre_eq.rs` | Create (planned) | Typed coefficient-bank/source identity, geometry/reset metadata and atomic candidate admission. |
+| `crates/phy/src/signal_processing/pre_eq.rs` | Create (planned) | Single Rust owner for stable bank normalization, complex replacement/adjustment arithmetic and carrier multiplication. |
+| `crates/phy/src/transmitter/pre_eq.rs` | Create (planned) | Validate complete grid/bank identities and apply the frozen bank without altering roles or upstream state. |
+| `crates/phy/src/resources/grid.rs` | Create (planned) | Shared channel-wide exclusion mask, physical carrier coordinates and symbol-role metadata. |
+| `crates/phy/src/types/iq.rs` | Create (planned) | Shared complex-cell representation and declared observation reference plane. |
+| `crates/phy/tests/pre_eq.rs` | Create (planned) | Independent complex/normalization/default/update/reset reference cases. |
+| `crates/phy/tests/tx_pre_eq.rs` | Create (planned) | Grid streaming, coefficient generations, failure atomicity and matched passive observations. |
 
+**Operation and reference plane.** Let `X[t,k]` be the actual TX-05 physical
+frequency cell, including its prescribed pilot/complementary power gain. Let
+`C[k]` be the applied Pre-Eq coefficient at the same physical index. TX-06 returns
+`Z[t,k] = C[k] * X[t,k]`. For `C=a+jb` and `X=u+jv`, the output is
+`(a*u-b*v) + j*(a*v+b*u)`. This is multiplication, not division, conjugation or
+application of a second QAM/pilot normalization. Retain physical `k=0..N-1`
+ordering, symbol/frame/grant identity, coefficient generation, role, validity and
+normalization metadata for TX-07.
 
-Status: **placeholder; detailed architecture and implementation remain planned**.
-Apply the accepted complex correction on its defined carrier/reference plane;
-the initial response is unity.
-ARCH-TX-06 stays unchecked until its detailed contract and acceptance criteria
-are defined. [Return to TX stage overview](#internal-stage-sequence).
+Use the same physical-bin convention as the resource plan, including excluded
+and currently unused carriers. Do not index coefficients by compact interleaver
+row, payload-cell ordinal or a library's shifted FFT storage. Every data, known
+pilot and complementary-data value receives its carrier coefficient once.
+Excluded, inactive and ungranted cells remain exact zeros; a nonzero input at a
+resource that the accepted plan requires to be zero is a validation error rather
+than an opportunity to hide a framing defect. Do not change a data role to
+excluded merely because its valid symbol or coefficient happens to be zero.
+
+| Applied coefficient | Input cell | Expected output before IFFT |
+| --- | --- | --- |
+| `1+j0` | `2+j3` | `2+j3` |
+| `0+j1` | `2+j3` | `-3+j2` |
+| `-1+j0` | `2+j3` | `-2-j3` |
+
+These are independent arithmetic anchors, not external DOCSIS vectors. Constant
+unit-magnitude banks also exercise phase without changing coefficient energy.
+Unity may copy admitted non-excluded input values unchanged; it must still check
+identity, dimensions, finite values and required-zero roles.
+
+**Coefficient bank and normalization.** A proposed owned `PreEqBank` contains
+exactly `N` finite complex coefficients, a channel/geometry identity and exclusion
+mask, source kind, coefficient generation and explicit normalization provenance.
+Source kinds distinguish normative unity defaults, a synthetically calculated
+bank and a future validated captured corrective response. Retain raw/source
+values or their immutable provenance alongside the derived applied bank; do not
+call a normalization result the original captured bytes.
+
+A channel exclusion is different from a bin unused by this grant, a zero-valued
+minislot, a pilot role or a future missing measurement. Define the normalization
+domain `A` as all physical carrier indices classified by the accepted channel as
+used or unused, excluding channel-excluded carriers. For newly calculated raw
+candidate coefficients `C_raw`, the engineering expression of §7.4.17 is:
+
+```text
+E = sum(|C_raw[k]|^2 for k in A) / |A|
+C_applied[k] = C_raw[k] / sqrt(E), for k in A
+C_applied[k] = 0+j0, for channel-excluded k
+mean(|C_applied[k]|^2 over k in A) = 1
+```
+
+Validate a nonempty domain and strictly positive, representable norm. Use stable
+Rust norm arithmetic with checked finite results; naive squaring of a large
+finite input is not a reason to accept an infinity, and underflow must not create
+a fabricated unity bank. Define and test an explicit floating-point comparison
+tolerance for admitted normalized results at implementation time. Preserve the
+common phase: normalization uses one positive real scale, not phase removal.
+Uniform raw `2+j0` becomes `1+j0`; uniform raw `0+j2` becomes `0+j1` over the
+admitted domain. Individual coefficients need not have unit magnitude.
+
+Normalize the complete bank once when admitting a calculated candidate. Do not
+normalize separately per grant, active mask, pilot subset, symbol, chunk or QAM
+constellation. Include currently unused non-excluded carriers in the denominator;
+exclude channel-excluded zeros. Unit coefficient mean energy does not guarantee
+unit mean output for a particular resource allocation or finite payload, and does
+not undo TX-05 pilot boosting or establish an absolute dBmV calibration.
+
+Default construction explicitly assigns zero to excluded indices and unity to
+the remaining used/unused indices. An explicitly supplied bank must declare the
+same physical mask and valid excluded-zero values; a mismatch is rejected rather
+than silently changing its meaning. A zero coefficient on an individual
+non-excluded bin is allowed by this mathematical bank contract if total energy
+is positive; source recovery on a suppressed bin is a separate receiver outcome.
+Do not impose an unstated inverse-channel floor on a transmitter multiplier.
+The whole-bank zero case cannot satisfy normalization and is rejected.
+
+**Initialization, adjustment and reset boundaries.** PHY3.1 §7.4.17 requires
+replacement when CMTS coefficients initialize the equalizer and complex
+multiplication for an adjustment: `C_next_raw[k] = C_base[k] * A_update[k]`.
+The base is the coefficient set used in the corresponding last probe, not an
+arbitrary newer mutable bank. A future update candidate therefore identifies its
+base generation and addressed physical indices explicitly. Initialization replaces
+addressed values; an adjustment multiplies them. Outside the specified range,
+retain the base values before full-bank normalization; an explicit channel reset
+instead starts from defaults. Distinguish this global normalization scale from
+which raw indices the update addressed.
+
+The CMTS's update I/Q components use signed 16-bit `s1.14` representation.
+A future wire adapter must preserve that signed fixed-point interpretation; it
+does not imply that cumulative normalized floating-point coefficients must be
+clipped or quantized back into the update-field range. Wire decoding, byte order,
+RNG-RSP/P-MAP/UCD parsing and CMTS coefficient estimation need their own pinned
+MULPI/probe evidence and implementation. This section defines their mathematical
+boundary without introducing a MAC exchange or adaptive equalization loop.
+
+| Event | Required/default bank behavior and simulator boundary |
+| --- | --- |
+| First transmission after first UCD | PHY reset before transmission; the synthetic initial run constructs the matching default bank. |
+| Change of upstream channel ID, index-zero frequency, subcarrier spacing, CP size or rolloff-period duration | PHY reset before the next transmission. Reject reuse of a bank bound to the old reset identity; a fresh default/configuration acceptance is required. |
+| Carrier becomes excluded | Its applied coefficient is zero and its mask/geometry association is updated explicitly. |
+| Carrier becomes non-excluded | PHY sets its coefficient to unity, including the next probe opportunity; never restore a stale hidden coefficient. |
+| New calculated/initialized/adjusted candidate | Validate and normalize transactionally, then publish a new generation when allowed by the mode's configuration timing. |
+
+The baseline freezes bank and exclusion mask for the entire accepted run, including
+pause/resume. It implements no mid-burst updates, live exclusion transitions,
+probe scheduling or disabled-equalizer probe mode. Future event ordering must
+preserve the newly re-enabled carrier's next-probe unity rule; a generic bank
+normalizer must not silently override that guarantee. Coupled reset/update/probe
+timing is deferred to that mode's detailed contract. A change of unrelated UI
+selection does not reset coefficients, source or PHY randomizer state.
+
+**Input/output, state and failure handling.** Accept a complete valid `N`-bin
+physical symbol from TX-05 plus the frozen admitted bank. Check matching channel,
+N/spacing/index-zero frequency, CP/rolloff reset identity, exclusions, run/grant
+and coefficient generation before numerical work. Preserve caller buffers and
+source provenance. A proposed output snapshot owns the corrected cells, the same
+coordinates/roles/validity and the applied coefficient generation/reference plane.
+A diagnostic raw/corrected pair does not become normal receiver configuration.
+
+The stage's baseline call handles at most one complete physical symbol with
+`N <= 4096`; output queues and retained snapshots have separate configured bounds.
+Coefficient admission handles exactly one N-element candidate, with at most the
+bounded accepted/base/candidate generations needed for the transaction. Do not
+retain every update, symbol or captured bank in an unbounded cache. Check byte
+counts, counters and generated results before publication, including finite-input
+multiplications whose outputs would overflow.
+
+Validate and compute against candidate state/output, then commit together.
+Wrong length/coordinates, NaN/infinity, zero-domain/norm, stale or incompatible
+bank generations, invalid required-zero input, exhausted budgets and nonfinite
+results return typed failures without replacing the accepted bank, advancing the
+symbol cursor or changing prior outputs. Never repair them with unity, clipping,
+implicit resampling or a coefficient selected from the nearest available bin.
+There is no temporal filter state: chunking cannot change a carrier's result,
+but complete symbol identities/order must still be checked.
+
+Pause preserves the bank and next symbol identity. Cancellation retains completed
+corrected symbols and reports any unfinished work as partial; no failed candidate
+is labeled emitted. Changing settings applies to a fresh accepted run. Preview
+uses an immutable bank/snapshot without advancing the pipeline or rewriting input.
+A disabled/full observer cannot change coefficients or numerical decisions.
+
+```mermaid
+flowchart LR
+    SOURCE[Default or explicit calculated candidate] --> ADMIT[Validate geometry, exclusions and full-bank norm]
+    ADMIT --> BANK[Frozen applied coefficient generation]
+    GRID[TX-05 role-scaled physical grid] --> CHECK[Validate symbol and bank identity]
+    BANK --> CHECK
+    CHECK --> APPLY[Multiply C by each physical carrier value]
+    APPLY --> OUT[Owned corrected grid with preserved roles]
+    OUT --> IFFT[TX-07 IFFT]
+    OUT -. bounded snapshots .-> QAM[Shared Pre-Eq grid QAM view]
+```
+
+**Channel, receiver and measured-source boundaries.** Write `X` for the uncorrected
+TX-05 grid, `C` for transmitter correction and `H` for the physical channel. In a
+compatible diagonal reference, received useful bins contain `H*C*X` plus noise.
+The first channel is an exact time-sample unity transport; it does not secretly
+apply C again or divide by it. With unity C/H, matched active cells are unchanged;
+with nonunity C and unity H, the actual transmitted waveform includes C.
+
+Normal RX-04 estimates effective `C*H` from received known pilots and TX-05's
+known sign/role amplitudes. It does not receive the injected H, C bank or TX labels
+as a shortcut. Receiver noise after this correction is handled by the receiver's
+own model, not borrowed from a measured transmitter response. Independent metrics
+may compare C/H/received estimates with declared truth, outside ordinary recovery.
+
+Future measured Pre-Eq is a corrective response with exact carrier grid, complex
+sign/units, hashes/timestamps and source normalization metadata. It is not an
+exact inverse of the RF channel, a calibrated CMTS noise observation or proof of
+how a specific modem's analogue path behaved. Preserve original bytes and raw
+values; any derived normalization or channel hypothesis has separate provenance.
+Unknown grid coverage, coefficient direction or normalization is an admission gap,
+not permission to interpolate, conjugate, invert or fill missing values with one.
+
+The initial contract adds no capture parser or inferred-channel mode. A later
+channel hypothesis from `1/C` needs an explicit gain/delay reference, treatment of
+zeros/missing carriers, regularization and a separate validation/acceptance plan.
+Do not feed such a hypothesis back as both C and H or claim the resulting ideal
+closure reproduces field RxMER. Real probe-derived CMTS adaptation and the
+calibrated CMTS performance procedure on pp107–108 remain outside this baseline.
+
+**API and instruments.** Rust owns bank admission/normalization, reset identities,
+complex operations and snapshots. The future public facade and native Python/Qt
+adapters reuse those checks and error semantics. Python indices/counts are checked
+before narrowing; complex components must be finite and optional unavailable
+results remain absent. No new callable API, persisted schema or report field is
+implemented by this section.
+
+`tx.pre_eq.iq` shows actual corrected carrier cells after C and before IFFT,
+with coefficient generation, magnitude/phase, role gain and physical index visible.
+Compare against `tx.grid.iq` on the same symbol/range. A reference overlay may show
+the declared role-scaled constellation multiplied by C for a selected carrier;
+it must not silently divide or normalize the actual observed points. A C response
+plot is distinct from an RX channel estimate or time-domain Spectrum Analyzer.
+SA uses the eventual assembled waveform. BER/RxMER require later matched recovery
+or independent metrics, not the coefficient magnitude alone.
+
+**Implementation acceptance and evidence.** Use independent complex arithmetic
+anchors and whole-bank norm expectations, including constant real/imaginary raw
+banks, nonuniform magnitudes, phase preservation, unused non-excluded indices,
+excluded zeros, individual zeros and invalid whole-zero/empty/nonfinite domains.
+Cover replacement versus adjustment, explicit ranges, base generations, default
+construction and every reset-key change without conflating them with live probing.
+Probe/exclusion event scheduling needs its later mode-specific acceptance.
+
+Verify unchanged identity/roles, gain applied once after pilot boosting, literal
+phase rotations, exact zeros, complete-symbol chunk invariance, immutable inputs,
+rejected-call atomicity, bounded cancellation and observer neutrality. Nonunity C
+must affect actual TX samples even when the channel stub is unity; received-pilot
+recovery must estimate the effective response without consuming C/H truth.
+Independent source comparison, LDPC matrix/source checks and the complete waveform
+loop remain separate acceptance prerequisites.
+
+Controlling source: CM-SP-PHYv3.1-I20-230419 §7.4.1.5–6, PDF p51 (placement,
+extracted prose), and §7.4.17, pp106–108. Original pp107–108 were rendered and
+visually inspected for defaults/exclusions, replacement/adjustment, update-number
+format, full-domain normalization, resets and probe/control boundaries. The p108
+continuation belongs to §7.4.17 even though its extraction file is indexed under
+7.5; it was reviewed only up to the actual downstream heading. Stable norms,
+immutable generations, transactional failure policy and bounded streaming are
+engineering contracts, not invented CM RF/quantization requirements. Read-only
+reference review covered complex response application and receiver-only estimates;
+no downstream H/pilot geometry, inverse floor, code or capture assets are copied
+or linked into this transmitter design.
 
 #### TX-07: IFFT
 
@@ -1641,7 +1874,7 @@ The instrument availability table is an interface plan, not a list of implemente
 | --- | --- | --- |
 | `tx.qam.mapped` | Normalized loaded cell symbols before grant permutation/Pre-Eq | QAM |
 | `tx.grid.iq` | Role-scaled physical data/pilot/complementary-data cells before Pre-Eq | QAM |
-| `tx.pre_eq.iq` | Actual corrected carrier symbols after Pre-Eq | QAM |
+| `tx.pre_eq.iq` | Actual corrected carrier symbols after the admitted Pre-Eq bank | QAM |
 | `tx.output.samples` | Complete assembled complex baseband burst | SA |
 | `channel.input.samples` | Identical channel-input waveform/reference plane to TX output | SA |
 | `channel.output.samples` / `rx.input.samples` | Actual delivered waveform/reference plane; identical in the unity baseline | SA |

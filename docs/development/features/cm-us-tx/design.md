@@ -1,6 +1,6 @@
 # CM-US-TX block and stage design
 
-Status: transmitter overview and TX-01 through TX-05 architecture defined; integration is
+Status: transmitter overview and TX-01 through TX-06 architecture defined; integration is
 planned. Subsequent stages are expanded one at a time in processing order.
 Scope is documentation in this repository, with no links to another source
 checkout and no scientific, UI, CLI or binding implementation changes.
@@ -33,6 +33,10 @@ checkout and no scientific, UI, CLI or binding implementation changes.
 | TX-GRID-02 | Partition each frame's eligible grant minislots into normative blocks and use the specified joint bit-reverse address sequence. | Rust partition/permutation owners; independent 24-minislot boundary, power-of-two and bijection checks. |
 | TX-GRID-03 | Generate exact known pilot signs and apply required role/pattern power scaling once. | Independent PRBS12 and pilot owners; fixed-seed physical-bin vectors, all-bin clocks and boosting/exception cases. |
 | TX-GRID-04 | Assemble complete physical symbol grids with bounded state, valid partial results and matching receiver expectations. | TX framer and RX adapters; frame/block merging, failure/cancel/observer cases and known-amplitude inverse checks. |
+| TX-PREEQ-01 | Apply one complex corrective coefficient per physical carrier after pilot-role scaling and before IFFT. | Shared Rust numerical owner and TX adapter; independent phase/gain vectors and exact grid/role conservation. |
+| TX-PREEQ-02 | Normalize newly calculated banks over used and unused non-excluded carriers, preserving excluded zeros. | Coefficient admission; independent full-domain energy/phase cases, empty/zero/nonfinite rejection and atomic state. |
+| TX-PREEQ-03 | Distinguish defaults/reset, replacement and multiplicative adjustment with explicit geometry/base identities. | Configuration owner; stale-base, range, reset-trigger and future last-probe association cases; no MAC parsing or live adaptation claim. |
+| TX-PREEQ-04 | Keep corrective C separate from injected H, source truth and receiver estimation. | Pipeline/API observations; received-pilot effective-response checks and bounded partial/observer behavior. |
 
 The canonical [CM-US-TX block](../../../architecture.md#cm-us-tx-block-architecture)
 owns the overview and
@@ -51,7 +55,7 @@ defines module roots. TX-01 maps to shared resource/grant planning and
 `crates/phy/src/transmitter/framing.rs`; TX-02 adds
 `crates/phy/src/transmitter/ldpc.rs` around the existing codec; TX-03 uses
 `crates/phy/src/bit_processing/randomizer.rs` with separate transmitter/receiver
-adapters. TX-06..08 have proposed file locations while their detailed designs
+adapters. TX-07..08 have proposed file locations while their detailed designs
 remain pending. Test filenames are recorded beside each owner in the canonical
 section rather than creating empty modules or duplicate algorithms.
 The [TX-04 section](../../../architecture.md#tx-04-cell-word-construction-and-qam-mapping)
@@ -60,7 +64,7 @@ planned `crates/phy/src/configuration/modulation.rs`,
 `crates/phy/src/signal_processing/qam_tables.rs` and
 `crates/phy/tests/tx_mapping.rs` alongside the existing planned lookup/adapter
 paths. Shared `resources/permutation.rs` supplies the visit sequence; its detailed
-implementation follows the shared ARCH-TX-05 contract. The first five stage designs do
+implementation follows the shared ARCH-TX-05 contract. The first six stage designs do
 not establish a running grant-integrated transmitter.
 The [TX-05 section](../../../architecture.md#tx-05-pilots-ofdma-framing-and-interleaving)
 owns shared resource roles, block partitioning, joint visits, pilot expectations
@@ -73,6 +77,15 @@ and physical grid assembly. New planned leaves are
 `crates/phy/tests/upstream_pilots.rs`, alongside the existing planned framer/grid
 tests. RX reuses the pure plan/expectations with its own processing state. This
 design does not implement masks, sequence vectors, address generation or adapters.
+The [TX-06 section](../../../architecture.md#tx-06-cm-pre-eq) owns the accepted
+corrective bank and its application after role scaling. It adds planned
+`crates/phy/src/configuration/pre_eq.rs`,
+`crates/phy/src/signal_processing/pre_eq.rs` and
+`crates/phy/tests/tx_pre_eq.rs` beside the already planned transmitter adapter,
+grid/types and primitive acceptance tests. Normalization is bank admission,
+not a per-symbol/active-mask adjustment. Defaults are unity on used/unused
+non-excluded carriers and zero on excluded carriers. A run freezes its bank;
+live probe-driven updates and measured import remain outside this baseline.
 
 ## Reference and source boundaries
 
@@ -135,10 +148,21 @@ acceptance prerequisites. Read-only reference inspection confirmed its downstrea
 bit interleaver and 13-bit pilot sequence cannot provide upstream algorithms;
 only immutable physical-index/validation patterns inform this local design.
 
+TX-06 uses §7.4.1.5–6, p51 (placement, extracted prose), and §7.4.17,
+pp106–108. Original pp107–108 were rendered and visually reviewed for
+defaults/exclusions, complex adjustment, signed update components, normalization,
+reset triggers and probe/control boundaries. The p108 continuation is upstream
+§7.4.17 text despite being carried in the extraction indexed under 7.5; review
+stopped at the actual downstream heading. The calibrated CMTS performance
+procedure is not acceptance for this static-bank architecture. Wire field decoding
+and event scheduling require separate MULPI/probing evidence. Read-only reference
+review supplied complex-response and receiver-estimation ownership patterns only;
+its downstream H interpretation/inverse floor are not a CM transmit-bank contract.
+
 ## Dependency-ordered checklist
 
 - [x] ARCH-TX-NAV: Link all eight TX overview/output labels to unique local
-  sections; mark TX-06..08 as pending placeholders and add overview backlinks.
+  sections; mark TX-07..08 as pending placeholders and add overview backlinks.
 - [x] ARCH-TX-PATH: Name planned implementation/test files in every TX section
   and distinguish existing codec reuse from new PHY adapters.
 - [x] ARCH-TX-00: Standardize CM-US-TX and document the ordered internal stages.
@@ -154,7 +178,8 @@ only immutable physical-index/validation patterns inform this local design.
   shared visit-order dependency, bounded mapping and independent acceptance.
 - [x] ARCH-TX-05: Define resource roles/geometry, exact block/counter conventions,
   independent pilots/gains, grid assembly, shared ownership and acceptance checks.
-- [ ] ARCH-TX-06: Expand CM Pre-Eq and its reference plane.
+- [x] ARCH-TX-06: Define Pre-Eq bank normalization, multiplication, defaults,
+  update/reset identities, truth boundaries, streaming and independent acceptance.
 - [ ] ARCH-TX-07: Expand IFFT geometry, bin order and normalization.
 - [ ] ARCH-TX-08: Expand CP, roll-off/window/overlap and burst sample assembly.
 - [ ] PHY-01: Implement and validate the shared grant planner after scientific
@@ -224,3 +249,13 @@ implementation milestones remain unchecked. `git diff --check` passed. The sourc
 figure review substantiates the architecture; mask/address/sequence execution,
 pilot-boost runtime behavior, Python parity and native instruments remain
 unimplemented and are not established by the existing checkpoint tests.
+
+For TX-06, `scripts/validate.sh` passed 20 skills, 287 local links, the existing
+23 Rust tests, 19 setup tests and 5 Git tests, formatting and Clippy. Focused
+documentation checks resolved 56 section links, retained all 16 TX overview/output
+links and confirmed that the seven planned code/test paths remain absent.
+TX-07/08 remain placeholders, and LDPC-01/02, grant integration and waveform
+implementation acceptance remain unchecked. `git diff --check` passed. Original
+PDF review includes the upstream continuation on p108; no coefficient normalizer,
+complex-grid stage, live update/probe controller, capture adapter or Python/UI
+behavior was implemented or validated by executing this documentation change.

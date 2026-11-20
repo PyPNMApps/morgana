@@ -35,8 +35,11 @@ See [architecture](../architecture.md) and [foundation design](features/foundati
   address generation, physical-bin pilots/boosting, bounded grid assembly and
   code/test paths; see [TX-05](../architecture.md#tx-05-pilots-ofdma-framing-and-interleaving).
   Architecture only; exact masks/vectors and executable acceptance remain planned.
-- [ ] ARCH-TX-06..08: Expand the remaining transmitter stages one at a time in
-  processing order, starting with CM Pre-Eq and its reference plane.
+- [x] ARCH-TX-06: Define coefficient/reference planes, defaults/exclusions,
+  normalization, update/reset boundaries, bounded application and code/test paths;
+  see [TX-06](../architecture.md#tx-06-cm-pre-eq). Architecture only; no adaptive loop.
+- [ ] ARCH-TX-07..08: Expand the remaining transmitter stages one at a time in
+  processing order, starting with IFFT geometry, bin order and normalization.
 - [x] ARCH-RANGING-00: Reserve explicit future ranging/preamble and probing modes;
   see [placeholder](../architecture.md#deferred-burst-modes-and-preambles).
 - [x] SETUP-01..03: Adopt generic installer guidance and implement/test explicit
