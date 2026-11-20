@@ -10,7 +10,7 @@ is described locally.
 
 | ID | Requirement | Owner / acceptance |
 | --- | --- | --- |
-| CH-ARCH-01 | Show ordered channel stages, major-section contents links and planned code/test paths. | Canonical architecture; major sections resolve, six unique stage anchors and an independently linked RxMER input. |
+| CH-ARCH-01 | Show ordered channel stages, compact block/configuration/PNM contents links and planned code/test paths. | Canonical architecture; contents links resolve, six unique stage anchors and independently linked PNM inputs. |
 | CH-UNITY-01 | Deliver exact TX samples and metadata with no impairments or random draws. | Unity owner; bit-identical finite I/Q, indices, burst/tail/guard validity and chunk invariance. |
 | CH-STATE-01 | Bound buffers/work, admit atomically and retain completed output on pause/cancel/error. | Pipeline; backpressure, cursor/state retention, stale identity, gap and overflow cases. |
 | CH-OBS-01 | Expose channel input/output to the shared SA without affecting transport. | Passive observations; matching unity sample ranges, retention limits and no invented gaps. |
@@ -73,7 +73,7 @@ rand_distr 0.5.1; no dependency or scientific source changes are made here.
 ## Dependency-ordered checklist
 
 - [x] ARCH-CH-00: Define six linked channel stages, support states and file paths;
-  add a table of contents linking the architecture's major sections and indexes.
+  keep compact contents for the four main blocks, US Configuration and PNM Files.
 - [x] ARCH-CH-01: Define bounded input admission and identity/timeline validation.
 - [x] ARCH-CH-02: Define exact unity transport without RNG or numerical rewriting.
 - [x] ARCH-CH-06: Define output commit, observations and partial lifecycle.
@@ -133,3 +133,15 @@ have architecture status; scientific execution, capture formats and the named
 model extensions stay unchecked. `git diff --check` passed. No FIR, Gaussian
 stream, RxMER synthesis, oscillator/delay, Python adapter or receiver runtime
 acceptance was executed; the new equations/bounds/drain rules remain designs.
+
+## Configuration and PNM input extension
+
+The [input design](../upstream-inputs/design.md) adds explicit single-shot/multi-
+input modes, US Configuration and US-Pre-EQ bank/update replay. RxMER remains
+a residual-power input to CH-SIM; Pre-EQ feeds TX-06. Both inventories can be
+retained together. Initial RxMER synthesis preflights every effective C in the
+complete replay plan and rejects any nonunity bank before source consumption.
+Unity CH-SIM passes the actual TX waveform, including accepted changing C.
+The compact architecture contents uses four main block links, a US Configuration
+link and PNM Files links for RxMER/US-Pre-EQ; detailed stage indexes stay local.
+All new input/runtime/format work remains planned.

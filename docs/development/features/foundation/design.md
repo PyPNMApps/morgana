@@ -152,7 +152,7 @@ scientific calculations. No waveform or Python method is claimed implemented.
 | --- | --- | --- |
 | FOUNDATION-01..03 | Assessments, standalone workspace, docs, skills, CI | Build/test/lint locally; no source checkout runtime dependencies |
 | LDPC-01..02 | All three upstream codecs and isolated closed loops | Source arithmetic, syndrome, recovery, bounded failure and shortening tests |
-| PHY-01 | Typed virtual CMTS configuration and grant/codeword selector | Independent §7.4.3.1.1 boundary cases, UCD/IUC meaning verified |
+| PHY-01 | Typed US Configuration and grant/codeword selector | Independent §7.4.3.1.1 boundary cases, UCD/IUC meaning verified |
 | WAVE-TX-01 | One upstream data burst | Verify randomizer/interleaver/map/pilot/preamble order and exact coordinates |
 | WAVE-RX-01 | Received-only noiseless receiver | Recover exact original bytes without TX truth in RX interfaces |
 | WAVE-CH-01 | Exact unity channel boundary | Preserve actual samples, indices and metadata under arbitrary chunking |
@@ -171,7 +171,7 @@ This supports FEC applicability only, not complete FDX/FDD waveform support.
 
 ```mermaid
 flowchart LR
-  V[Virtual CMTS configuration] --> TX[CM OFDMA TX]
+  V[US Configuration] --> TX[CM OFDMA TX]
   TX --> C[Upstream channel and noise]
   C --> RX[CMTS receiver: received pilots only]
   RX --> R[Versioned report]

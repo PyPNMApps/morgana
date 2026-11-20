@@ -93,8 +93,11 @@ Windows/macOS execution remain unverified.
 ```mermaid
 flowchart LR
     SOURCE[PRBS source] --> TX[CM-US-TX]
-    TX --> CHANNEL[Channel Simulator: unity first]
-    MER[RxMER input: optional] -. residual model, later .-> CHANNEL
+    TX --> CHANNEL[CH-SIM: unity first]
+    MER[RxMER: single-shot or multi-input] -. residual model, later .-> CHANNEL
+    PRE[US-Pre-EQ: banks and multiple updates] -. coefficient plan, later .-> TX
+    CFG[US Configuration] -. accepted settings .-> TX
+    CFG -. accepted settings .-> RX
     CHANNEL --> RX[CMTS-US-RX]
     RX --> VERIFY[Independent PRBS-RX comparison]
     SOURCE -. expected stream only .-> VERIFY
@@ -109,9 +112,14 @@ The first Channel Simulator will pass samples through unchanged. Shared
 **QAM Analyzer** and **Spectrum Analyzer (SA)** views will inspect bounded Rust
 observations at TX, channel and RX test points. Impairments follow the unity
 closed loop. A full MAC, scheduler and downstream waveform are outside scope.
-The planned [RxMER input](docs/architecture.md#rxmer-input) preserves upstream
-measurements and offers single, power-average and scheduled playback policies
-for a later residual model. Loading measurements leaves unity mode unchanged.
+The planned [US Configuration](docs/architecture.md#us-configuration) input
+provides channel geometry, profile inventory/selection and synthetic grants to
+both endpoints. **PNM Files** contains [RxMER](docs/architecture.md#rxmer-input)
+and [US-Pre-EQ](docs/architecture.md#us-pre-eq-input). Both cover single-shot and
+multi-input selection: RxMER offers power averaging and scheduled playback;
+Pre-EQ offers a fixed bank, multiple snapshots or explicit update replay into
+TX-06. Loading inputs does not start processing or enable an impairment. All
+these inputs and the full waveform remain architecture, not current runtime.
 
 The [canonical architecture](docs/architecture.md#planned-upstream-signal-path-and-workbenches)
 defines ordered stages, instrument contracts and ownership. The

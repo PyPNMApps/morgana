@@ -6,18 +6,17 @@ contains requirements, reuse assessments, evidence, API proposal and milestones.
 
 **Table of contents**
 
-- [Checkpoint and target overview](#checkpoint-and-target-overview)
-- [Planned upstream signal path and workbenches](#planned-upstream-signal-path-and-workbenches)
-- [Planned code layout](#planned-code-layout)
-- [Configuration and source](#configuration-and-source)
-- [PRBS block architecture](#prbs-block-architecture)
-- [CM-US-TX block architecture](#cm-us-tx-block-architecture) and [TX stage index](#internal-stage-sequence)
-- [Deferred burst modes and preambles](#deferred-burst-modes-and-preambles)
-- [Channel Simulator](#channel-simulator-unity-stub-first) and [channel stage index](#channel-stage-sequence)
-- [RxMER input](#rxmer-input)
-- [CMTS-US-RX block architecture](#cmts-us-rx-block-architecture) and [RX stage index](#receiver-stage-sequence)
-- [Shared QAM Analyzer and Spectrum Analyzer](#shared-qam-analyzer-and-spectrum-analyzer)
-- [Ownership, results and acceptance](#ownership-results-and-acceptance)
+- [PRBS](#prbs-block-architecture)
+- [CM-US-TX](#cm-us-tx-block-architecture)
+- [CH-SIM](#channel-simulator-unity-stub-first)
+- [CMTS-US-RX](#cmts-us-rx-block-architecture)
+
+[US Configuration](#us-configuration)
+
+**PNM Files**
+
+- [RxMER](#rxmer-input)
+- [US-Pre-EQ](#us-pre-eq-input)
 
 ## Checkpoint and target overview
 
@@ -41,10 +40,11 @@ Planned top-level path (expanded in the workbench section below):
 ```mermaid
 flowchart LR
     PRBS[PRBS source] --> TX[CM-US-TX]
-    TX --> CH[Channel Simulator: unity first]
-    MER[RxMER input: optional] -. accepted residual model, later .-> CH
+    TX --> CH[CH-SIM: unity first]
+    MER[RxMER: single or multiple captures] -. accepted residual model, later .-> CH
+    PRE[US-Pre-EQ: banks and multiple updates] -. accepted coefficient plan, later .-> TX
     CH --> RX[CMTS-US-RX]
-    CFG[Virtual CMTS configuration] -. configuration .-> TX
+    CFG[US Configuration] -. configuration .-> TX
     CFG -. configuration .-> RX
     PRBS -. expected stream only .-> TRUTH[Independent PRBS-RX comparison]
     RX --> TRUTH
@@ -56,7 +56,7 @@ Receiver inputs must contain received signals and explicit configuration, never
 hidden injected H or original bits. Normal receiver estimation observes C×H.
 Simulator truth is available only to independent diagnostic comparisons.
 
-Virtual CMTS, grant/codeword selection, UCD/IUC mapping, randomization,
+US Configuration, grant/codeword selection, UCD/IUC mapping, randomization,
 interleaving, pilot/preamble placement, waveform generation/acquisition, Pre-Eq
 capture import, impairment pipeline, RxMER and full experiment reports are planned.
 Python is a future native wrapper of the same public Rust API; all calculations
@@ -76,9 +76,15 @@ Use the same left-to-right organization as the reference workbench:
 **PRBS → CM-US-TX → Channel Simulator → CMTS-US-RX → PRBS-RX/results**.
 CM-US-TX and CMTS-US-RX open their own stage workbenches. Test-point actions open
 the shared **QAM Analyzer** or **Spectrum Analyzer (SA)** for the selected tap.
-The separate [RxMER input](#rxmer-input) sits above the
-[Channel Simulator](#channel-simulator-unity-stub-first) and feeds its future
-residual-power planner. Accepting a measurement does not enable an impairment.
+The **PNM Files** inputs sit beside the main path. The [RxMER input](#rxmer-input)
+accepts single or multiple captures and feeds
+the future residual-power planner in [CH-SIM](#channel-simulator-unity-stub-first).
+The separate [US-Pre-EQ input](#us-pre-eq-input) accepts corrective banks and
+multiple update records for [TX-06](#tx-06-cm-pre-eq). Accepting either input does
+not enable its model or start processing. [US Configuration](#us-configuration)
+provides accepted common settings to TX/RX. Each main block retains its own
+stage index; the contents keeps the four processing blocks, US Configuration
+and the two PNM inputs.
 The direction changes to CM transmission and CMTS reception; upstream FEC,
 framing, pilot and interleaving rules determine the actual stage order.
 
@@ -99,7 +105,7 @@ validation and bounded orchestration stay Rust; adapters present owned results.
 | --- | --- | --- |
 | `Cargo.toml` | Extend (existing) | Register the future PHY member/dependency when implemented; update `Cargo.lock` through Cargo. |
 | `crates/phy/Cargo.toml`, `crates/phy/src/lib.rs`, `crates/phy/src/error.rs` | Create (planned) | Rust PHY crate, module declarations/public domain surface and typed stage errors. |
-| `crates/phy/src/configuration/mod.rs` | Create (planned) | Accepted virtual-CMTS/profile/waveform/burst/Pre-Eq configuration and separate channel/RxMER/receiver policies. |
+| `crates/phy/src/configuration/mod.rs` | Create (planned) | Accepted US Configuration/profile/waveform/burst/Pre-Eq configuration and separate channel/RxMER/receiver policies. |
 | `crates/phy/src/types/mod.rs` | Create (planned) | Register `bits.rs`, `iq.rs` and `samples.rs` in this directory for bit ranges, complex cells and indexed sample blocks. |
 | `crates/phy/src/source/mod.rs` | Create (planned) | PRBS source and independent verifier. |
 | `crates/phy/src/resources/mod.rs` | Create (planned) | Shared grant grids, pilot roles/patterns, block partitioning and cell permutations. |
@@ -108,7 +114,7 @@ validation and bounded orchestration stay Rust; adapters present owned results.
 | `crates/phy/src/signal_processing/mod.rs` | Create (planned) | Shared QAM/transform/coefficient-bank arithmetic, waveform/channel primitives and received-pilot/correction/soft-demapping numerics. |
 | `crates/phy/src/transmitter/mod.rs` | Create (planned) | Compose the eight TX stage adapters. |
 | `crates/phy/src/channel/mod.rs` | Create (planned) | Unity sample transport and future ordered channel stages. |
-| `crates/phy/src/measurements/mod.rs` | Create (planned) | Register upstream RxMER observation/admission types; future measured inputs retain separate source/reference semantics. |
+| `crates/phy/src/measurements/mod.rs` | Create (planned) | Register separate upstream RxMER observations and US-Pre-EQ bank/update records with original provenance. |
 | `crates/phy/src/receiver/mod.rs` | Create (planned) | Compose the nine RX stage adapters without source truth. |
 | `crates/phy/src/instruments/mod.rs` | Create (planned) | Bounded passive observations and shared QAM/SA calculations. |
 | `crates/phy/src/simulation/mod.rs` | Create (planned) | Run lifecycle, source associations and independent comparisons. |
@@ -123,12 +129,22 @@ register those leaves when implemented. Numerical dependency selection and actua
 Qt application file placement remain open decisions for their implementation/UI
 plans; this layout does not introduce a new numerical dependency or UI crate.
 
-### Configuration and source
+### US Configuration
+
+[CM-US-TX](#cm-us-tx-block-architecture) ·
+[CMTS-US-RX](#cmts-us-rx-block-architecture).
+
+Status: **configuration-input architecture defined; editor, import and full
+waveform configuration remain planned**. This is the upstream counterpart to
+the reference modulation-profile input/editor concept. Use the name **US
+Configuration**, including diagram labels; it supplies accepted common channel,
+profile and grant settings to both endpoints. It does not implement a CMTS MAC.
 
 **Planned code paths (repository-relative).**
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
+| `crates/phy/src/configuration/mod.rs` | Create (planned) | Compose and atomically validate the immutable US Configuration snapshot/generation. |
 | `crates/phy/src/configuration/profile.rs` | Create (planned) | Accepted loading, pilot pattern and PHY seed configuration, composing the shared waveform geometry. |
 | `crates/phy/src/configuration/waveform.rs` | Create (planned) | Accepted upstream N/clock/CP/RP geometry and checked lengths, shared by TX/RX; detailed in TX-08. |
 | `crates/phy/src/configuration/grant.rs` | Create (planned) | Synthetic grant identity, resource assignment and configured clock epoch. |
@@ -137,15 +153,75 @@ plans; this layout does not introduce a new numerical dependency or UI crate.
 | `crates/phy/src/types/iq.rs` | Create (planned) | Complex-cell representation with explicit grid/reference metadata. |
 | `crates/phy/src/types/samples.rs` | Create (planned) | Complex samples, rates, indices, burst boundaries and validity. |
 | `crates/phy/tests/configuration.rs` | Create (planned) | Configuration bounds, atomic admission and matching endpoint validation. |
+| `crates/morgana/src/inputs/us_configuration.rs` | Create (planned) | Manual/typed or future verified decoded input, retained profile inventory and selected-profile queries. |
+| `crates/morgana/src/inputs/mod.rs` | Create (planned) | Register configuration separately from PNM measurement importers. |
+| `crates/morgana/src/lib.rs` | Extend (existing) | Expose Rust admission/inventory/preview before matching future Python/UI adapters. |
+| `crates/morgana/tests/us_configuration.rs` | Create (planned) | Inventory selection, malformed import, shared validation and original-input preservation. |
 
 
-An immutable Virtual CMTS configuration supplies the upstream channel/numerology,
+An immutable US Configuration supplies the upstream channel/numerology,
 IUC-to-burst-profile mapping, per-minislot loading, pilot pattern, synthetic grant,
 clock/frame epoch and accepted ranging/timing state. It is a configuration input
 to both endpoints, separate from source bits and injected-channel truth. The
 first run uses one valid data profile, configured timing and unity Pre-Eq.
 No downstream waveform, real UCD/MAP parser, contention or service-group scheduler
 is required. IUC is an identifier selecting a configured profile, not a fixed QAM order.
+
+**Editor groups and accepted ownership.** The future editor follows the reference
+profile interaction: inspect original information, retain a profile inventory,
+choose a profile, edit a draft, preview and Apply/Cancel. Rust owns all checks.
+
+| Group | Accepted content / consumer |
+| --- | --- |
+| Channel | Upstream channel/CM identity, physical frequency origin, N/spacing/sample clock and used/unused/excluded carrier map; shared TX/RX geometry. |
+| Timing | CP/RP, frame/physical-symbol epoch, synthetic grant origin and configured receiver timing; shared TX-08/RX-01/02 conventions. |
+| Burst/profile inventory | Stable profile IDs, source identity and IUC associations, supported per-minislot data/complementary loading, pilot pattern and PHY randomizer seed; TX-01..05 and corresponding RX stages. |
+| Grant | Explicit ordered allocations, selected profile/IUC, scheduled-data mode and work limits; shared pure capacity/codeword planning. |
+| Compatibility | PNM grid/reset identity, coverage and selected model support; validate RxMER and US-Pre-EQ without importing their measured values into this configuration. |
+
+Keep original imported configuration/profile records and their provenance
+separate from edited/derived settings. A manually entered configuration is
+labeled synthetic. A future captured upstream descriptor/profile importer needs
+its own pinned type/version/units and OSSI/MULPI fixtures; downstream DPD file
+types, PLC/NCP fields and downstream timing/interleaving are not inherited.
+No new wire format or saved-workbench schema is defined here.
+
+**Single-profile and multiple-profile selection.** Retain a bounded inventory
+with unique IDs and explicit IUC associations. Single-shot selects exactly one
+valid scheduled-data profile/grant configuration. Multiple retained profiles
+remain discoverable/queryable through Rust and future Python/UI, with explicit
+selection; never merge their loading or infer a profile from QAM order alone.
+The first run still uses one selected profile. A future sequential profile sweep
+needs separately accepted per-profile requests, bounded work and distinct
+results; importing multiple profiles does not automatically run a sweep or
+imply simultaneous multi-CM traffic. US-Pre-EQ update replay changes C, not
+the accepted profile/channel geometry during that run.
+
+Proposed application limits are 1..256 retained profiles, N<=4096 and at most
+1,048,576 retained expanded carrier assignments, 16 MiB per imported file and
+64 MiB original bytes per batch. These cap storage and do not define legal IUCs,
+PHY modulation support or a normative profile count. Admission checks actual
+upstream loading/pilot rules against TX-01/04/05, grant feasibility, finite
+values, unique IDs, geometry, counts and operation budgets before allocation/run.
+Unsupported modes/orders return explicit errors; recognizing a value is not
+an implemented waveform or decoder capability.
+
+Apply validates the complete candidate configuration and dependent PNM selections
+without consuming source/RNG state or starting a job. Incompatible retained PNM
+inputs remain inspectable with explicit not-ready reasons; they never become
+silently resampled or replaced. Cancel/rejected drafts preserve accepted settings.
+Start freezes the accepted snapshot and dependencies. Edits affect a fresh run;
+pause/resume preserves the old generation and pending Pre-EQ/RxMER events.
+Changes to reset identity require a fresh compatible bank/default and acceptance.
+Only legitimate known profile/grant/timing settings reach normal RX; no source
+bits, injected H/C, update factors or target noise are included as receiver truth.
+
+Planned acceptance covers single/multiple inventories, selection and unknown/
+duplicate IDs, wrong grids, unsupported loading/modes, invalid grant/timing,
+atomic edits, stale generation rejection, retained originals and unchanged state
+on preview/cancel. The underlying PHY rules remain owned/cited by the TX stage
+contracts. This editor/control architecture is an engineering adaptation of the
+reference profile workflow, not evidence of upstream capture compatibility.
 
 PRBS uses the same explicit PRBS15 source/verifier contract as the reference
 implementation: recurrence `s[n+15] = s[n+14] XOR s[n]`, nonzero 15-bit seed,
@@ -524,7 +600,7 @@ flowchart LR
 identity, grant epoch/ordered minislots, selected IUC/profile, per-cell loading
 and role, exclusions, accepted timing and explicit work limits. The common
 resource-plan owner supplies the same cell geometry/order used by TX-04/05;
-TX-01 does not duplicate a different pilot/exclusion counter. The virtual CMTS
+TX-01 does not duplicate a different pilot/exclusion counter. US Configuration
 supplies these accepted synthetic inputs without a real UCD/MAP parser. IUC
 selects a profile; it does not by itself determine one QAM order or codeword size.
 
@@ -852,7 +928,7 @@ separate from the PRBS15 payload source, pilot generation and channel noise.
 before TX-04 groups them into loaded QAM cell words. The transform is additive
 binary XOR with a deterministic 23-bit-register sequence. It preserves length,
 bit order, grant offsets and all bit-role associations. The PHY polynomial is
-`x^23 + x^18 + 1`, with the seed supplied by accepted virtual-CMTS configuration.
+`x^23 + x^18 + 1`, with the seed supplied by accepted US Configuration.
 Actual UCD wire-field parsing remains outside this synthetic-grant path.
 
 ```mermaid
@@ -1527,7 +1603,7 @@ correction is not an injected physical-channel response or a receiver estimate.
 | --- | --- | --- |
 | `crates/phy/src/configuration/pre_eq.rs` | Create (planned) | Typed coefficient-bank/source identity, geometry/reset metadata and atomic candidate admission. |
 | `crates/phy/src/signal_processing/pre_eq.rs` | Create (planned) | Single Rust owner for stable bank normalization, complex replacement/adjustment arithmetic and carrier multiplication. |
-| `crates/phy/src/transmitter/pre_eq.rs` | Create (planned) | Validate complete grid/bank identities and apply the frozen bank without altering roles or upstream state. |
+| `crates/phy/src/transmitter/pre_eq.rs` | Create (planned) | Validate complete grid/bank identities and apply the bank selected by the immutable static/replay plan without altering roles or upstream state. |
 | `crates/phy/src/resources/grid.rs` | Create (planned) | Shared channel-wide exclusion mask, physical carrier coordinates and symbol-role metadata. |
 | `crates/phy/src/types/iq.rs` | Create (planned) | Shared complex-cell representation and declared observation reference plane. |
 | `crates/phy/tests/pre_eq.rs` | Create (planned) | Independent complex/normalization/default/update/reset reference cases. |
@@ -1535,8 +1611,9 @@ correction is not an injected physical-channel response or a receiver estimate.
 
 **Operation and reference plane.** Let `X[t,k]` be the actual TX-05 physical
 frequency cell, including its prescribed pilot/complementary power gain. Let
-`C[k]` be the applied Pre-Eq coefficient at the same physical index. TX-06 returns
-`Z[t,k] = C[k] * X[t,k]`. For `C=a+jb` and `X=u+jv`, the output is
+`C[t,k]` be the applied Pre-Eq coefficient at the same physical index. TX-06 returns
+`Z[t,k] = C[t,k] * X[t,k]`; static mode uses the same bank for every t.
+For `C=a+jb` and `X=u+jv`, the output is
 `(a*u-b*v) + j*(a*v+b*u)`. This is multiplication, not division, conjugation or
 application of a second QAM/pilot normalization. Retain physical `k=0..N-1`
 ordering, symbol/frame/grant identity, coefficient generation, role, validity and
@@ -1635,17 +1712,20 @@ boundary without introducing a MAC exchange or adaptive equalization loop.
 | Carrier becomes non-excluded | PHY sets its coefficient to unity, including the next probe opportunity; never restore a stale hidden coefficient. |
 | New calculated/initialized/adjusted candidate | Validate and normalize transactionally, then publish a new generation when allowed by the mode's configuration timing. |
 
-The baseline freezes bank and exclusion mask for the entire accepted run, including
-pause/resume. It implements no mid-burst updates, live exclusion transitions,
-probe scheduling or disabled-equalizer probe mode. Future event ordering must
-preserve the newly re-enabled carrier's next-probe unity rule; a generic bank
+Static mode freezes one bank and exclusion mask for the accepted run, including
+pause/resume. The separately planned [US-Pre-EQ replay](#us-pre-eq-input) freezes
+an entire bank/update schedule before Start and activates banks at declared
+complete-symbol boundaries. Its synthetic event timing is an engineering policy,
+not an RNG-RSP timing claim. Both modes exclude live exclusion transitions,
+probe scheduling and disabled-equalizer probe mode. Future probe event ordering
+must preserve the newly re-enabled carrier's next-probe unity rule; a generic bank
 normalizer must not silently override that guarantee. Coupled reset/update/probe
 timing is deferred to that mode's detailed contract. A change of unrelated UI
 selection does not reset coefficients, source or PHY randomizer state.
 
 **Input/output, state and failure handling.** Accept a complete valid `N`-bin
-physical symbol from TX-05 plus the frozen admitted bank. Check matching channel,
-N/spacing/index-zero frequency, CP/rolloff reset identity, exclusions, run/grant
+physical symbol from TX-05 plus the bank selected for it by the admitted plan.
+Check matching channel, N/spacing/index-zero frequency, CP/rolloff reset identity, exclusions, run/grant
 and coefficient generation before numerical work. Preserve caller buffers and
 source provenance. A proposed output snapshot owns the corrected cells, the same
 coordinates/roles/validity and the applied coefficient generation/reference plane.
@@ -1653,8 +1733,9 @@ A diagnostic raw/corrected pair does not become normal receiver configuration.
 
 The stage's baseline call handles at most one complete physical symbol with
 `N <= 4096`; output queues and retained snapshots have separate configured bounds.
-Coefficient admission handles exactly one N-element candidate, with at most the
-bounded accepted/base/candidate generations needed for the transaction. Do not
+Each coefficient transaction handles one N-element candidate. Static mode retains
+only its bounded accepted/base/candidate generations; replay uses the explicit
+bank/event budgets in the [input contract](#us-pre-eq-input). Do not
 retain every update, symbol or captured bank in an unbounded cache. Check byte
 counts, counters and generated results before publication, including finite-input
 multiplications whose outputs would overflow.
@@ -1668,16 +1749,16 @@ implicit resampling or a coefficient selected from the nearest available bin.
 There is no temporal filter state: chunking cannot change a carrier's result,
 but complete symbol identities/order must still be checked.
 
-Pause preserves the bank and next symbol identity. Cancellation retains completed
-corrected symbols and reports any unfinished work as partial; no failed candidate
+Pause preserves the bank, next replay event and next symbol identity.
+Cancellation retains completed corrected symbols and reports any unfinished work as partial; no failed candidate
 is labeled emitted. Changing settings applies to a fresh accepted run. Preview
 uses an immutable bank/snapshot without advancing the pipeline or rewriting input.
 A disabled/full observer cannot change coefficients or numerical decisions.
 
 ```mermaid
 flowchart LR
-    SOURCE[Default or explicit calculated candidate] --> ADMIT[Validate geometry, exclusions and full-bank norm]
-    ADMIT --> BANK[Frozen applied coefficient generation]
+    SOURCE[Default, calculated or US-Pre-EQ input] --> ADMIT[Validate geometry, exclusions and full-bank norm]
+    ADMIT --> BANK[Immutable static bank or scheduled bank selection]
     GRID[TX-05 role-scaled physical grid] --> CHECK[Validate symbol and bank identity]
     BANK --> CHECK
     CHECK --> APPLY[Multiply C by each physical carrier value]
@@ -1707,7 +1788,9 @@ values; any derived normalization or channel hypothesis has separate provenance.
 Unknown grid coverage, coefficient direction or normalization is an admission gap,
 not permission to interpolate, conjugate, invert or fill missing values with one.
 
-The initial contract adds no capture parser or inferred-channel mode. A later
+The [US-Pre-EQ side input](#us-pre-eq-input) defines capture/update admission and
+scheduled replay; its parsers and runtime remain unimplemented. No inferred-channel
+mode is introduced. A later
 channel hypothesis from `1/C` needs an explicit gain/delay reference, treatment of
 zeros/missing carriers, regularization and a separate validation/acceptance plan.
 Do not feed such a hypothesis back as both C and H or claim the resulting ideal
@@ -2007,7 +2090,7 @@ by this documentation change.
 **Accepted parameters and extension.**
 
 Freeze the same upstream N and 102.4 Msamples/s clock admitted by TX-07.
-The accepted virtual-CMTS configuration selects CP count C and roll-off count R
+The accepted US Configuration selects CP count C and roll-off count R
 from these sample-valued sets, transcribed from PHY Tables 9 and 10:
 
 | Parameter | Allowed counts at 102.4 Msamples/s |
@@ -2224,6 +2307,143 @@ policies, not additional MAC guard requirements. All eight TX stages now have
 architecture; source-table audits, scientific implementations and the integrated
 closed loop remain unfinished and require the existing approval/prerequisites.
 
+### US-Pre-EQ input
+
+[Return to CM-US-TX](#cm-us-tx-block-architecture) ·
+[TX-06 application](#tx-06-cm-pre-eq) · [RxMER side input](#rxmer-input).
+
+Status: **single-shot and multi-input architecture defined; formats, import and
+update replay remain planned**. This side input supplies corrective coefficients
+C to TX-06. It supplies neither a physical channel H to CH-SIM nor a known
+correction to normal CMTS-US-RX. The initial reference experiment still uses
+the explicit unity default and needs no capture.
+
+**Planned code paths (repository-relative).**
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/phy/src/measurements/pre_eq.rs` | Create (planned) | Original corrective-bank/update records, source IDs, exact grid and provenance. |
+| `crates/phy/src/configuration/pre_eq.rs` | Create (planned) | Shared TX-06 bank admission, mode, reset identity, base/probe associations and accepted event plan. |
+| `crates/phy/src/signal_processing/pre_eq.rs` | Create (planned) | Same TX-06 normalization/replacement/adjustment arithmetic; no separate importer math. |
+| `crates/phy/src/transmitter/pre_eq_playback.rs` | Create (planned) | Pure symbol-to-bank queries and bounded event selection for TX-06. |
+| `crates/phy/src/transmitter/pre_eq.rs` | Create (planned) | Apply the selected complete bank once to each actual TX-05 symbol. |
+| `crates/morgana/src/inputs/pre_eq.rs` | Create (planned) | Bounded file/batch decoding, original byte retention and typed Rust admission. |
+| `crates/morgana/src/inputs/mod.rs` | Create (planned) | Register separate RxMER and Pre-EQ import entrypoints. |
+| `crates/morgana/src/lib.rs` | Extend (existing) | Expose shared Rust input/preview operations before future native Python/UI adapters. |
+| `crates/phy/tests/pre_eq_input.rs` | Create (planned) | Original values, identity/coverage, source-kind and atomic batch admission. |
+| `crates/phy/tests/pre_eq_playback.rs` | Create (planned) | Independent update chains, event boundaries, restart/pause and schedule budgets. |
+| `crates/phy/tests/tx_pre_eq.rs` | Create (planned) | Actual changed waveform, unchanged upstream clocks and observer neutrality. |
+| `crates/morgana/tests/pre_eq_import.rs` | Create (planned) | Verified format fixtures, unsupported types and bounded malformed batches. |
+
+Register these leaves under the existing planned measurement/configuration/
+transmitter/facade module roots. No source placeholders or callable API are
+created by this design. Rust owns decoding admission, numerical operations and
+immutable previews; Python/UI later use identical validation and domain errors.
+
+**Single-shot and multi-input modes.** Input count and replay policy are explicit;
+loading a batch does not start a run or select a mode automatically.
+
+| Selection | Accepted behavior |
+| --- | --- |
+| Single-shot | Select exactly one complete applied bank, or unity default, and freeze it for the run. An adjustment alone cannot serve as an initial bank. |
+| Multi-bank replay | Select an initial complete bank and an ordered schedule of later complete snapshots. Each snapshot replaces the whole bank at its offset; snapshots are never multiplied together. |
+| Multiple-update replay | Select an initial bank plus ordered initialization/adjustment records. Resolve each explicit base/probe reference, derive and admit complete effective banks before Start, then activate them at their offsets. |
+
+The multi-input inventory may contain both banks and updates; each event declares
+its kind. No complex-coefficient averaging or interpolation is implicit. A user
+may also select one bank from an inventory for a single-shot run. A source's
+capture epoch, a replay event offset and a simulation trial count are separate
+concepts; selecting multiple files does not silently launch multiple trials.
+
+**Original records and association.** Keep original bytes, SHA-256, format/type/
+version, capture time, CM/user and upstream channel identity, exact physical
+frequency grid, complex sign/scale, excluded/missing mask and normalization
+provenance. Distinguish a complete applied snapshot, a raw calculated bank,
+initialization values and multiplicative adjustment factors. A downstream
+channel estimate is not an upstream corrective bank. Do not invert, conjugate,
+resample, fill missing coefficients or infer a record's kind from its filename.
+
+All selected records share the accepted channel/reset identity: N, spacing,
+index-zero frequency, CP, RP and exclusion mask, as well as CM/user association.
+Full banks must cover used and unused non-excluded carriers; partial update
+ranges are valid only with an explicit compatible complete base. Preserve raw
+captured values separately from derived coefficients. A captured applied bank
+must satisfy the declared normalization contract within a reviewed numerical
+tolerance; do not silently renormalize it. Calculated/update candidates use
+TX-06's one complete-bank normalization before admission.
+
+For initialization, replace addressed values in the declared base. For adjustment,
+multiply addressed values by the update factors; retain unaddressed base values
+before complete-bank normalization. An adjustment identifies the bank used for
+its corresponding last probe, not simply whichever bank is newest in memory.
+Retain immutable base-bank and probe-reference IDs, addressed indices, event ID,
+derived generation and source lineage. Synthetic records declare synthetic probe
+associations explicitly. Reject missing, future, cyclic or incompatible base
+references and duplicate events. An older known probe base may be intentional;
+never substitute the immediately preceding event's result for it.
+
+**Update timeline and lifecycle.** Accept event zero as the initial bank at
+physical-symbol offset zero. Subsequent offsets are strictly increasing integers
+within the accepted K-symbol interval. Reject ties, out-of-range offsets and
+arithmetic overflow; do not reorder by filenames or wall-clock times. Explicit
+symbol offsets are a synthetic replay policy, not a claim about MAC command
+arrival or normative activation latency. Original epochs remain unchanged;
+automatic epoch-to-symbol mapping and live RNG-RSP/P-MAP exchanges are deferred.
+
+At offset j, TX-06 selects one complete bank for every carrier of symbol j before
+TX-07 transforms it. No coefficient changes partway through a symbol. TX-08
+retains the previous symbol's actual window tail and overlaps it with the new
+symbol normally; an update never rewrites emitted samples or resets WOLA,
+PRBS, randomizer, pilot, interleaver or RNG state. Hold the last bank to normal
+finish. Channel geometry/exclusion transitions require a fresh acceptance/run;
+live reset/probe sequencing remains outside this replay scope.
+
+Preflight the entire batch, dependency graph, effective banks, event positions
+and channel-mode compatibility before consuming source bits. Freeze the accepted
+plan for the run. Pure preview/query returns selected generation and source IDs
+without advancing state. Pause/resume retains the next symbol/event; failed
+transactions advance neither. Cancellation retains completed symbols and reports
+the unapplied suffix. Editing/Apply is atomic and affects a fresh run; invalid
+drafts leave the accepted inventory and plan intact.
+
+Proposed application budgets are 1..256 source records, at most 256 complete
+effective banks and 256 scheduled entries including the initial bank, N<=4096
+and at most 1,048,576 coefficients per original/derived bank collection. Bound
+original files to 16 MiB each and 64 MiB per batch. Bound aggregate raw update
+values to 1,048,576 as well; check allocation/work arithmetic before decoding or
+deriving banks. Store bounded event references, not a new N-element bank per
+emitted symbol or an unbounded generation cache. These are engineering limits,
+not DOCSIS requirements; fixtures and runtime budgets remain implementation work.
+
+**Relationship to multi-RxMER.** Both inputs can be inspected and accepted
+independently. Optional capture/probe pairing requires explicit identities and
+time tolerance; timestamp proximity does not establish causation or update order.
+Unity CH-SIM passes the waveform containing each applied C. The first RxMER
+residual model requires every effective C in the complete update plan to be
+unity, identity H and disabled timing/phase. Reject incompatible joint models
+before Start. Broader measured-RxMER/nonunity-C composition needs CH-EXT-02;
+never apply the same correction in TX and channel or send bank truth to RX.
+Diagnostics may join applied generations to received symbols outside normal
+recovery. Tracking a changing effective C×H is an RX-04 design/validation task,
+not a guaranteed BER or convergence outcome from this input architecture.
+
+**Evidence and acceptance.** PHY I20 §7.4.17, PDF pp106–108 supplies the CM
+coefficient/update/default/reset boundary described in TX-06. Its pp107–108
+extraction was rechecked for corresponding-probe bases and full-bank normalization.
+The scheduled replay policy and input budgets above are engineering choices.
+Actual binary/wire formats, byte order, capture scaling and update control fields
+need pinned upstream OSSI/MULPI evidence and lawful fixtures (PREEQ-FORMAT-01).
+Typed synthetic records may precede those adapters, with honest provenance.
+
+Planned acceptance covers single-shot identity and nonunity banks, multiple
+snapshot replacements, mixed initialization/adjustment chains, explicit older
+probe bases, partial ranges, independent complex/norm expectations, incompatible
+grids, preserved originals and rejected-call atomicity. Exercise both sides of
+every activation boundary, hold-last, malformed dependencies, budgets, chunk/
+pause/retry invariance, unchanged random streams, passive observers, actual TX
+sample changes and preflight rejection of a later nonunity C in RxMER mode.
+No parser, replay engine or hardware/control behavior is claimed implemented.
+
 ### Channel Simulator: unity stub first
 
 Status: **staged architecture defined; implementation remains planned**.
@@ -2288,10 +2508,15 @@ No read-only input preview runs a channel or consumes source/noise state.
 | Unity | Identity | Off | Off | Exact TX-08 sample transport, with no RNG. |
 | Deterministic | Identity or causal FIR | Off | Off or integer delay/phase/CFO | Deliberately impaired waveform; receiver outcomes need measurement. |
 | Controlled AWGN | Identity or causal FIR | Explicit complex sample-noise power | Off or integer delay/phase/CFO | Output-referred sample noise after the response, before timing/phase. |
-| RxMER residual | Identity; TX C must also be unity | Accepted RxMER power synthesis | Off | Declared unit-reference probe-to-data approximation; no hidden H/C compensation. |
+| RxMER residual | Identity; every scheduled TX C must also be unity | Accepted RxMER power synthesis | Off | Declared unit-reference probe-to-data approximation; no hidden H/C compensation. |
 
 Reject incompatible selections before a run. Input inspection may still retain
 an otherwise valid RxMER capture when a chosen response mode cannot use it.
+The two side-input collections may be loaded independently or together. Unity
+CH-SIM passes the actual TX waveform even when an accepted Pre-EQ plan changes C.
+Initial RxMER residual mode instead preflights every effective Pre-EQ bank,
+including later updates, and rejects any nonunity C before source consumption.
+Never disable an update silently or derive H from C to force compatibility.
 Captured-H-to-FIR reconstruction, fractional timing, sample-rate error, stochastic
 phase noise and arbitrary RxMER/FIR/timing combinations remain unsupported
 extensions. They need their own design/acceptance, not additional implicit steps.
@@ -2325,6 +2550,21 @@ it is independent of transmitter settings, channel Start and receiver metrics.
 The first unity run needs no RxMER. Loading/applying observations alone leaves
 channel mode unchanged; a future measured-residual mode must be selected
 explicitly and supported before it can run.
+
+**Single-shot and multi-input inventory.** Single-shot selects exactly one
+capture and Single policy for a fixed target throughout the run. Multi-input
+selects compatible captures for Average, Hold or Interpolate below; selecting
+one from a larger inventory may still use Single. These choices do not silently
+change trial counts or start multiple runs. Load a bounded batch, each with an
+immutable source ID and its own original bytes/provenance. Selection, ordering
+and playback policy are separate accepted configuration; inspecting, deselecting
+or reordering captures never alters originals. Reject duplicate source selection
+instead of counting one capture twice in an average. A batch is for one accepted
+CM/user, channel and compatible grid/reference cohort, not multiple simultaneous
+users. Rust owns batch admission and policy validation; future Python/UI adapters
+expose the same collection and failures. [US-Pre-EQ](#us-pre-eq-input) is an
+independent collection, with optional explicit capture/probe association only;
+file order or similar timestamps never pair the two inputs automatically.
 
 **Planned code paths (repository-relative; all create, planned).**
 
@@ -2374,7 +2614,7 @@ Measured association requires the source identities/reference and epoch needed
 by the selected policy. A readable but unassociated capture may be inspected
 without becoming ready for simulation. Apply validates the whole selection,
 explicit capture-time tolerance and geometry generation atomically; rejected
-drafts leave prior accepted inputs intact. A configuration change invalidates
+drafts leave prior accepted inputs intact. A US Configuration change invalidates
 derived compatibility/results and requires revalidation. Applying edits affects
 a fresh run, not the measurements frozen into an active or paused run.
 
@@ -2486,7 +2726,8 @@ Accept only the declared composition table and upstream clock. Report a typed
 unsupported-model error for every undeclared combination; numeric failure,
 identity mismatch, capacity/backpressure and cancellation remain distinct. For
 nonunity jobs, preflight FIR/delay drain counts, per-quantum operation counts and
-the full RxMER schedule/required role coverage. Never advance source, noise or
+the full RxMER schedule/required role coverage and all scheduled Pre-EQ bank
+compatibility. Never advance source, noise or
 stage state just to check readiness. Tests include rejection after an accepted
 plan, input split at a work-quantum boundary, buffer exhaustion and preserving
 the accepted configuration when a proposed replacement fails.
@@ -2626,7 +2867,8 @@ as a proposed application ceiling, with finite per-run/total-energy/work checks.
 Do not infer Eb/N0, RF dBmV or post-EQ RxMER from p without a separate reference.
 
 RxmerResidual consumes the immutable [RxMER power playback](#rxmer-input).
-The initial design requires identity CH-03, unity accepted TX Pre-Eq C and Off
+The initial design requires identity CH-03, unity accepted TX Pre-Eq C throughout
+the entire static/update plan and Off
 CH-05. The unit BPSK-probe reference is explicitly mapped to unit-average-power
 scheduled data/complementary QAM. This is a model assumption, not a recovered
 field RF waveform. For physical symbol j and each full-grid carrier k:

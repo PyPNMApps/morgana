@@ -45,13 +45,25 @@ See [architecture](../architecture.md) and [foundation design](features/foundati
   origins, tail/guards, bounded chunk emission and planned code/test paths;
   see [TX-08](../architecture.md#tx-08-sample-assembly). Architecture only.
 - [x] ARCH-CH-00: Stage the Channel Simulator with six linked sections, support
-  states and planned files; add the architecture's major-section table of contents.
+  states and planned files; keep a compact block/configuration/PNM contents list.
   See [channel design](features/channel-simulator/design.md).
 - [x] ARCH-CH-01/02/06: Define sample admission, exact unity transport, output
   observations and bounded lifecycle. Architecture only; no channel execution.
 - [x] ARCH-RXMER-01: Add the separate upstream RxMER input, original provenance,
   exact association, power selection/playback and model/metric boundaries;
   see [RxMER input](../architecture.md#rxmer-input). Implementation remains planned.
+- [x] ARCH-US-CONFIG-01: Define US Configuration input, retained profile inventory,
+  selection, shared TX/RX admission and code/test paths; architecture only.
+- [x] ARCH-PNM-02: Define single-shot/multi-input RxMER and US-Pre-EQ,
+  bounded bank/update replay, explicit bases/events and joint-model compatibility;
+  see [input design](features/upstream-inputs/design.md). Implementation planned.
+- [ ] US-CONFIG-01: Implement shared configuration/profile admission and inventory.
+- [ ] US-CONFIG-FORMAT-01: Verify upstream configuration/profile capture formats
+  against pinned source evidence and fixtures before exposing import support.
+- [ ] PREEQ-FORMAT-01: Verify upstream bank/update formats, scales and control
+  semantics with pinned OSSI/MULPI evidence and lawful fixtures.
+- [ ] PREEQ-INPUT-01: Implement typed banks/updates, provenance-preserving import
+  and bounded preflight/replay after the reference waveform prerequisites.
 - [x] ARCH-CH-03: Define causal complex FIR, original tap/path reference,
   bounded history/work, exact tail and independent acceptance; architecture only.
 - [x] ARCH-CH-04: Define sample AWGN and restricted unity-C/H RxMER synthesis,
@@ -72,7 +84,8 @@ See [architecture](../architecture.md) and [foundation design](features/foundati
 - [ ] ARCH-RX-08: Expand shortening/codec integration and separate decode outcomes.
 - [ ] ARCH-RX-09: Expand receiver-known deframing and partial information results.
 - [ ] CH-EXT-02: Detail captured-H reconstruction, fractional timing/clock error,
-  stochastic phase noise and broader RxMER/response composition before support.
+  stochastic phase noise and broader RxMER/response/Pre-EQ-update composition
+  before support.
 - [ ] RXMER-FORMAT-01: Verify upstream format/type/units/null handling and lawful
   fixtures before claiming a binary/decoded capture adapter.
 - [x] ARCH-RANGING-00: Reserve explicit future ranging/preamble and probing modes;

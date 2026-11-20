@@ -92,8 +92,13 @@ corrective bank and its application after role scaling. It adds planned
 `crates/phy/tests/tx_pre_eq.rs` beside the already planned transmitter adapter,
 grid/types and primitive acceptance tests. Normalization is bank admission,
 not a per-symbol/active-mask adjustment. Defaults are unity on used/unused
-non-excluded carriers and zero on excluded carriers. A run freezes its bank;
-live probe-driven updates and measured import remain outside this baseline.
+non-excluded carriers and zero on excluded carriers. Single-shot freezes one
+bank; planned [US-Pre-EQ input](../../../architecture.md#us-pre-eq-input) also
+defines multiple-bank/update replay with an immutable schedule and explicit
+probe bases. TX-06 applies each selected complete bank at its declared symbol
+boundary. Live probe-driven updates and format support remain deferred; all
+import/replay implementation is pending. See the
+[input design](../upstream-inputs/design.md) for acceptance and evidence gaps.
 The [TX-07 section](../../../architecture.md#tx-07-ifft) defines full upstream
 geometry, the centered unitary transform and useful-symbol sample metadata.
 The planned shared `crates/phy/src/signal_processing/transform.rs` owns safe Rust
@@ -186,8 +191,9 @@ defaults/exclusions, complex adjustment, signed update components, normalization
 reset triggers and probe/control boundaries. The p108 continuation is upstream
 §7.4.17 text despite being carried in the extraction indexed under 7.5; review
 stopped at the actual downstream heading. The calibrated CMTS performance
-procedure is not acceptance for this static-bank architecture. Wire field decoding
-and event scheduling require separate MULPI/probing evidence. Read-only reference
+procedure is not acceptance for this bank/replay architecture. Wire field decoding
+and normative command/probe scheduling require separate MULPI/probing evidence;
+explicit synthetic symbol offsets are an engineering replay policy. Read-only reference
 review supplied complex-response and receiver-estimation ownership patterns only;
 its downstream H interpretation/inverse floor are not a CM transmit-bank contract.
 

@@ -10,6 +10,9 @@ Task: ARCH-01. This request authorizes documentation, not scientific or Qt code.
 - Keep the first channel a genuine unity pass-through; reserve impairment extension points.
 - Add a separate optional upstream RxMER input for later channel residual models,
   preserving original observations and distinct input/derived/receiver results.
+- Add US Configuration as a shared channel/profile/grant input to TX/RX.
+- Group RxMER and US-Pre-EQ under PNM Files; define single-shot/multi-input
+  selection and multiple explicit Pre-EQ updates into TX-06.
 - Specify the same shared QAM Analyzer and Spectrum Analyzer interaction model
   as the reference workbench, with upstream metadata and clear reference planes.
 - Preserve upstream normative processing and distinguish planned support from the
@@ -35,6 +38,10 @@ are defined for their declared initial modes; implementation remains planned.
 RxMER input uses the reference selection/power-playback workflow
 with upstream CMTS/user/probe semantics, not downstream DPD/file assumptions.
 The first waveform milestone still requires exact unity without measurements.
+The [input extension](../upstream-inputs/design.md) defines US Configuration,
+single-shot/multi-input PNM selection and multiple Pre-EQ updates separately
+from RxMER power playback. Configuration supplies legitimate common settings;
+Pre-EQ feeds TX-06, and neither C nor model targets become normal RX truth.
 
 The [CMTS-US-RX design](../cmts-us-rx/design.md) defines the receiver block,
 chart, nine linked stage sections, output inspections and per-stage file paths.

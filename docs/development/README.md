@@ -5,6 +5,10 @@
   [per-section layout design/checklist](features/code-layout/design.md)
 - [Upstream signal path and QAM/SA architecture](../architecture.md#planned-upstream-signal-path-and-workbenches)
   and [ARCH-01 design](features/upstream-signal-path/design.md)
+- [US Configuration](../architecture.md#us-configuration),
+  [PNM RxMER](../architecture.md#rxmer-input) and
+  [PNM US-Pre-EQ](../architecture.md#us-pre-eq-input), with
+  [input design/checklist](features/upstream-inputs/design.md)
 - [PRBS block architecture](../architecture.md#prbs-block-architecture)
   and [ARCH-PRBS-01 design/checklist](features/prbs-source/design.md)
 - [CM-US-TX block architecture](../architecture.md#cm-us-tx-block-architecture),
