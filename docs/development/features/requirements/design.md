@@ -65,3 +65,19 @@ No future requirement is satisfied merely by these document checks. No new
 scientific/runtime, capture-format, native Python, hosted/platform or provisioning
 acceptance was executed. Source/specification gaps remain pending. The save
 command is prepared only; no staging, commit, push or installation occurred.
+
+## Mandatory requirement wording
+
+The baseline uses uppercase SHALL and MUST for obligations, and SHALL NOT and
+MUST NOT for prohibitions. Advisory requirements are prohibited; a recommendation
+requires an explicit mandatory, excluded or deferred decision before baseline
+acceptance. Unresolved design choices require a decision before dependent work.
+Optional field/capability applicability and consumer installation choices remain
+distinct from mandatory delivery and acceptance obligations. All 59 requirement
+IDs and architecture/checklist links are retained.
+
+`bash scripts/validate.sh` passed again: 20 skills, 454 local file links,
+23 Rust tests, 19 setup tests, 5 Git-helper tests, doctests, formatting and Clippy.
+Focused checks preserved all 59 requirement IDs and all prior document links,
+confirmed uppercase mandatory keywords and found no advisory keyword. Git
+whitespace checks passed. Scientific/API implementation status is unchanged.
