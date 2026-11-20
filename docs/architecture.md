@@ -260,9 +260,9 @@ maps these requirements to owners and planned checks:
 
 ### CM-US-TX block architecture
 
-Status: **planned**. ARCH-TX-00 defines the transmitter block and ARCH-TX-01
-expands its first stage below. The current isolated LDPC codec is a dependency;
-it does not make this transmitter implemented. CM-US-TX converts meaningful
+Status: **planned**. ARCH-TX-00 defines the transmitter block; ARCH-TX-01 and
+ARCH-TX-02 expand its first two stages below. The isolated LDPC codec is a
+dependency; it does not make this transmitter implemented. CM-US-TX converts meaningful
 PRBS source bits and an accepted upstream grant into complex baseband samples
 delivered to the Channel Simulator.
 
@@ -330,8 +330,8 @@ data with their own loading. Do not discard them as if they were known pilots.
 Excluded/unused carriers and zero-valued minislots follow upstream mapping rules.
 
 The initial path is a normal scheduled data burst. Do not insert a generic
-training/ranging preamble into every data burst. Dedicated ranging/probe formats,
-their preambles and special coding are later modes requiring their own evidence.
+training/ranging preamble into every data burst. Initial/fine ranging require
+dedicated preambles and special coding; probing has a separate pilot-based format.
 
 The first run uses accepted scheduled-data resources, unity Pre-Eq and the unity
 channel. Grant validation/readiness is separate from source acceptance. Start
@@ -341,10 +341,42 @@ run and invalidates older observations by generation. Explicit cancellation
 retains completed work and reports partial emission rather than treating
 generated codewords as proof that their waveform was delivered.
 
-The following detail begins with TX-01. TX-02 through TX-08 remain overview
-contracts and will be expanded one at a time in processing order. The local
+Detailed contracts below cover TX-01 and TX-02. TX-03 through TX-08 remain
+overview contracts and will be expanded one at a time in processing order. The local
 [CM-US-TX feature record](development/features/cm-us-tx/design.md) tracks those
 architecture steps separately from implementation.
+
+#### Deferred burst modes and preambles
+
+ARCH-RANGING-00 reserves this extension now; detailed architecture and
+implementation follow the first verified scheduled-data TX → unity channel → RX
+closed loop. These are documented mode boundaries, not new source enums or
+empty algorithm modules. All full-waveform modes remain unimplemented today.
+
+| Proposed burst mode | Architecture status |
+| --- | --- |
+| Scheduled data | First full-waveform target: use the normal grant/FEC path and edge/body pilots, with configured timing initially. No generic preamble is prepended. |
+| Initial ranging | Future dedicated preamble, data coding and waveform construction; unsupported by the initial data path. |
+| Fine ranging | Future dedicated preamble/data structure and corresponding timing/power procedures; unsupported by the initial data path. |
+| Probing | Future probing-symbol/pilot generation and observation; keep distinct from a data burst with an added preamble. |
+
+A future burst-mode dispatcher validates the accepted request **before** normal
+TX-01 planning or source consumption. Unsupported modes return a typed error;
+they never fall back to scheduled data. Ranging waveform construction must own
+its mode-specific coding, mapping and sample assembly instead of simply adding
+a prefix to the ordinary data chain.
+
+The matching receiver work must define bounded preamble detection and applicable
+timing/frequency estimation from received samples and configured known sequences.
+Configured-timing data recovery does not establish preamble acquisition support.
+Keep these modes unavailable in future UI/API selectors until their complete
+contracts, implementation and validation exist.
+
+Detailed follow-up is ARCH-RANGING-01: review PHY3.1 §7.4.15.1–3, identify the
+mode-specific TX/RX boundaries and MULPI dependencies, then define source vectors,
+bounds, observables and acceptance before implementation. Initial/fine-ranging
+preambles and probing pilots were identified in the pinned extraction at PDF
+pp89–95 and pp98–99; their detailed construction is not specified by this placeholder.
 
 #### TX-01: Grant framing and FEC selection
 
@@ -490,6 +522,174 @@ no-transmission handling and bounded admission are explicit simulator policies.
 Actual MAC byte framing and UCD/MAP wire semantics require MULPI evidence and
 remain outside this synthetic-grant path. DOCSIS 4.0 mode extensions require
 separate applicability review; this section does not claim full FDD/FDX support.
+
+#### TX-02: LDPC encoding and shortening
+
+Status: **architecture defined; transmitter integration remains planned**.
+ARCH-TX-02 uses the existing standalone codec as the numerical owner. It does
+not complete LDPC-01/02 or claim that a complete transmitter already exists.
+
+**Purpose and boundary.** Convert each TX-01 information block into its selected
+upstream systematic LDPC codeword, omit its known shortening coordinates and
+assemble the ordered encoded grant with any final zero grant padding. TX-01 owns
+codeword selection, information fill and source admission. TX-02 preserves that
+plan; it does not select a more convenient code or consume additional PRBS bits.
+TX-03 receives the completed/streamed encoded grant before PHY randomization.
+Normal scheduled data has no BCH outer code or additional parity-bit puncturing.
+Future ranging modes retain their separate mode-specific coding boundary.
+
+```mermaid
+flowchart LR
+    INPUT[TX-01 plan and retained information] --> ADMIT[Validate code, length and bit roles]
+    ADMIT --> RESTORE[Append shortening zeros]
+    RESTORE --> ENCODE[Systematic upstream LDPC encoding]
+    ENCODE --> CHECK[Check mother syndrome and layout]
+    CHECK --> OMIT[Omit only appended zero coordinates]
+    OMIT --> ASSEMBLE[Preserve codeword order and append grant pad]
+    ASSEMBLE --> NEXT[Encoded grant bits to TX-03]
+```
+
+**Mother-code identity and source.** Select the exact upstream matrix specified
+by CM-SP-PHYv3.1-I20-230419 §7.4.3.2. Code size alone is not sufficient to
+identify a matrix. The selected plan fixes these dimensions:
+
+| Upstream code | Mother codeword `N` | Mother information `K` | Parity `P = N - K` | Lift `L` | Base matrix |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Long | 16200 | 14400 | 1800 | 360 | 5 × 45 |
+| Medium | 5940 | 5040 | 900 | 180 | 5 × 33 |
+| Short | 1120 | 840 | 280 | 56 | 5 × 20 |
+
+The expanded binary parity-check matrix `H` has `P` rows and `N` columns. A
+dash in the base table is an all-zero block; a numeric shift represents an
+`L × L` cyclically right-shifted identity. With zero-based block row `b_r`, block
+column `b_c` and local row `r`, a shift `s` contributes an edge at row
+`b_r*L + r`, column `b_c*L + ((r+s) mod L)`. Check every source-table entry and
+this orientation independently before declaring a code family source-validated.
+
+Current source review is incomplete. In particular, the long table's fifth row,
+zero-based column 20, remains `-1` in the checkpoint where PDF p57 shows `12`.
+This documentation task does not correct the matrix. Existing unit tests and
+the Gaussian test encoder share transcribed tables, so matching parity and
+successful round trips cannot resolve that finding. A future validated TX-02
+path must require the applicable code's source checks to pass; current codec
+availability is not a substitute for that acceptance.
+
+**Encoding and shortening coordinates.** Let `I` be the retained information
+count supplied by TX-01, including any information-fill ones, and let
+`S = K - I` be the omitted information count. Validate the exact planner-issued
+descriptor before encoding. The standalone codec accepts `1..=K`; this broad
+codec domain does not authorize a normal-grant size that TX-01 would not select.
+
+| Representation | Ordered bits and length |
+| --- | --- |
+| Retained information `u` | `I` binary values, preserving meaningful source and information-fill coordinates. |
+| Mother information | `u` followed by `S` zeros; exactly `K` values. |
+| Mother codeword `c` | `u`, then those `S` zeros, then `P` computed parity bits; exactly `N` values. |
+| Transmitted codeword `t` | `u` followed by all `P` parity bits; exactly `T = I + P = N - S` values. |
+
+Compute parity over the complete mother information so `H*c^T = 0` in binary
+arithmetic. Remove only mother positions `[I, K)` after parity calculation.
+Parity comes from mother positions `[K, N)` and remains in its original order.
+Do not shift parity into the shortened coordinates before computing it, drop
+zero-valued payload bits, strip TX-01's one-valued fill or reverse byte/bit order.
+For `S = 0`, transmit the entire mother word unchanged.
+
+The existing sparse substitution plan is the initial encoder implementation:
+compile its parity dependencies from the selected matrix and reject malformed
+or unsolvable definitions. Keep this algorithm in `crates/ldpc`; waveform code
+must not introduce a second encoder or its own shortening calculation. A
+pre-emission integrity check evaluates the mother syndrome, restoring omitted
+zeros when checking a transmitted word. Syndrome validity is an encoder check,
+not a declaration of correct original payload or successful receiver recovery.
+
+For the TX-01 700-bit example, encode 420 retained information bits, including
+the four byte-residue ones, followed by 420 shortening zeros. The mother short
+word contains 840 information positions and 280 parity bits. Transmit the
+original 420 retained bits followed by all 280 computed parity bits. The four
+fill ones remain transmitted; the appended 420 zeros do not.
+
+**Grant assembly and output identity.** Concatenate transmitted codewords in
+the precise TX-01 order. Borrowing may yield two shortened codewords; both use
+their own descriptors and lengths. Append exactly the plan's zero grant padding
+after the final codeword, outside FEC and before TX-03. Zero pad is not another
+codeword, additional information fill or a decoder input. Preserve the identity
+`sum(T_i) + grant_pad_bits = G` without adding symbol alignment or byte padding.
+A TX-01 no-transmission result produces no encoded burst and consumes no source.
+
+A proposed owned `EncodedCodeword` result carries run/configuration/grant identity,
+codeword ordinal, matrix/code identity, `N/K/P/L`, retained/shortened lengths,
+actual transmitted bits and the planned encoded-grant offset. Preserve TX-01's
+information-role ranges for diagnostics and later independent source association.
+A proposed encoded-grant stream carries a checked next bit offset, codeword
+boundaries, final-pad range and explicit complete/partial status. Descriptor
+metadata is not proof that corresponding samples have been emitted.
+
+Stream only complete encoded codewords or bounded slices with explicit offsets;
+arbitrary transport chunking does not restart an encoder or alter output order.
+TX-03 owns grant-seeded randomizer state across all codeword and padding chunks.
+Never silently replace a missing/failed codeword with zeros to finish a grant.
+If a later word fails after an earlier prefix was delivered, retain that prefix's
+actual status and mark the grant/run incomplete rather than fabricate completion.
+
+**Validation, work bounds and public ownership.** Before encoding, check matching
+run/grant/configuration identity, descriptor consistency, exact binary input
+length, valid code, shortening coordinates and remaining queue/retention budget.
+Reject inputs before publishing output; do not modify caller buffers or accepted
+plans. TX-02 never advances the source. If TX-01 already admitted a payload,
+later encoding failure preserves that recorded admission as un-emitted work;
+it does not silently rewind PRBS or count the payload as delivered.
+
+Use the existing local owners:
+
+| Owner | Reuse and boundary |
+| --- | --- |
+| `crates/ldpc/src/definitions.rs` | Upstream family/dimensions and matrix construction; pending source review stays visible. |
+| `crates/ldpc/src/sparse_encoder.rs` | Sparse parity dependencies and encoding; preserve its existing copyright/adaptation notices. |
+| `crates/ldpc/src/codec.rs` | Reuse `LdpcCodec::encode` and `valid_syndrome`; the latter restores shortened zero coordinates internally. |
+| Proposed PHY transmitter adapter | Validate TX-01 descriptors, call the codec and assemble ordered output/pad; no matrix or parity arithmetic here. |
+
+Keep codec/context caches bounded by the job's admitted code/settings budget;
+do not accumulate every shortening length encountered during a continuous run.
+Word work is bounded by the selected mother code, while grant/in-flight/output
+budgets bound aggregate work and memory. Preserve earlier completed results on
+cancellation, with checks between bounded work units. Encoding is deterministic
+and needs no noise RNG, decoder trials or iterative convergence loop.
+
+The current `LdpcSettings` also contains a decoder iteration limit; that is shared
+codec API plumbing, not a TX parity-generation parameter or TX-02 control. A
+future encoder-only handle, if justified, must reuse the same numerical owner.
+The public Rust facade exposes typed validation and owned results first; future
+Python/Qt consumers use those exact semantics, with checked integer conversion,
+equivalent binary buffers and structured error mapping. No new callable API or
+report-schema change is implemented by this architecture section.
+
+**Stage view and acceptance.** The future TX-02 view reports codeword identity,
+mother/retained/transmitted sizes, information fill, omitted shortening count,
+parity count, grant offset and actual encoder-check status. A bounded bit inspector
+separates information/fill/parity/grant-pad roles. Mother zero coordinates may
+be shown as an explicitly reconstructed diagnostic view, never as transmitted
+samples. Planned values, retained actual bits and unretained history must be
+distinguishable. This stage has no QAM/SA input and no RX MER or decoder-iteration
+result; those remain owned by later stages.
+
+Implementation acceptance requires independent source-table/orientation checks,
+systematic/parity ordering and syndrome checks, a separately structured parity
+oracle, full/shortened cases for all three families, preservation of fill ones,
+exact zero omission and unchanged caller buffers. Exercise TX-01-approved mixed
+codeword orders and two-shortened-word cases, final grant pad, boundary offsets,
+chunk-invariant concatenation, stale/malformed descriptors, bounded context
+reuse and partial cancellation/failure. Standalone `I = 1`, `K-1` and `K` codec
+tests remain separate from normal-grant admissibility. Matched RX restoration
+and independent PRBS recovery are later closed-loop acceptance, not substitutes
+for encoder/source checks. Keep missing external interoperability evidence honest.
+
+Evidence: CM-SP-PHYv3.1-I20-230419 §7.4.3, Table 8, PDF p52;
+§7.4.3.1.1, p56; §7.4.3.2 and the upstream matrix tables, pp56–57;
+§7.4.3.3, p58. Original PDF pp56–58 were rendered and inspected for systematic
+ordering, matrix dimensions/right-shift convention, the known long-table cell
+and shortening steps. This is not a completed cell-by-cell transcription audit.
+Stage metadata, bounded streaming and pre-emission checks are engineering
+contracts around the normative CM encoding/shortening behavior.
 
 ### Channel Simulator: unity stub first
 

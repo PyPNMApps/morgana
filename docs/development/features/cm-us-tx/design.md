@@ -1,6 +1,6 @@
 # CM-US-TX block and stage design
 
-Status: transmitter overview and TX-01 architecture defined; implementation is
+Status: transmitter overview and TX-01/02 architecture defined; integration is
 planned. Subsequent stages are expanded one at a time in processing order.
 Scope is documentation in this repository, with no links to another source
 checkout and no scientific, UI, CLI or binding implementation changes.
@@ -16,11 +16,15 @@ checkout and no scientific, UI, CLI or binding implementation changes.
 | TX-PLAN-03 | Plan without source mutation and admit bounded work transactionally. | Orchestration; rejected inputs preserve accepted state and source, no unbounded grant history. |
 | TX-PLAN-04 | Let RX derive the same layout from accepted configuration without transmitter truth. | Shared pure planner called independently by endpoints; no original bits/seed/source ledger in RX recovery. |
 | TX-PLAN-05 | Keep validation/results shared by Rust and future Python/UI consumers. | Public facade and thin adapters; typed errors/owned results and versioned export changes. |
+| TX-FEC-01 | Preserve TX-01's codeword identity and encode retained information with systematic parity. | Existing Rust codec; source-verified upstream matrices, independent parity oracle and exact bit ordering. |
+| TX-FEC-02 | Append shortening zeros before encoding and omit only those coordinates afterward. | Codec shortening owner; all families, full/shortened boundaries and unchanged information-fill ones. |
+| TX-FEC-03 | Assemble ordered encoded words and final grant pad with bounded, explicit partial status. | Transmitter adapter; checked offsets/totals, chunk invariance, stale-input and failure/cancellation coverage. |
 
 The canonical [CM-US-TX block](../../../architecture.md#cm-us-tx-block-architecture)
 owns the overview and
 [TX-01 section](../../../architecture.md#tx-01-grant-framing-and-fec-selection)
-owns the detailed first-stage contract. The existing codec stays independent of
+owns grant planning. The [TX-02 section](../../../architecture.md#tx-02-ldpc-encoding-and-shortening)
+owns encoding, shortening and ordered grant assembly. The existing codec stays independent of
 source, grant resources, modulation and waveform processing. Further stage
 sections will define their detailed contracts rather than creating empty modules.
 
@@ -40,12 +44,22 @@ reverse calculation is informative and is not the controlling forward selector.
 Real UCD/MAP/MAC framing requires separate MULPI evidence. FDD/FDX extensions are
 not claimed by this initial scheduled-data contract.
 
+TX-02 adds original-PDF review of §7.4.3.2–3, pp56–58: systematic information/
+parity order, matrix dimensions/right-shift orientation, the known long-code
+source discrepancy and append/encode/omit shortening. This review does not
+complete the all-cell matrix audit. Existing local definitions, sparse encoder,
+codec operations and shortening tests were inspected; no reference-project
+implementation or new numerical code is introduced.
+
 ## Dependency-ordered checklist
 
 - [x] ARCH-TX-00: Standardize CM-US-TX and document the ordered internal stages.
 - [x] ARCH-TX-01: Define grant capacity, selection, framing/bit roles, admission,
   inspection and independent acceptance checks.
-- [ ] ARCH-TX-02: Expand upstream LDPC encoding and shortening.
+- [x] ARCH-RANGING-00: Reserve [future burst modes and preambles](../../../architecture.md#deferred-burst-modes-and-preambles)
+  with explicit unsupported-mode dispatch and matching RX requirements.
+- [x] ARCH-TX-02: Define upstream LDPC encoding/shortening, transmitted ordering,
+  reuse boundaries, bounded assembly, inspection and independent validation.
 - [ ] ARCH-TX-03: Expand grant-seeded PHY randomization.
 - [ ] ARCH-TX-04: Expand cell-word construction and QAM mapping.
 - [ ] ARCH-TX-05: Expand pilots, grant resource mapping and joint interleaving.
@@ -56,6 +70,9 @@ not claimed by this initial scheduled-data contract.
   plan approval; verify exact boundaries, borrowing and bit-role conservation.
 - [ ] WAVE-TX-01: Integrate all accepted stages into one verified upstream burst
   after codec/source/resource prerequisites are complete.
+- [ ] ARCH-RANGING-01: Expand mode-specific ranging/preamble and probing TX/RX
+  architecture after the scheduled-data unity closed loop; implementation follows
+  separate acceptance criteria and authorization.
 
 The PRBS block supplies only meaningful source bits; information byte residue,
 coding fill, omitted shortening and grant padding do not consume that source.
@@ -74,3 +91,15 @@ overview stages and the absence of external/workstation links in the new block
 and feature design. `git diff --check` passed. `scripts/validate.sh` passed
 23 existing Rust, 19 setup and 5 Git tests, formatting and Clippy. Those results
 validate the existing checkpoint; the planned transmitter stages are unimplemented.
+
+The subsequent preamble-placeholder update is documentation only. Its acceptance
+is explicit scheduled-data versus ranging/probing ownership, no unsupported-mode
+fallback and accurate pending status; it introduces no acquisition implementation.
+
+For TX-02, `python3 tools/validation/check.py` passed 20 skills and 265 local
+links. Focused checks resolved its section anchors, confirmed the self-contained
+contract and kept LDPC-01/02 implementation/source acceptance unchecked.
+`git diff --check` and `scripts/validate.sh` passed, including the existing
+23 Rust, 19 setup and 5 Git tests, formatting and Clippy. This is checkpoint
+regression evidence; grant-integrated TX-02 and future adapter parity remain
+unimplemented, and the known matrix-source discrepancy remains unresolved.

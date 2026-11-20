@@ -16,8 +16,13 @@ See [architecture](../architecture.md) and [foundation design](features/foundati
   observation boundaries; see [transmitter design](features/cm-us-tx/design.md).
 - [x] ARCH-TX-01: Expand grant framing/FEC selection, source/fill/shortening/pad
   accounting, bounded admission and stage acceptance. Documentation only.
-- [ ] ARCH-TX-02..08: Expand the remaining transmitter stages one at a time in
-  processing order, starting with upstream LDPC encode/shorten.
+- [x] ARCH-TX-02: Define LDPC encoding/shortening, exact transmitted bit order,
+  grant assembly, codec ownership, inspection and source-validation boundaries;
+  see [TX-02](../architecture.md#tx-02-ldpc-encoding-and-shortening). Architecture only.
+- [ ] ARCH-TX-03..08: Expand the remaining transmitter stages one at a time in
+  processing order, starting with grant-seeded PHY randomization.
+- [x] ARCH-RANGING-00: Reserve explicit future ranging/preamble and probing modes;
+  see [placeholder](../architecture.md#deferred-burst-modes-and-preambles).
 - [x] SETUP-01..03: Adopt generic installer guidance and implement/test explicit
   development setup. Nineteen setup tests and Ubuntu 22.04 read-only modes pass;
   see [design/checklist](features/development-setup/design.md).
@@ -49,6 +54,9 @@ See [architecture](../architecture.md) and [foundation design](features/foundati
   taps from the [signal path architecture](../architecture.md#planned-upstream-signal-path-and-workbenches).
 - [ ] WAVE-CH-02: Add controlled impairments and provenance-preserving measured
   Pre-Eq inputs after the unity closed loop passes.
+- [ ] ARCH-RANGING-01: Detail initial/fine-ranging preambles, distinct probing
+  waveforms and matching RX acquisition after the scheduled-data unity loop;
+  keep these modes unsupported until implemented and validated.
 - [ ] API-01: Complete experiment reports and matching native Python wrapper.
 
 At each completion/commit-msg review, reconcile this checklist, architecture,
