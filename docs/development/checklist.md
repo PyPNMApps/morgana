@@ -31,8 +31,12 @@ See [architecture](../architecture.md) and [foundation design](features/foundati
 - [x] ARCH-TX-04: Define MSB-first cell words, exact upstream constellation/role
   loading, reference scaling, bounded mapping, QAM inspection and code/test paths;
   see [TX-04](../architecture.md#tx-04-cell-word-construction-and-qam-mapping). Architecture only.
-- [ ] ARCH-TX-05..08: Expand the remaining transmitter stages one at a time in
-  processing order, starting with pilots, resource placement and joint interleaving.
+- [x] ARCH-TX-05: Define shared pilot/resource roles, block partitioning, joint
+  address generation, physical-bin pilots/boosting, bounded grid assembly and
+  code/test paths; see [TX-05](../architecture.md#tx-05-pilots-ofdma-framing-and-interleaving).
+  Architecture only; exact masks/vectors and executable acceptance remain planned.
+- [ ] ARCH-TX-06..08: Expand the remaining transmitter stages one at a time in
+  processing order, starting with CM Pre-Eq and its reference plane.
 - [x] ARCH-RANGING-00: Reserve explicit future ranging/preamble and probing modes;
   see [placeholder](../architecture.md#deferred-burst-modes-and-preambles).
 - [x] SETUP-01..03: Adopt generic installer guidance and implement/test explicit

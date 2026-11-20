@@ -1,6 +1,6 @@
 # CM-US-TX block and stage design
 
-Status: transmitter overview and TX-01/02/03/04 architecture defined; integration is
+Status: transmitter overview and TX-01 through TX-05 architecture defined; integration is
 planned. Subsequent stages are expanded one at a time in processing order.
 Scope is documentation in this repository, with no links to another source
 checkout and no scientific, UI, CLI or binding implementation changes.
@@ -29,6 +29,10 @@ checkout and no scientific, UI, CLI or binding implementation changes.
 | TX-QAM-02 | Use exact Annex A labels and Table 54 scaling for upstream BPSK/QPSK through 4096-QAM. | Shared Rust tables/lookup; independent literal vectors, cardinality and uniform-label energy checks, including 8-QAM and 32-QAM. |
 | TX-QAM-03 | Distinguish data, complementary data, known pilots and inactive resources. | Accepted profile/resource validation; complementary loading max(data bits minus four, one), no payload clocks for known pilots or zero minislots. |
 | TX-QAM-04 | Preserve bounded state/results on invalid input, backpressure and cancellation. | TX adapter; chunk invariance, stale/duplicate/overrun cases, partial status and passive QAM observations. |
+| TX-GRID-01 | Derive one accepted role/loading/physical-address plan shared by capacity, mapping and inverse recovery. | Resource owner; contiguous minislots, edge transitions, exclusions, zero resources and exact bit/cell conservation. |
+| TX-GRID-02 | Partition each frame's eligible grant minislots into normative blocks and use the specified joint bit-reverse address sequence. | Rust partition/permutation owners; independent 24-minislot boundary, power-of-two and bijection checks. |
+| TX-GRID-03 | Generate exact known pilot signs and apply required role/pattern power scaling once. | Independent PRBS12 and pilot owners; fixed-seed physical-bin vectors, all-bin clocks and boosting/exception cases. |
+| TX-GRID-04 | Assemble complete physical symbol grids with bounded state, valid partial results and matching receiver expectations. | TX framer and RX adapters; frame/block merging, failure/cancel/observer cases and known-amplitude inverse checks. |
 
 The canonical [CM-US-TX block](../../../architecture.md#cm-us-tx-block-architecture)
 owns the overview and
@@ -47,7 +51,7 @@ defines module roots. TX-01 maps to shared resource/grant planning and
 `crates/phy/src/transmitter/framing.rs`; TX-02 adds
 `crates/phy/src/transmitter/ldpc.rs` around the existing codec; TX-03 uses
 `crates/phy/src/bit_processing/randomizer.rs` with separate transmitter/receiver
-adapters. TX-05..08 have proposed file locations while their detailed designs
+adapters. TX-06..08 have proposed file locations while their detailed designs
 remain pending. Test filenames are recorded beside each owner in the canonical
 section rather than creating empty modules or duplicate algorithms.
 The [TX-04 section](../../../architecture.md#tx-04-cell-word-construction-and-qam-mapping)
@@ -56,8 +60,19 @@ planned `crates/phy/src/configuration/modulation.rs`,
 `crates/phy/src/signal_processing/qam_tables.rs` and
 `crates/phy/tests/tx_mapping.rs` alongside the existing planned lookup/adapter
 paths. Shared `resources/permutation.rs` supplies the visit sequence; its detailed
-implementation remains dependent on ARCH-TX-05. The first four stage designs do
+implementation follows the shared ARCH-TX-05 contract. The first five stage designs do
 not establish a running grant-integrated transmitter.
+The [TX-05 section](../../../architecture.md#tx-05-pilots-ofdma-framing-and-interleaving)
+owns shared resource roles, block partitioning, joint visits, pilot expectations
+and physical grid assembly. New planned leaves are
+`crates/phy/src/resources/pilot_patterns.rs`,
+`crates/phy/src/resources/pilots.rs`,
+`crates/phy/src/resources/interleaving_blocks.rs` and
+`crates/phy/src/bit_processing/pilot_sequence.rs`; focused tests are
+`crates/phy/tests/upstream_interleaving.rs` and
+`crates/phy/tests/upstream_pilots.rs`, alongside the existing planned framer/grid
+tests. RX reuses the pure plan/expectations with its own processing state. This
+design does not implement masks, sequence vectors, address generation or adapters.
 
 ## Reference and source boundaries
 
@@ -108,10 +123,22 @@ provenance and independent-label/energy tests. Its downstream table set omits
 as the upstream capability set. No reference tables, source or third-party assets
 are copied; future actual reuse requires its own attribution/compatibility review.
 
+TX-05 uses §7.4.5–7.4.5.1, pp58–64, Figures 8–12; §7.4.15.3.3, p99,
+Figure 35; §7.4.16–7.4.16.3, pp101–105, Figures 38–42; §7.4.16.6,
+p106; and §8.2.1–8.2.3.11, pp172–175, Table 51/Figure 85. Original PDF
+pp59–60/62–63/99/102–106/173/175 were rendered and visually reviewed for
+partition/counter control flow, pilot taps/patterns, boosting and geometry/serial
+order. Remaining cited prose was read in the pinned extraction. Appendix III
+was read as informative context, not controlling normative behavior or imported C.
+Full per-cell mask and independent address/sequence-vector audits remain scientific
+acceptance prerequisites. Read-only reference inspection confirmed its downstream
+bit interleaver and 13-bit pilot sequence cannot provide upstream algorithms;
+only immutable physical-index/validation patterns inform this local design.
+
 ## Dependency-ordered checklist
 
 - [x] ARCH-TX-NAV: Link all eight TX overview/output labels to unique local
-  sections; mark TX-05..08 as pending placeholders and add overview backlinks.
+  sections; mark TX-06..08 as pending placeholders and add overview backlinks.
 - [x] ARCH-TX-PATH: Name planned implementation/test files in every TX section
   and distinguish existing codec reuse from new PHY adapters.
 - [x] ARCH-TX-00: Standardize CM-US-TX and document the ordered internal stages.
@@ -125,7 +152,8 @@ are copied; future actual reuse requires its own attribution/compatibility revie
   behavior, bit coverage, bounded state, inspection and independent soft inverse.
 - [x] ARCH-TX-04: Define cell-word construction, exact label/scale/role contracts,
   shared visit-order dependency, bounded mapping and independent acceptance.
-- [ ] ARCH-TX-05: Expand pilots, grant resource mapping and joint interleaving.
+- [x] ARCH-TX-05: Define resource roles/geometry, exact block/counter conventions,
+  independent pilots/gains, grid assembly, shared ownership and acceptance checks.
 - [ ] ARCH-TX-06: Expand CM Pre-Eq and its reference plane.
 - [ ] ARCH-TX-07: Expand IFFT geometry, bin order and normalization.
 - [ ] ARCH-TX-08: Expand CP, roll-off/window/overlap and burst sample assembly.
@@ -186,3 +214,13 @@ and waveform implementation acceptance remain unchecked. `git diff --check`
 passed. PDF visual review supports the documented low-order anchors/scaling and
 role/bit-order contracts; it does not complete the higher-order full-label audit
 or execute the proposed mapper, streaming adapter, Python bindings or QAM UI.
+
+For TX-05, `scripts/validate.sh` passed 20 skills, 284 local links, the existing
+23 Rust tests, 19 setup tests and 5 Git tests, formatting and Clippy. Focused
+documentation checks resolved 52 section links, retained all 16 TX overview/output
+links and confirmed that the stage's 12 planned code/test paths remain absent.
+TX-06..08 remain placeholders and LDPC-01/02, grant integration and waveform
+implementation milestones remain unchecked. `git diff --check` passed. The source
+figure review substantiates the architecture; mask/address/sequence execution,
+pilot-boost runtime behavior, Python parity and native instruments remain
+unimplemented and are not established by the existing checkpoint tests.

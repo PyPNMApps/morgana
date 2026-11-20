@@ -81,9 +81,9 @@ validation and bounded orchestration stay Rust; adapters present owned results.
 | `crates/phy/src/configuration/mod.rs` | Create (planned) | Accepted virtual-CMTS configuration, profiles and burst modes. |
 | `crates/phy/src/types/mod.rs` | Create (planned) | Register `bits.rs`, `iq.rs` and `samples.rs` in this directory for bit ranges, complex cells and indexed sample blocks. |
 | `crates/phy/src/source/mod.rs` | Create (planned) | PRBS source and independent verifier. |
-| `crates/phy/src/resources/mod.rs` | Create (planned) | Shared grant resource grids and cell permutations. |
+| `crates/phy/src/resources/mod.rs` | Create (planned) | Shared grant grids, pilot roles/patterns, block partitioning and cell permutations. |
 | `crates/phy/src/grant/mod.rs` | Create (planned) | Shared pure capacity/codeword planning. |
-| `crates/phy/src/bit_processing/mod.rs` | Create (planned) | Shared PHY randomizer primitive. |
+| `crates/phy/src/bit_processing/mod.rs` | Create (planned) | Shared payload randomizer and independent known-pilot sequence. |
 | `crates/phy/src/signal_processing/mod.rs` | Create (planned) | Shared QAM and transform algorithms. |
 | `crates/phy/src/transmitter/mod.rs` | Create (planned) | Compose the eight TX stage adapters. |
 | `crates/phy/src/channel/mod.rs` | Create (planned) | Unity sample transport and future ordered channel stages. |
@@ -335,7 +335,7 @@ maps these requirements to owners and planned checks:
 
 
 Status: **planned**. ARCH-TX-00 defines the transmitter block; ARCH-TX-01 through
-ARCH-TX-04 expand its first four stages below. The isolated LDPC codec is a
+ARCH-TX-05 expand its first five stages below. The isolated LDPC codec is a
 dependency; it does not make this transmitter implemented. CM-US-TX converts meaningful
 PRBS source bits and an accepted upstream grant into complex baseband samples
 delivered to the Channel Simulator.
@@ -370,7 +370,7 @@ flowchart LR
 | [TX-02: upstream LDPC](#tx-02-ldpc-encoding-and-shortening) | Select long/medium/short mother codes; append shortening zeros, encode systematic information/parity, omit shortened zeros and account for remaining grant padding. No downstream BCH or ordinary-data puncturing. Expose code identity, retained length and encoded bits. |
 | [TX-03: randomization](#tx-03-grant-seeded-phy-randomization) | Randomize the encoded grant stream, including padding as specified, with accepted upstream seed/state. Reset the PHY randomizer at the grant boundary; never reset PRBS15 because a grant starts. |
 | [TX-04: cell-word/QAM mapping](#tx-04-cell-word-construction-and-qam-mapping) | Group randomized bits in MSB-first cell order; map data and data-bearing complementary-pilot cells using their respective loading and normalized constellation references. |
-| [TX-05: OFDMA framer/interleaver](#tx-05-pilots-ofdma-framing-and-interleaving) | Generate known BPSK pilots and edge/body patterns; allocate logical grant cells, perform the upstream joint time/frequency interleaving and map to physical carriers with exclusions/unused bins preserved. Export role/order/grid metadata. |
+| [TX-05: OFDMA framer/interleaver](#tx-05-pilots-ofdma-framing-and-interleaving) | Generate known BPSK pilots and edge/body patterns, apply prescribed role gains, allocate logical grant cells and perform the upstream joint time/frequency interleaving and map to physical carriers with exclusions/unused bins preserved. Export role/order/grid metadata. |
 | [TX-06: CM Pre-Eq](#tx-06-cm-pre-eq) | Apply one complex corrective coefficient per carrier; identity coefficients initially. Keep the correction response distinct from an injected physical channel. |
 | [TX-07: IFFT](#tx-07-ifft) | Convert the complete physical frequency grid into complex baseband useful-symbol samples with explicit transform normalization and bin order. |
 | [TX-08: sample assembly](#tx-08-sample-assembly) | Add configured CP/roll-off extension, apply the specified transmit window/overlap treatment, and emit correctly indexed burst/guard samples. Preserve state across arbitrary output chunk boundaries. |
@@ -388,7 +388,7 @@ meaning depends on the selected viewer.
 | [TX-02 encoded grant](#tx-02-ldpc-encoding-and-shortening) | Actual systematic/parity bits, transmitted lengths and zero grant padding; bounded bit inspector. |
 | [TX-03 randomized grant](#tx-03-grant-seeded-phy-randomization) | Actual post-randomization bits with accepted seed/grant epoch; bounded bit inspector. |
 | [TX-04 mapped cells](#tx-04-cell-word-construction-and-qam-mapping) | Actual symbol values, constellation/loading and logical cell identity; shared QAM Analyzer. |
-| [TX-05 physical grid](#tx-05-pilots-ofdma-framing-and-interleaving) | Physical carrier/symbol coordinates with known-pilot, complementary-data, data and excluded/unused roles; shared QAM Analyzer. |
+| [TX-05 physical grid](#tx-05-pilots-ofdma-framing-and-interleaving) | Role-scaled physical carrier/symbol coordinates with gain, known-pilot, complementary-data, data and excluded/unused roles; shared QAM Analyzer. |
 | [TX-06 Pre-Eq grid](#tx-06-cm-pre-eq) | Actual corrected carrier values and response reference plane; shared QAM Analyzer. |
 | [TX-07 useful samples](#tx-07-ifft) | Contiguous complex time samples per symbol, transform normalization and sample rate; shared Spectrum Analyzer. |
 | [TX-08 burst samples](#tx-08-sample-assembly) | Actual windowed/assembled stream with sample indices and burst boundaries; shared Spectrum Analyzer and channel input. |
@@ -417,7 +417,7 @@ run and invalidates older observations by generation. Explicit cancellation
 retains completed work and reports partial emission rather than treating
 generated codewords as proof that their waveform was delivered.
 
-Detailed contracts below cover TX-01 through TX-04. TX-05 through TX-08 remain
+Detailed contracts below cover TX-01 through TX-05. TX-06 through TX-08 remain
 overview contracts and will be expanded one at a time in processing order. The local
 [CM-US-TX feature record](development/features/cm-us-tx/design.md) tracks those
 architecture steps separately from implementation.
@@ -1212,21 +1212,279 @@ copied, and no external source checkout is linked or required by this design.
 
 #### TX-05: Pilots, OFDMA framing and interleaving
 
-**Planned code paths (repository-relative).**
+[Return to TX stage overview](#internal-stage-sequence).
+
+Status: **architecture defined; implementation remains planned**. ARCH-TX-05
+owns the shared resource/visit plan and assembles TX-04 cells plus known pilots
+into complete physical frequency grids for TX-06. The pure planning operation
+runs before source consumption; waveform assembly uses that accepted plan.
+
+**Planned code paths (repository-relative).** Every file below is **create
+(planned)**. Register the leaves through the existing
+[planned module roots](#planned-code-layout); no source placeholders are added.
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/resources/grid.rs` | Create (planned) | Shared physical/logical resource roles and accepted grid geometry. |
-| `crates/phy/src/resources/permutation.rs` | Create (planned) | One joint time/frequency address mapping with forward/inverse use. |
-| `crates/phy/src/transmitter/framer.rs` | Create (planned) | Known pilots, cell placement, exclusions and physical-grid assembly. |
-| `crates/phy/tests/ofdma_framing.rs` | Create (planned) | Independent pilot/resource/permutation cases and inverse coverage. |
+| `crates/phy/src/configuration/profile.rs` | Create (planned) | Accepted numerology, frame size, channel bandwidth and per-minislot pattern/loading configuration. |
+| `crates/phy/src/resources/grid.rs` | Create (planned) | Physical/compact row association, immutable cell roles/loading, coverage and coded capacity. |
+| `crates/phy/src/resources/pilot_patterns.rs` | Create (planned) | Source-indexed scheduled-data pilot/complementary masks and admitted frame-length variants. |
+| `crates/phy/src/resources/pilots.rs` | Create (planned) | Edge/body selection, pattern-family validation and shared role/power expectations. |
+| `crates/phy/src/resources/interleaving_blocks.rs` | Create (planned) | Per-frame eligible-minislot ordering and Figure 8 block partitioning. |
+| `crates/phy/src/resources/permutation.rs` | Create (planned) | Figure 11/12 joint address iterator and matching inverse association; one owner for TX and RX. |
+| `crates/phy/src/bit_processing/pilot_sequence.rs` | Create (planned) | Independent fixed-seed 12-bit pilot sequence indexed by every physical FFT bin. |
+| `crates/phy/src/transmitter/framer.rs` | Create (planned) | Validate mapped-cell identity/order, write grid cells, insert/scale pilots and emit complete physical symbol grids. |
+| `crates/phy/src/receiver/resources.rs` | Create (planned) | Later RX-05 adapter gathers the same configured visits without TX labels or state. |
+| `crates/phy/tests/ofdma_framing.rs` | Create (planned) | Independent physical-grid placement, coverage, ordering and bounded-lifecycle checks. |
+| `crates/phy/tests/upstream_interleaving.rs` | Create (planned) | Independent partition/address literals, exhaustive bounded bijection and inverse cases. |
+| `crates/phy/tests/upstream_pilots.rs` | Create (planned) | Audited masks, physical-bin sequence vectors and boost/exception expectations. |
 
+**Geometry and identities.** Accepted synthetic configuration supplies the grant,
+frame epochs, profile/loading, pattern per minislot, exclusion map and numerology.
+For the initial ordinary coaxial contract, 50 kHz uses `N=2048` and `Q=8`
+subcarriers per minislot; 25 kHz uses `N=4096` and `Q=16`. RFoG exceptions,
+REQ subslots, ranging and probing remain distinct unsupported modes, not alternate
+inputs silently passed through scheduled-data framing. Real UCD/MAP parsing is
+outside this synthetic configuration path.
 
-Status: **placeholder; detailed architecture and implementation remain planned**.
-Place data and pilots on the accepted resource grid and define the joint
-time/frequency permutation with physical carrier roles preserved.
-ARCH-TX-05 stays unchecked until its detailed contract and acceptance criteria
-are defined. [Return to TX stage overview](#internal-stage-sequence).
+`K` is symbols per OFDMA frame. Validate `K >= 6` and the Table 51/§8.2.3.2.1
+bandwidth-dependent maxima before creating a plan:
+
+| Encompassed channel bandwidth | `K_max`, 2K/20 microsecond useful symbol | `K_max`, 4K/40 microsecond useful symbol |
+| --- | ---: | ---: |
+| At least 72 MHz | 18 | 9 |
+| At least 48 MHz, less than 72 MHz | 24 | 12 |
+| Less than 48 MHz | 36 | 18 |
+
+Bandwidth here is the configured encompassed channel spectrum, not the count of
+currently loaded subcarriers. Each granted minislot is `Q` contiguous physical
+carriers with no internal excluded/unused carrier. Validate channel-wide exclusions
+independently of profile assignment. Preserve physical `k=0..N-1` in ascending
+frequency, including outside excluded bins; TX-07 later adapts that normative
+coordinate order to its transform storage convention.
+
+The plan retains run/configuration/grant, absolute frame/symbol, physical minislot,
+block, compact `(t,f)`, physical `k`, resource role, loading and expected amplitude.
+Compact rows concatenate eligible minislots in physical frequency order, omitting
+exclusions/zero-valued minislots from the interleaving domain. Preserve the inverse
+row-to-physical mapping rather than renumbering physical pilot sequence positions.
+
+**Pilot roles and edge/body selection.** Determine roles on the physical resource
+allocation before compaction or interleaving-block partitioning. Use an edge
+minislot for the burst's first minislot, the first nonzero minislot in each frame,
+and the first after an exclusion band, skipped subcarriers or zero-valued minislots;
+other minislots are body minislots. An arbitrary software chunk or a new
+interleaving block alone does not create an edge transition. A gap remains a gap
+even after the participating minislots become adjacent compact rows.
+
+| Minislot width | Patterns | CM requirement | CMTS requirement / channel-family rule |
+| --- | --- | --- | --- |
+| 8 carriers | 1–4 | MUST support | MUST support; do not mix with 5–7 on the same channel. |
+| 8 carriers | 5–7 | MUST support | SHOULD support; separate boosted family. |
+| 16 carriers | 8–11 | MUST support | MUST support; do not mix with 12–14 on the same channel. |
+| 16 carriers | 12–14 | MUST support | SHOULD support; separate boosted family. |
+
+Patterns may vary per minislot within the permitted channel family. Keep required
+endpoint support separate from which exact pattern/length cases MORGANA actually
+implements. Figures 39–42 control cell coordinates; every admitted mask requires
+an independently reviewed transcription of both edge/body cases, local carrier
+orientation and time indexing. No pattern is enabled by recognizing its ID alone.
+
+For 8-carrier patterns, the figures cover `K=6..16`; the prose fixes complementary
+positions to the 14th/16th symbols for `K>16`, with later symbols carrying data
+only. For 16-carrier patterns the corresponding range is `K=6..9`, with fixed
+7th/9th complementary positions for `K>9` and later symbols carrying data only.
+Preserve the separate short-frame variants for patterns 7 and 14 at `K=6/7`.
+Convert one-based figure symbol positions to zero-based indices explicitly; never
+stretch a bitmap, infer a period through omitted columns or move the fixed pilots
+when extending a frame. Full per-cell mask auditing remains implementation work.
+
+Known pilots reserve their positions and contribute no randomized payload bits.
+Complementary cells carry TX-04 payload at `max(m_data-4,1)` bits. A zero-valued
+minislot sets data, pilot and complementary positions to zero and contributes no
+coded capacity. TX-01 sums exactly the shared data/complementary loadings; TX-04
+queries those same roles in visit order. Figure 85 illustrates pre-interleaving
+serial order with complementary data inline, not a second source of pilot masks.
+The actual address-coupled loading follows §7.4.5.1/Figure 11; do not add a second
+payload shuffle to manufacture a separate intermediate minislot fill.
+
+**Per-frame interleaving blocks.** For each grant/frame, let `n` be the number of
+eligible nonzero minislots after preserving their physical association. Do not
+include zero-valued minislots or exclusion holes in `n`. If `n=0`, produce no
+interleaver block and consume no coded bits. Otherwise Figure 8 defines
+`blocks = ceil(n/24)`. Starting with `remaining=n` and `blocks_remaining=blocks`,
+each block takes `floor(remaining/blocks_remaining)` successive minislots, then
+both remaining counts are reduced. This fixes the order of unequal block sizes:
+
+| Eligible minislots | Ordered block sizes |
+| ---: | --- |
+| 24 | 24 |
+| 25 | 12, 13 |
+| 48 | 24, 24 |
+| 49 | 16, 16, 17 |
+
+Never take a 24-minislot prefix plus a tiny remainder, move a minislot into another
+frame or interleave across grants. Each block has `L=Q*block_minislots` compact
+carrier rows and `K` symbol columns. Its known-pilot and complementary locations
+are still those of the original physical minislots; partitioning does not select
+new pilot masks.
+
+**Joint address generation and mapping.** One `resources/permutation.rs` iterator
+produces all `K*L` coordinate visits for a block. Maintain `Count_t`, `Count_f`
+and `Count_diagonal`, initially zero. Use the actual Figure 12 bit-reverse counter,
+which tests the current counter, advances past out-of-range reversed values and
+returns both the accepted coordinate and the accepted (unreversed) counter.
+The caller's increment is separate; do not increment a valid counter twice.
+
+Honor §7.4.5.1's explicit sizes: `K1` is the smallest power of two at least `K`,
+whereas the prose defines `L1` as the smallest power of two greater than `L`.
+Reverse exactly `log2(K1)` or `log2(L1)` bits and use the respective modulus.
+Do not silently replace these definitions with one common rounding helper;
+power-of-two boundary cases require independent vectors.
+
+For each of the `K` outer passes, generate `L` pairs by applying that counter to
+`Count_t/K` and `Count_f/L`, then increment the accepted counters modulo `K1` and
+`L1`. At the end of the pass, increment `Count_diagonal` modulo `K1`, run it
+through the K counter, set `Count_t` to its updated **unreversed counter** and
+reset `Count_f` to zero. The returned diagonal coordinate is not assigned to
+`Count_t`. This is a Rust design transcription of §7.4.5.1/Figures 11–12;
+Appendix III's illustrative C is not an implementation dependency or a substitute
+for the controlling flow/prose. Check each bounded block's complete coverage and
+uniqueness independently; a matching inverse round trip alone is insufficient.
+
+At each visited `(t,f)`, identify its original minislot/role. Skip known pilot
+positions without consuming payload; request the exact data/complementary word
+from TX-04 for every other eligible cell. Check its label/loading, ordinal,
+coded-bit range and planned coordinates before writing exactly once. A known
+pilot visit is part of address enumeration even though it is absent from the
+payload-cell sequence. Do not compact the counters down to payload-only positions.
+
+Read completed block columns in ascending `t`, with carrier rows in frequency
+order, then restore the physical holes via the retained row mapping. Merge all
+blocks belonging to a frame into the same `N`-bin symbol at each `t`; do not emit
+all symbols of block 1 followed by all symbols of block 2. Grant codewords can
+cross block/frame boundaries without resetting TX-03's grant randomizer or the
+continuous source. Only the joint address counters reset for a new block.
+
+**Known pilot sequence and power.** Scheduled-data pilots use §7.4.16.6's reference
+to §7.4.15.3.3/Figure 35: polynomial `x^12+x^9+x^8+x^5+1`, fixed seed 3071
+(`0xBFF`), independent of PRBS15 and the 23-bit grant randomizer. With numeric
+register bit 0 as Figure 35's rightmost output, emit old bit 0, compute feedback
+from old bits 0, 5, 8 and 9, shift right, and insert feedback into bit 11.
+This numeric convention is an engineering transcription of the inspected figure;
+implementation requires independent vectors, not just agreement with its mirror.
+
+Initialize at physical `k=0` for a useful OFDMA symbol and clock after every
+physical bin, including data/complementary, excluded, zero and unused bins. Select
+the sign for a pilot at its original physical `k`; do not clock only on pilots or
+only compact rows. The same immutable N-bin sequence can be reused each symbol.
+Generate exactly N bits, including the 4095-period wrap when N is 4096. The
+source's first 16 bits are `1,1,1,1,1,1,1,1,1,1,0,1,0,1,1,1`; verify the stated
+2K/4K tail anchors before enabling an implementation. Map 0 to `(1,0)` and 1 to
+`(-1,0)` before role-dependent power scaling. Complementary payload is never
+replaced by this sequence or XORed with it.
+
+For patterns 5–7 and 12–14, the specified pilot/complementary boost is a factor
+of three in power, hence `sqrt(3)` in I/Q amplitude. If a known pilot and a
+complementary pilot occur in the same symbol **and** the same minislot, boost the
+known pilot but keep that complementary cell at normal power. Otherwise apply
+the required boosted-family role gain. Normal data cells keep amplitude gain one;
+nonboosted families use their ordinary reference amplitudes. Apply the gain once
+in TX-05, after TX-04's unit-average-energy reference mapping and before Pre-Eq.
+Zero roles remain zero. Do not normalize the resulting grid back to unit energy
+or reinterpret this relative boost as absolute RF power calibration.
+
+```mermaid
+flowchart LR
+    CFG[Accepted configuration and physical grants] --> PLAN[Roles, blocks and joint visits]
+    PLAN --> CAP[TX-01 coded capacity]
+    PLAN --> MAP[TX-04 role-loaded cell words]
+    MAP --> WRITE[Validate and write destination cells]
+    PN[Independent physical-bin pilot sequence] --> WRITE
+    PLAN --> WRITE
+    WRITE --> POWER[Apply prescribed role gains once]
+    POWER --> GRID[Complete N-bin physical symbol grids]
+    GRID --> NEXT[TX-06 Pre-Eq]
+    GRID -. passive snapshots .-> QAM[Shared grid QAM view]
+```
+
+**Bounded state and failures.** A proposed immutable resource plan owns geometry,
+role/pattern identities, block descriptors, physical row associations and visit
+metadata needed by independent TX/RX contexts. A proposed framer context owns
+only its accepted identity, expected cell/visit offsets, bounded frame grid and
+write/validity coverage. Keep input configuration/cells unchanged. Unwritten cells
+are incomplete/invalid, not zero-valued resources and not receiver observations.
+
+Allocate through checked `N*K`, `L*K` and byte-count admission. The engineering
+baseline permits one pending frame plus an independently bounded output queue;
+reject an oversized plan before source/mapping state advances. The conservative
+block envelope `24*16*36` is at most 13,824 coordinate visits, but actual K/Q pairs
+must still obey the validated geometry above. Bound per-call processing to at
+most 16,384 visits/cell writes and separately bound retained instrument snapshots.
+Never accumulate a continuous grant's whole history or unbounded cached plans.
+
+Validate a chunk against candidate counters/writes, then commit its accepted cells,
+coverage and cursor together. Reject stale/mismatched identity, duplicate/skipped
+visits, wrong role/loading, missing capacity, nonfinite values, double writes,
+invalid coordinates and exhausted budgets without modifying prior state. Do not
+repair malformed input by zero-fill, lower loading or a different pilot pattern.
+Pause preserves the partial grid and counters. Cancellation retains already
+emitted complete symbols/frames and reports the uncompleted frame explicitly;
+never flush a partial grid as a complete reference waveform. A fresh grant uses
+new contexts. Preview/observer reads do not clock pilots or advance payload visits.
+
+The baseline may finish a bounded frame before emitting its `K` physical columns.
+It must not emit a symbol until every participating block's cells for that symbol
+are valid. Preserve exact frame/symbol order, sample-clock association and N-bin
+roles for TX-06; no CP, window or time-sample production occurs here.
+
+**Receiver, API and observation boundary.** RX independently derives the same
+resource/visit plan from accepted configuration. RX-04 knows pilot locations,
+signs and nominal role gains; those known transmitted amplitudes must not be
+mistaken for channel response. RX-05 gathers data/complementary cells in payload
+visit order, and RX-06 accounts for configured complementary amplitude in its
+soft metric/noise policy. Missing cells retain erasure coordinates; never delete
+them and shift later randomized bits. TX payload labels/register state are not
+normal receiver inputs. Pilot-derived effective C×H estimation remains RX work.
+
+Rust owns role/geometry validation, sequence, partition/permutation, gains and
+complete-grid snapshots. The future facade and native Python/Qt adapters share
+those checks, range/finite-value semantics, typed errors and missing observations.
+No new callable API or persisted schema is introduced by this architecture.
+
+The existing `tx.grid.iq` tap represents actual role-scaled physical cells before
+Pre-Eq, unlike `tx.qam.mapped`'s unit-reference loaded cells. Show role, pattern,
+edge/body, physical/compact coordinates, gain and coverage when selecting a QAM
+view. Known pilot, complementary data and genuine zero remain separate. SA needs
+later time samples; incomplete plans and previews are labeled rather than shown
+as emitted results. Applying or disabling diagnostics cannot change processing.
+
+**Implementation acceptance and evidence.** Require independent partition/address
+literals plus coverage/bijection checks across admitted K/Q/block lengths,
+non-power-of-two and power-of-two counter boundaries, 24/25/48/49-minislot splits,
+multiple frames, physical gaps, mixed loading/patterns and zero-minislot cases.
+Audit each enabled edge/body/short/extended mask against Figures 39–42, with exact
+P/CP counts and payload capacity. Cover incompatible channel families, malformed
+minislots, physical indexing/orientation and all three consumers' plan agreement.
+
+Verify Figure 35 first/tail/period vectors, first-bin output, excluded-bin clocks,
+per-symbol reuse, every boost/exception combination and exact zero conservation.
+Check complete-column merging, input/output ownership, every arbitrary chunk
+boundary, stale/duplicate/missing cells, budgets, pause/cancel and observer
+neutrality. TX/RX round trips complement independent expectations and do not
+replace them. Full mask/address/vector audits and the closed-loop waveform remain
+implementation acceptance, not checks executed by this documentation change.
+
+Controlling evidence: CM-SP-PHYv3.1-I20-230419 §7.4.5–7.4.5.1, pp58–64,
+Figures 8–12; §7.4.15.3.3, p99, Figure 35; §7.4.16–7.4.16.3, pp101–105,
+Figures 38–42; §7.4.16.6, p106; and §8.2.1–8.2.3.11, pp172–175, Table 51
+and Figure 85. Original PDF pp59–60/62–63/99/102–106/173/175 were rendered and
+visually reviewed for partition/control flow, register taps, pilot patterns,
+boosting and geometry/serial-order context; remaining cited prose was read in
+the pinned extraction. This is not a completed per-cell mask transcription audit.
+Read-only reference review supplied immutable physical-index observations and
+checked ownership patterns only. Its downstream interleaver and 13-bit pilot
+sequence are unsuitable upstream; no code, mask assets or sample C is imported,
+and no other checkout is linked or required by the design.
 
 #### TX-06: CM Pre-Eq
 
@@ -1316,7 +1574,7 @@ registers these stages. These paths locate work without completing RX design.
 | RX-01 | `crates/phy/src/receiver/framing.rs` | Accepted configuration; no hidden TX acquisition state. | `crates/phy/tests/rx_framing.rs` |
 | RX-02 | `crates/phy/src/receiver/symbols.rs` | Accepted geometry and indexed sample types. | `crates/phy/tests/rx_symbols.rs` |
 | RX-03 | `crates/phy/src/receiver/fft.rs` | `crates/phy/src/signal_processing/transform.rs` shared with TX-07. | `crates/phy/tests/transforms.rs` |
-| RX-04 | `crates/phy/src/receiver/channel_estimation.rs` | Pilot-derived estimate/correction lives in this adapter; no injected response input. | `crates/phy/tests/channel_estimation.rs` |
+| RX-04 | `crates/phy/src/receiver/channel_estimation.rs` | Pilot-derived estimate/correction uses configured expectations from `crates/phy/src/resources/pilots.rs` and `crates/phy/src/bit_processing/pilot_sequence.rs`; no injected response input. | `crates/phy/tests/channel_estimation.rs` |
 | RX-05 | `crates/phy/src/receiver/resources.rs` | `crates/phy/src/resources/grid.rs`, `crates/phy/src/resources/permutation.rs` shared with TX-01/05. | `crates/phy/tests/ofdma_framing.rs` |
 | RX-06 | `crates/phy/src/receiver/demapping.rs` | `crates/phy/src/signal_processing/qam.rs` shared with TX-04. | `crates/phy/tests/soft_demapping.rs` |
 | RX-07 | `crates/phy/src/receiver/derandomization.rs` | `crates/phy/src/bit_processing/randomizer.rs` shared with TX-03. | `crates/phy/tests/randomization.rs` |
@@ -1382,7 +1640,7 @@ The instrument availability table is an interface plan, not a list of implemente
 | Proposed tap | Data and reference plane | Instruments |
 | --- | --- | --- |
 | `tx.qam.mapped` | Normalized loaded cell symbols before grant permutation/Pre-Eq | QAM |
-| `tx.grid.iq` | Physical data/pilot/complementary-data cells before Pre-Eq | QAM |
+| `tx.grid.iq` | Role-scaled physical data/pilot/complementary-data cells before Pre-Eq | QAM |
 | `tx.pre_eq.iq` | Actual corrected carrier symbols after Pre-Eq | QAM |
 | `tx.output.samples` | Complete assembled complex baseband burst | SA |
 | `channel.input.samples` | Identical channel-input waveform/reference plane to TX output | SA |
