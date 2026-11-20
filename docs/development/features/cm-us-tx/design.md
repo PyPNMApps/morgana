@@ -1,7 +1,7 @@
 # CM-US-TX block and stage design
 
-Status: transmitter overview and TX-01 through TX-07 architecture defined; integration is
-planned. Subsequent stages are expanded one at a time in processing order.
+Status: transmitter overview and TX-01 through TX-08 architecture defined;
+scientific implementation and integration remain planned.
 Scope is documentation in this repository, with no links to another source
 checkout and no scientific, UI, CLI or binding implementation changes.
 
@@ -41,15 +41,19 @@ checkout and no scientific, UI, CLI or binding implementation changes.
 | TX-IFFT-02 | Use the positive centered exponent and unitary scaling with ascending physical bins. | Shared safe Rust transform; independent complex-sum/tone/impulse and energy checks, not round trips alone. |
 | TX-IFFT-03 | Emit one owned useful complex symbol with local timing before CP/window/overlap assembly. | Sample types and adapter; exact N/order/rate/validity, no invented global continuity or power calibration. |
 | TX-IFFT-04 | Bound plans/scratch/output and share conventions with RX and passive instruments. | Rust numerical owner; atomic failure, completed-symbol retention, concurrency and future adapter parity cases. |
+| TX-ASSEMBLY-01 | Admit exact upstream CP/RP sample choices with RP strictly below CP for scheduled data. | Shared configuration; independent Tables 9/10 cases, incompatible/stale geometry and unsupported-mode rejection. |
+| TX-ASSEMBLY-02 | Apply exact cyclic extension, half-sample raised-cosine taper and overlap-add at N+CP cadence. | Focused Rust numerical owners; independent indexing/coefficient/adjacent-symbol cases including zero RP. |
+| TX-ASSEMBLY-03 | Preserve absolute prefix/useful origins, isolated burst edges, final tail and explicit guard intervals. | Burst plan and assembly; checked lengths/ranges, no tail truncation or invented schedule padding, independent RX extraction. |
+| TX-ASSEMBLY-04 | Emit identical samples across output chunks with bounded state and honest partial completion. | TX adapter/job; backpressure, transactional failure, drain/pause/cancel/reset and passive observation acceptance. |
 
 The canonical [CM-US-TX block](../../../architecture.md#cm-us-tx-block-architecture)
 owns the overview and
 [TX-01 section](../../../architecture.md#tx-01-grant-framing-and-fec-selection)
 owns grant planning. The [TX-02 section](../../../architecture.md#tx-02-ldpc-encoding-and-shortening)
 owns encoding, shortening and ordered grant assembly. The existing codec stays independent of
-source, grant resources, modulation and waveform processing. Further stage
-sections are linked placeholders until their detailed contracts are developed;
-this does not complete their design or create empty modules.
+source, grant resources, modulation and waveform processing. All eight stage
+sections now have detailed contracts; no scientific modules are created by
+architecture completion.
 The [TX-03 section](../../../architecture.md#tx-03-grant-seeded-phy-randomization)
 owns grant-seeded bit randomization and the paired RX soft inverse. Its primitive
 belongs in the proposed Rust PHY bit-processing owner, independently of the codec.
@@ -59,8 +63,8 @@ defines module roots. TX-01 maps to shared resource/grant planning and
 `crates/phy/src/transmitter/framing.rs`; TX-02 adds
 `crates/phy/src/transmitter/ldpc.rs` around the existing codec; TX-03 uses
 `crates/phy/src/bit_processing/randomizer.rs` with separate transmitter/receiver
-adapters. TX-08 has proposed file locations while its detailed design
-remains pending. Test filenames are recorded beside each owner in the canonical
+adapters. All eight stages have proposed file locations. Test filenames are
+recorded beside each owner in the canonical
 section rather than creating empty modules or duplicate algorithms.
 The [TX-04 section](../../../architecture.md#tx-04-cell-word-construction-and-qam-mapping)
 defines exact label/role/scaling contracts and stateful word assembly. It adds
@@ -68,7 +72,7 @@ planned `crates/phy/src/configuration/modulation.rs`,
 `crates/phy/src/signal_processing/qam_tables.rs` and
 `crates/phy/tests/tx_mapping.rs` alongside the existing planned lookup/adapter
 paths. Shared `resources/permutation.rs` supplies the visit sequence; its detailed
-implementation follows the shared ARCH-TX-05 contract. The first seven stage designs do
+implementation follows the shared ARCH-TX-05 contract. These eight stage designs do
 not establish a running grant-integrated transmitter.
 The [TX-05 section](../../../architecture.md#tx-05-pilots-ofdma-framing-and-interleaving)
 owns shared resource roles, block partitioning, joint visits, pilot expectations
@@ -100,6 +104,20 @@ or copied implementation is introduced. Planned `transmitter/ifft.rs` and
 `configuration/profile.rs` remain shared owners. `crates/phy/tests/tx_ifft.rs`
 adds stage checks beside `crates/phy/tests/transforms.rs`. No useful symbols
 are silently concatenated into a final time stream; TX-08 owns assembly.
+The [TX-08 section](../../../architecture.md#tx-08-sample-assembly) defines
+upstream CP/RP admission, cyclic copies, the half-sample transmit taper,
+overlap-add, indexed useful/prefix references, burst tail and optional simulation
+silence. New planned shared owners are
+`crates/phy/src/configuration/waveform.rs`,
+`crates/phy/src/signal_processing/cyclic_extension.rs`,
+`crates/phy/src/signal_processing/transmit_window.rs` and
+`crates/phy/src/signal_processing/overlap_add.rs`; their responsibilities are
+separate from `crates/phy/src/transmitter/assembly.rs` admission/output cursors.
+The geometry owner is also named in the configuration and TX-07 sections so
+profile validation and waveform adapters do not invent competing definitions.
+`crates/phy/tests/transmit_window.rs` adds independent primitive checks beside
+`crates/phy/tests/burst_assembly.rs`. All ten TX-08 code/test paths are planned
+creations. No empty files, new Cargo member or Python calculations are added.
 
 ## Reference and source boundaries
 
@@ -185,10 +203,24 @@ equivalence of the centering methods and useful-window timing/retention policies
 are local engineering contracts, not additional CM RF requirements. Source
 inspection does not execute the planned kernel, stage or receiver.
 
+TX-08 uses §7.4.1.7, p51 (extracted placement prose), §7.4.10–7.4.10.2.1,
+pp67–70, Tables 9/10 and Figures 17/18, plus §7.4.11–7.4.11.1, pp70–71,
+Figure 19. Original pp67–71 were rendered and visually reviewed for every CP/RP
+count, scheduled-data RP<CP, exact extension, half-sample window equation,
+overlap/cadence and prefix/useful timing references. R=0 is an upstream table
+choice; the reference project's downstream evaluation-only qualification is
+rejected. The publisher's I20 revision/section identity was also checked.
+Read-only reference review covered pure prefix insertion, immutable window
+coefficients, retained-tail/drain/reset and fixed downstream geometry. Numerical
+organization is an adaptation candidate; no implementation or source checkout
+link is copied. Isolated-burst support, optional simulation guards, transactional
+draining and cancellation policies are local contracts. They do not establish
+real MAC scheduling, RF spectral compliance, receiver acquisition or echo immunity.
+
 ## Dependency-ordered checklist
 
 - [x] ARCH-TX-NAV: Link all eight TX overview/output labels to unique local
-  sections; retain TX-08's pending placeholder and add overview backlinks.
+  sections with overview backlinks; all eight now have detailed architecture.
 - [x] ARCH-TX-PATH: Name planned implementation/test files in every TX section
   and distinguish existing codec reuse from new PHY adapters.
 - [x] ARCH-TX-00: Standardize CM-US-TX and document the ordered internal stages.
@@ -208,7 +240,8 @@ inspection does not execute the planned kernel, stage or receiver.
   update/reset identities, truth boundaries, streaming and independent acceptance.
 - [x] ARCH-TX-07: Define IFFT geometry, centered/unitary conventions, useful-sample
   timing, bounded shared ownership, planned file paths and independent acceptance.
-- [ ] ARCH-TX-08: Expand CP, roll-off/window/overlap and burst sample assembly.
+- [x] ARCH-TX-08: Define CP/RP admission, exact extension/taper/overlap,
+  burst timing/edges/tail/guards, bounded output cursors and independent acceptance.
 - [ ] PHY-01: Implement and validate the shared grant planner after scientific
   plan approval; verify exact boundaries, borrowing and bit-role conservation.
 - [ ] WAVE-TX-01: Integrate all accepted stages into one verified upstream burst
@@ -297,3 +330,15 @@ PDF review substantiates geometry and transform conventions; no IFFT kernel,
 sample adapter, receiver transform, Python binding or SA execution was added.
 These results validate the existing checkpoint and documentation, not the
 planned numerical vectors or useful-symbol processing.
+
+For TX-08, `scripts/validate.sh` passed 20 skills, 293 local links, the existing
+23 Rust tests, 19 setup tests and 5 Git tests, formatting and Clippy. Focused
+documentation checks resolved 66 section links, retained all 16 TX overview/output
+labels and confirmed that the ten TX-08 code/test paths remain absent. All eight
+stage designs are checked; LDPC-01/02, grant integration and waveform execution
+remain unchecked. `git diff --check` passed. Shared geometry is named in both
+the earlier configuration/TX-07 sections and TX-08. Original PDF pp67–71 were
+reviewed; no extension/window/overlap implementation, sample emission, RX
+extraction or Python/SA runtime was executed. Results cover the local checkpoint
+and documentation, not the planned waveform acceptance cases. Gate elapsed time
+was not measured separately; hosted/platform and external evidence remain absent.

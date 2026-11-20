@@ -78,13 +78,13 @@ validation and bounded orchestration stay Rust; adapters present owned results.
 | --- | --- | --- |
 | `Cargo.toml` | Extend (existing) | Register the future PHY member/dependency when implemented; update `Cargo.lock` through Cargo. |
 | `crates/phy/Cargo.toml`, `crates/phy/src/lib.rs`, `crates/phy/src/error.rs` | Create (planned) | Rust PHY crate, module declarations/public domain surface and typed stage errors. |
-| `crates/phy/src/configuration/mod.rs` | Create (planned) | Accepted virtual-CMTS configuration, profiles, burst modes and Pre-Eq banks. |
+| `crates/phy/src/configuration/mod.rs` | Create (planned) | Accepted virtual-CMTS configuration, profiles, waveform geometry, burst modes and Pre-Eq banks. |
 | `crates/phy/src/types/mod.rs` | Create (planned) | Register `bits.rs`, `iq.rs` and `samples.rs` in this directory for bit ranges, complex cells and indexed sample blocks. |
 | `crates/phy/src/source/mod.rs` | Create (planned) | PRBS source and independent verifier. |
 | `crates/phy/src/resources/mod.rs` | Create (planned) | Shared grant grids, pilot roles/patterns, block partitioning and cell permutations. |
 | `crates/phy/src/grant/mod.rs` | Create (planned) | Shared pure capacity/codeword planning. |
 | `crates/phy/src/bit_processing/mod.rs` | Create (planned) | Shared payload randomizer and independent known-pilot sequence. |
-| `crates/phy/src/signal_processing/mod.rs` | Create (planned) | Shared QAM, transform and coefficient-bank arithmetic. |
+| `crates/phy/src/signal_processing/mod.rs` | Create (planned) | Shared QAM/transform/coefficient-bank arithmetic and focused cyclic-extension, transmit-window and overlap owners. |
 | `crates/phy/src/transmitter/mod.rs` | Create (planned) | Compose the eight TX stage adapters. |
 | `crates/phy/src/channel/mod.rs` | Create (planned) | Unity sample transport and future ordered channel stages. |
 | `crates/phy/src/receiver/mod.rs` | Create (planned) | Compose the nine RX stage adapters without source truth. |
@@ -107,7 +107,8 @@ plans; this layout does not introduce a new numerical dependency or UI crate.
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/configuration/profile.rs` | Create (planned) | Accepted numerology, loading, pilot pattern and PHY seed configuration. |
+| `crates/phy/src/configuration/profile.rs` | Create (planned) | Accepted loading, pilot pattern and PHY seed configuration, composing the shared waveform geometry. |
+| `crates/phy/src/configuration/waveform.rs` | Create (planned) | Accepted upstream N/clock/CP/RP geometry and checked lengths, shared by TX/RX; detailed in TX-08. |
 | `crates/phy/src/configuration/grant.rs` | Create (planned) | Synthetic grant identity, resource assignment and configured clock epoch. |
 | `crates/phy/src/configuration/burst.rs` | Create (planned) | Scheduled-data mode admission and explicit unsupported-mode results. |
 | `crates/phy/src/types/bits.rs` | Create (planned) | Binary chunks, checked ranges and bit-role identities. |
@@ -335,7 +336,7 @@ maps these requirements to owners and planned checks:
 
 
 Status: **planned**. ARCH-TX-00 defines the transmitter block; ARCH-TX-01 through
-ARCH-TX-07 expand its first seven stages below. The isolated LDPC codec is a
+ARCH-TX-08 expand all eight stages below. The isolated LDPC codec is a
 dependency; it does not make this transmitter implemented. CM-US-TX converts meaningful
 PRBS source bits and an accepted upstream grant into complex baseband samples
 delivered to the Channel Simulator.
@@ -417,8 +418,8 @@ run and invalidates older observations by generation. Explicit cancellation
 retains completed work and reports partial emission rather than treating
 generated codewords as proof that their waveform was delivered.
 
-Detailed contracts below cover TX-01 through TX-07. TX-08 remains an overview
-contract and is the next architecture step in processing order. The local
+Detailed contracts below cover TX-01 through TX-08. Scientific implementation
+and integrated transmitter acceptance remain planned. The local
 [CM-US-TX feature record](development/features/cm-us-tx/design.md) tracks those
 architecture steps separately from implementation.
 
@@ -1225,7 +1226,7 @@ runs before source consumption; waveform assembly uses that accepted plan.
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/configuration/profile.rs` | Create (planned) | Accepted numerology, frame size, channel bandwidth and per-minislot pattern/loading configuration. |
+| `crates/phy/src/configuration/profile.rs` | Create (planned) | Frame size, channel bandwidth and per-minislot pattern/loading configuration, composing the shared waveform geometry. |
 | `crates/phy/src/resources/grid.rs` | Create (planned) | Physical/compact row association, immutable cell roles/loading, coverage and coded capacity. |
 | `crates/phy/src/resources/pilot_patterns.rs` | Create (planned) | Source-indexed scheduled-data pilot/complementary masks and admitted frame-length variants. |
 | `crates/phy/src/resources/pilots.rs` | Create (planned) | Edge/body selection, pattern-family validation and shared role/power expectations. |
@@ -1751,6 +1752,7 @@ cyclic extension, roll-off/windowing, overlap, guards and final stream timing to
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
 | `crates/phy/src/configuration/profile.rs` | Create (planned) | Shared accepted upstream numerology/clock; already proposed by earlier stages, with no separate transform configuration owner. |
+| `crates/phy/src/configuration/waveform.rs` | Create (planned) | Shared geometry composed by the profile; TX-07 reads N/spacing/fs and TX-08 validates CP/RP and derived lengths. |
 | `crates/phy/src/types/samples.rs` | Create (planned) | Shared useful-symbol samples, local indices, rate, identity and timing/validity metadata; extend the existing plan for indexed sample blocks. |
 | `crates/phy/src/signal_processing/transform.rs` | Create (planned) | Single safe Rust radix-2 numerical owner, reusable immutable plans and unitary centered synthesis/analysis wrappers. |
 | `crates/phy/src/transmitter/ifft.rs` | Create (planned) | Admit one full corrected grid and return one owned useful symbol with accepted geometry and generation. |
@@ -1947,19 +1949,258 @@ resolve the earlier LDPC/source acceptance gaps.
 
 #### TX-08: Sample assembly
 
+[Return to TX stage overview](#internal-stage-sequence).
+
+Status: **architecture defined; implementation remains planned**. ARCH-TX-08
+turns the useful complex symbols from [TX-07](#tx-07-ifft) into the actual
+indexed stream delivered to the [Channel Simulator](#channel-simulator-unity-stub-first).
+It owns cyclic extension, the transmit taper, overlap history, isolated burst
+edges and output cursors. The initial mode remains scheduled data; ranging,
+probing and their different extension/preamble rules remain explicitly deferred.
+
 **Planned code paths (repository-relative).**
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/transmitter/assembly.rs` | Create (planned) | CP/roll-off/window/overlap, guard samples and indexed burst emission. |
-| `crates/phy/tests/burst_assembly.rs` | Create (planned) | Independent extension/window boundaries and arbitrary-chunk equivalence. |
+| `crates/phy/src/configuration/waveform.rs` | Create (planned) | Single accepted upstream N/clock/CP/RP geometry with checked stride/extension lengths, composed by the already planned profile owner. |
+| `crates/phy/src/configuration/burst.rs` | Create (planned) | Extend the earlier plan with scheduled-data burst origin, ordered symbol count and explicit optional guard intervals. |
+| `crates/phy/src/types/samples.rs` | Create (planned) | Shared sample ranges, prefix/useful origins, burst support/drain/guard validity and completion metadata. |
+| `crates/phy/src/signal_processing/cyclic_extension.rs` | Create (planned) | Pure trailing-prefix/leading-suffix copy with no transmitter state or RX acquisition. |
+| `crates/phy/src/signal_processing/transmit_window.rs` | Create (planned) | Immutable half-sample taper coefficients and finite complex multiplication; separate from SA analysis windows. |
+| `crates/phy/src/signal_processing/overlap_add.rs` | Create (planned) | Bounded complex tail addition and explicit normal finish/reset, independent of source/FEC. |
+| `crates/phy/src/transmitter/assembly.rs` | Create (planned) | Stage identity/admission, numerical-owner composition, output cursor, guards and transactional burst lifecycle. |
+| `crates/phy/src/receiver/symbols.rs` | Create (planned) | Existing proposed RX-02 owner: independently select useful receive windows from accepted timing/geometry. |
+| `crates/phy/tests/transmit_window.rs` | Create (planned) | Independent extension/taper/overlap vectors and upstream geometry boundaries. |
+| `crates/phy/tests/burst_assembly.rs` | Create (planned) | Exact timeline, burst edges/drain, arbitrary output chunks, failure and lifecycle acceptance. |
 
+All are proposed creations. Shared paths extend their earlier design; none
+exists in the current checkpoint. The planned configuration/signal-processing
+module roots register these focused leaves. `transmitter/assembly.rs` orchestrates
+the primitives rather than hiding all DSP and timing in one adapter. Adapt the
+reviewed pure-prefix, immutable-window and retained-tail organization, with
+upstream parameters and the local contracts below. Preserve notices/provenance
+if code is later adapted; no reference code, timing UI or capture data is copied
+by this documentation change.
 
-Status: **placeholder; detailed architecture and implementation remain planned**.
-Define CP, roll-off, window/overlap, guard treatment and indexed burst output
-across processing chunks.
-ARCH-TX-08 stays unchecked until its detailed contract and acceptance criteria
-are defined. [Return to TX stage overview](#internal-stage-sequence).
+**Accepted parameters and extension.**
+
+Freeze the same upstream N and 102.4 Msamples/s clock admitted by TX-07.
+The accepted virtual-CMTS configuration selects CP count C and roll-off count R
+from these sample-valued sets, transcribed from PHY Tables 9 and 10:
+
+| Parameter | Allowed counts at 102.4 Msamples/s |
+| --- | --- |
+| C, cyclic prefix | 96, 128, 160, 192, 224, 256, 288, 320, 384, 512, 640 |
+| R, roll-off | 0, 32, 64, 96, 128, 160, 192, 224 |
+
+For scheduled data require `R < C`; R=0 is a specified upstream choice.
+Reject zero CP, unsupported counts, R=C, R>C, contradictory clock/geometry and
+configuration changes inside an active burst. Do not inherit downstream sample
+tables or treat zero RP as an unsupported evaluation-only mode. Durations are
+derived from counts/fs; accepting a floating duration never silently rounds it
+to a permitted count. Initial ranging's exception is outside this stage mode.
+
+Let `S = N+C` be symbol stride and `L = N+C+R` the extended length. For a
+finite useful symbol x of length N, define the extension in local sample order:
+
+```text
+y = x[N-C .. N] followed by x[0 .. N] followed by x[0 .. R]
+```
+
+Ranges here are half-open. Equivalently `y[t] = x[(t-C) mod N]` for
+`0 <= t < L`, using nonnegative modulo. The suffix comes from the beginning
+of the useful symbol, not the beginning of the copied prefix. Neither CP nor
+suffix consumes additional source bits, randomizer clocks or pilot states.
+This is a time-sample operation after the complete IFFT; carrier roles and
+frequency-grid nulls are not translated into inserted time-domain zeros.
+
+**Transmit taper and overlap.**
+
+Apply a real coefficient to both components of each complex y value. The
+following full-index form is an engineering rearrangement of the symmetric
+§7.4.10.1 half-window equation, retaining its half-sample offset:
+
+```text
+R = 0: w[t] = 1 for all 0 <= t < L
+
+R > 0:
+  r[q] = 0.5 * (1 - cos(pi * (q + 0.5) / R)), 0 <= q < R
+  w[t] = r[t]          for 0 <= t < R
+         1             for R <= t < S
+         1 - r[t-S]    for S <= t < S+R
+
+z[t] = y[t] * w[t]
+```
+
+This has `w[t] = w[L-1-t]` and `w[q] + w[S+q] = 1` for q in the overlap.
+The first/last coefficient for R>0 is positive, not an imposed zero endpoint.
+Do not replace this window with Hann, a square-root taper, endpoint-inclusive
+cosines or a generic library Tukey default. Do not normalize window energy or
+rescale each symbol. Unitary IFFT energy from TX-07 is a pre-window property;
+cyclic copies, tapering and addition change the assembled burst energy.
+
+Place each z symbol at stride S. For symbol j>0, combine the previous retained
+tail with its first R values:
+
+```text
+output_j[q] = z_previous[S+q] + z_j[q], 0 <= q < R
+output_j[q] = z_j[q],                 R <= q < S
+next_tail[q] = z_j[S+q],              0 <= q < R
+```
+
+For j=0 there is no preceding tail, so output its first S values directly.
+Never wrap the last symbol into the first. Adjacent samples being added can
+differ; complementary weights do not make the overlap a copy of either symbol.
+The symbol period remains S/fs, not L/fs. Chunk, codeword, minislot, interleaving
+block and frame boundaries do not reset history within this contiguous burst.
+
+```mermaid
+flowchart LR
+    X[TX-07 useful symbol] --> EXT[Copy CP and cyclic suffix]
+    EXT --> WIN[Apply frozen half-sample transmit taper]
+    WIN --> ADD[Add retained previous tail]
+    ADD --> READY[One indexed stride ready for draining]
+    WIN --> TAIL[Retain R suffix samples]
+    TAIL -. next symbol .-> ADD
+    READY --> CH[Channel Simulator and passive TX SA]
+    TAIL --> FINISH[Normal finish emits final tail once]
+```
+
+**Absolute timing, edges and guards.**
+
+Let B be the accepted first-prefix sample index for a scheduled burst of K
+symbols, K>=1. In the synthetic grant this is the configured starting frame
+boundary; §7.4.11 places the first CP sample there. The useful construction
+reference is separate, as in §7.4.11.1/Figure 19. Use checked integer arithmetic:
+
+| Interval/reference | Absolute sample index or half-open range |
+| --- | --- |
+| Prefix start of symbol j | `B + j*S` |
+| Useful start of symbol j | `B + j*S + C` |
+| Useful window of symbol j | `[B+j*S+C, B+j*S+C+N)` |
+| Nominal K-symbol extent | `[B, B+K*S)` |
+| Final R-sample tail | `[B+K*S, B+K*S+R)` |
+| Complete isolated-burst support | `[B, B+K*S+R)` |
+
+Resolve TX-07's useful-relative origin to this accepted timeline. Preserve
+frame/symbol identities and the distinction between nominal extent and emitted
+support; appending the tail does not add a scheduled symbol. Do not shift B by
+R/2, silently truncate the tail to the grant extent or add R to every stride.
+If TX-07 supplies an absolute useful origin, require agreement; resolve a
+pending origin here rather than rejecting an otherwise valid useful symbol.
+Real MAP/UCD parsing, scheduling and ranging timing adjustments remain separate
+MULPI/mode work; the synthetic timing contract does not implement those services.
+
+An isolated burst begins with empty overlap history and finishes by emitting
+the final tail exactly once. This models absent adjacent symbols as zero
+contributions while retaining the actual leading/trailing tapers. For R=0
+the tail is empty and support is exactly K*S. No generic preamble, cloned
+neighbor, periodic wrap or extra full symbol is added. Normal finish before K
+accepted symbols is an incomplete-input error; input after finish is rejected.
+Repeated finish after the final drain reports completion without duplicate data.
+
+Optional leading/trailing silence belongs to an explicit bounded simulation
+interval: leading samples end at B; trailing samples start after the final
+tail. Default extra guard counts are zero. Emit declared guards as exact complex
+zeros with their own ranges, without truncating taper support. They are not
+information-fill, grant padding, CP or the R-sample suffix. Absence of a retained
+sample interval means unavailable, not observed silence. The baseline accepts
+one isolated burst at a time; reject overlapping requested supports rather than
+silently resetting/summing separately scheduled bursts. Future adjacent-grant
+composition needs an explicit timeline contract; transport chunks cannot stand
+in for burst boundaries.
+
+For the unity channel and accepted timing, RX-02 independently selects the
+configured useful window at offset C. Since R<C, this interval is inside the
+unmodified flat portion of its own symbol; overlap with the prior symbol remains
+in the prefix. Test this on received samples and shared accepted configuration,
+not a TX sample ledger or supplied payload. Do not divide received samples by
+the transmit window. Impaired timing/echo tolerance, acquisition and shifted
+FFT-window phase correction remain later receiver work, not proved by the
+existence of a CP or a C-R sample margin.
+
+**Streaming, ownership and failure.**
+
+Admission consumes one complete TX-07 symbol with the exact next identity and
+accepted generation/geometry; partial useful arrays are rejected. Physical
+configuration is immutable within a burst. At most one stride awaits draining,
+with an output cursor and an R-value overlap tail. The numerical owners and
+all sample/guard arithmetic remain safe Rust with finite f64 I/Q. Maximum
+supported lengths are N=4096, C=640, R=224, S=4736 and L=4960. Bound the window,
+work buffer and ready buffer by these lengths and the retained tail by 224;
+check burst counts, all sample-index additions/products, guard budgets and total
+output/runtime budgets before starting. Long silence is emitted in bounded
+blocks, not allocated as one guard-length vector. No whole-burst buffer or
+unbounded symbol/history queue is required.
+
+Compute/validate a candidate stride and next tail before changing accepted
+state. Reject nonfinite inputs/results, stale/duplicate/skipped identities,
+wrong supplied origins, incompatible geometry, index underflow/overflow or
+exceeded budgets without changing the prior tail, cursor or next-symbol identity. Account for
+overflow from addition even if both summands are finite. A full ready buffer
+applies backpressure; it never drops old samples to admit another symbol.
+
+Output requests may drain any positive bounded count, including a single sample,
+across prefix/useful boundaries; a request never fabricates missing future data.
+Concatenated outputs must be identical for all drain chunk sizes. Do not accept
+the next symbol until the prior ready stride is drained. Pause preserves ready
+samples, cursor, tail and expected identity. Resume neither repeats nor omits
+samples. A normal final tail is drained under the same bounded cursor rules.
+Only after all scheduled symbols, tail and declared guards are delivered is
+the burst complete; generated or accepted symbols alone do not prove delivery.
+
+Cancellation preserves the already emitted sample prefix and reports accepted
+symbols, emitted count, pending ready/tail counts and incomplete status. It
+does not perform a successful normal finish or silently deliver pending samples.
+An error similarly retains completed output; a fresh burst requires explicit
+reset with new accepted identities/origin and empty overlap state. Observers
+cannot advance cursors, finish a burst or consume source/RNG state. Rust owns
+future public operations and Python parity; wrappers do no extension, window,
+overlap or sample-index arithmetic independently. No API/schema is added now.
+
+**Inspection and acceptance before implementation completion.**
+
+The TX-08 SA tap and channel input see the same actual emitted complex blocks,
+absolute indices, sample rate, normalized units and burst/guard/partial validity.
+Distinguish assembled samples from TX-07 useful windows. Rust SA analysis
+windowing/averaging remains independent of the transmit taper. Retained output
+chunks alone are not separate bursts or FFT windows; feed only contiguous
+available intervals to the analysis owner. This stage supplies time samples,
+not carrier QAM points, and claims no calibrated RF power or spectral compliance.
+
+1. Independently transcribe/test both modes and every permitted CP/RP count;
+   cover R=0, R=C rejection, adjacent invalid counts, contradictory clocks,
+   maximum lengths, stale identities and checked-index/budget failures.
+2. Use labeled complex samples to check exact prefix/useful/suffix coordinates.
+   Check half-sample taper endpoints, symmetry, flat indices and complementary
+   weights against the original symmetric equation, not production coefficients.
+   Independent toy lengths may test a primitive but are not admissible PHY modes.
+3. Use distinct neighboring symbols to calculate overlap values directly.
+   Include zero/constant/impulse and asymmetric complex cases; verify K*S+R
+   support, S cadence, first/last edges and no per-symbol energy rescaling.
+4. Check K=1 and multiple symbols across frame/grouping boundaries, exact
+   prefix/useful origins, zero/default and nonzero guards, final tail once,
+   premature finish, repeated finish and post-finish input rejection.
+5. Compare sample-for-sample for single-value, odd-size and boundary-splitting
+   drains, including pause in a stride/tail, backpressure, failures after prior
+   output and cancellation with pending samples. Reset must prevent old tails
+   entering a new burst; disabled/full observers must preserve all results.
+6. Through unity transport, independently extract each configured useful window
+   and compare it to its pre-assembly samples for numerical acceptance. This
+   diagnostic comparison is outside receiver recovery. Full waveform/FEC/source
+   recovery and future Rust/Python adapter parity need their own implementation
+   evidence; existing codec tests do not validate this stage.
+
+Controlling evidence: CM-SP-PHYv3.1-I20-230419 §7.4.1.7, PDF p51 (extracted
+placement prose); §7.4.10–7.4.10.2.1, pp67–70, Tables 9/10 and Figures 17/18;
+§7.4.11–7.4.11.1, pp70–71, Figure 19. Original pp67–71 were rendered and
+visually inspected for counts/restrictions, exact extension, half-sample taper,
+overlap, cadence and prefix/useful references. The full-index cosine form is
+a local derivation of that equation. Isolated-burst drain, optional simulation
+silence, buffer bounds and transactional streaming are explicit engineering
+policies, not additional MAC guard requirements. All eight TX stages now have
+architecture; source-table audits, scientific implementations and the integrated
+closed loop remain unfinished and require the existing approval/prerequisites.
 
 ### Channel Simulator: unity stub first
 

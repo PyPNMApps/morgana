@@ -14,7 +14,8 @@
   [TX-04 cell-word/QAM mapping](../architecture.md#tx-04-cell-word-construction-and-qam-mapping),
   [TX-05 pilots/framing/interleaving](../architecture.md#tx-05-pilots-ofdma-framing-and-interleaving),
   [TX-06 CM Pre-Eq](../architecture.md#tx-06-cm-pre-eq),
-  [TX-07 IFFT](../architecture.md#tx-07-ifft)
+  [TX-07 IFFT](../architecture.md#tx-07-ifft),
+  [TX-08 sample assembly](../architecture.md#tx-08-sample-assembly)
   and [transmitter design/checklist](features/cm-us-tx/design.md)
 - [Official checklist](checklist.md)
 - [Foundation design and reuse/specification assessments](features/foundation/design.md)
