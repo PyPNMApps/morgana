@@ -30,6 +30,15 @@ create (planned), reuse (existing) or extend (existing). Backfill earlier sectio
 when adopting this rule. Keep shared algorithms at one named path; mark unresolved
 placement explicitly. See the [file-layout procedure](references/procedure.md#code-layout-per-section).
 
+## Requirements and checklist traceability
+
+Use the [traceability procedure](references/checklist-traceability.md) for the full
+Requirements → Architecture → Checklist → Implementation → Validation flow.
+Every active task MUST link its requirement and architecture, identify dependency
+IDs and acceptance evidence, and resolve code/test placement through its owner.
+Preserve stable IDs and incomplete status; cover every in-scope requirement or
+record an explicit deferred decision. Verify anchors and dependency cycles.
+
 ## Standalone procedure
 
 Read the [operational guide](references/procedure.md) for inputs, implementation

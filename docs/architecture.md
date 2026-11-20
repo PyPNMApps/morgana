@@ -5,6 +5,9 @@ approval. The [foundation design](development/features/foundation/design.md)
 contains requirements, reuse assessments, evidence, API proposal and milestones.
 The consolidated [requirements baseline](requirements.md) defines stable behavior
 and acceptance IDs; this document owns their design and planned code/test layout.
+The [software development checklist](development/checklist.md) maps those
+requirements and owners to dependency-ordered implementation/acceptance tasks
+and preserves completed design records separately from scientific completion.
 
 **Table of contents**
 

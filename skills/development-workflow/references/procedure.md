@@ -112,3 +112,9 @@ ownership boundary is a design gap to resolve, not permission for broad refactor
 
 
 [Skill](../SKILL.md)
+
+## Traceable software development checklist
+
+Apply the [requirements/checklist procedure](checklist-traceability.md) when
+creating or updating delivery tasks. It defines direct links, dependencies,
+acceptance, bidirectional coverage and the distinction between design and runtime.

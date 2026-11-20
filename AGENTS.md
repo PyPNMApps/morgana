@@ -25,6 +25,10 @@ Read [requirements](docs/requirements.md), [architecture](docs/architecture.md),
 Requirements → Architecture → Checklist → Implementation → Validation.
 When asked for a plan, stop after planning. When asked for `next`, choose the next
 unfinished prerequisite in the checklist only when implementation is authorized.
+The official checklist SHALL link every active task to exact requirement and
+architecture targets, list dependency IDs and define acceptance. Preserve stable
+IDs/status and complete requirement coverage; completed design is not runtime
+acceptance. Follow the development-workflow traceability procedure.
 
 ## Skills and source evidence
 

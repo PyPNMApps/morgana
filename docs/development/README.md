@@ -36,7 +36,9 @@
 - [High-level Rust and Python API architecture](../architecture.md#high-level-rust-and-python-apis),
   [paired interface stubs](../architecture.md#paired-rust-and-python-interface-stubs)
   and [API design/checklist](features/public-api/design.md)
-- [Official checklist](checklist.md)
+- [Official software development checklist](checklist.md),
+  [requirement coverage](checklist.md#requirement-coverage) and
+  [traceability design/validation](features/software-development-checklist/design.md)
 - [Foundation design and reuse/specification assessments](features/foundation/design.md)
 - [Checkpoint validation](features/foundation/validation.md)
 - [Foundation adoption and local overrides](foundation-adoption.md)
