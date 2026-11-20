@@ -94,8 +94,10 @@ runnable configuration or a saved workbench. Exact originals remain separate.
 
 The measurement reference is a CMTS equalized upstream probe relative to ideal
 BPSK. It is a measured observation, distinct from synthetic target error power,
-injected channel truth and receiver noise variance. Real-capture association and
-single/multiple playback remain pending RXMER-INPUT-01; this decoder does not
-turn measurements into residual noise. Pre-EQ binary support remains separate.
+injected channel truth and receiver noise variance. The separate
+[measured experiment plan](measured-experiments.md) now admits the declared
+exporter profile with exact associations and explicit single/multiple playback;
+this inspection decoder alone does not configure residual synthesis. Pre-EQ bank/
+update decoding and controlled playback use the same measured-plan boundary.
 See [source/independent cases](../development/features/rxmer-capture/design.md)
 and [fixture provenance](../../examples/measurements/rxmer/README.md).

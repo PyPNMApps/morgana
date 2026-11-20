@@ -47,4 +47,16 @@ Actual native formatting/Clippy use the binding manifest explicitly. Local wheel
 packaging requires existing maturin1.8.3 and uses `tools/python/build_wheel.py` after
 the native checker; it verifies packaged notices and tests the actual artifact.
 No package is installed/published, and non-Linux/wider ABI/source-distribution
-acceptance remains separate. Preserve the build caches.
+acceptance remains separate. Preserve downloaded sources/toolchains and clean
+generated Cargo outputs after validation as described above.
+
+Reviewed scientific source archives are created with
+`python3 -B tools/packaging/source_bundle.py`. It refuses existing export paths
+and excludes private skills/templates, evidence, captures and generated outputs;
+authored public fixtures remain included. The extracted archive has its own
+`SOURCE-README.md` with standalone Cargo validation commands. See the
+[distribution review](features/remaining-delivery/validation.md#distribution-and-platform-boundaries).
+
+The [Master CI definition](../../.github/workflows/ci.yml) reuses these core, native,
+wheel and source-export owners on Ubuntu22.04/24.04. Hosted execution is not
+implied by the workflow file; local evidence is recorded separately.

@@ -6,7 +6,8 @@ The [capture-format milestone](../capture-formats/design.md) adds bounded raw
 Type51 UCD inspection; captured-channel projection and PNM formats retain
 separate delivery gates.
 The [upstream RxMER decoder](../rxmer-capture/design.md) now preserves bounded
-major2 binary observations; measured association/playback remains pending.
+major2 binary observations; the [measured adapter](../remaining-delivery/design.md)
+now implements bounded captured UCD/RxMER/Pre-EQ association/playback.
 The design history below is retained; capture/import, broader PHY and presentation
 items do not gain runtime acceptance from completed design checkboxes.
 

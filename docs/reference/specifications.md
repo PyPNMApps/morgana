@@ -42,3 +42,11 @@ to use the implemented inspector or its tracked fixtures.
 pins CCAP-OSSIv3.1-I18-200610 §7.3.2.5, Table397 and Table410 for the bounded
 major2 decoder. It records exact file offsets, source/reference limits and
 raw metadata interpretation separately from measured-model association.
+
+[Pre-EQ and measured admission evidence](../development/features/remaining-delivery/design.md)
+pins CM-SP-CM-OSSIv3.1-I27-250219 D.2.13, Tables77/78 pp187–192. Its local
+PDF SHA-256 is `29f0ebf32c4c38610b1b9c10a418ffff4045c34def0ffbe4e85fc674cb5b91de`.
+Applied s2.13 banks and s1.14 last updates have distinct scales; PHY I20
+§7.4.17 supplies reset/normalization and corresponding-probe Set/Adjust semantics.
+The file does not supply operation, base or application status; those explicit
+external controls and their source provenance are mandatory before replay.

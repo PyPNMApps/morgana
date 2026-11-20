@@ -173,6 +173,13 @@ impl PySimulation {
     fn configure(&self, config: PyRef<'_, PyConfig>) -> PyResult<()> {
         self.access(|session| session.configure(config.0.clone()))
     }
+    /// Admits original-preserving measured JSON through the public Rust session.
+    ///
+    /// Returns None while idle; invalid associations preserve accepted state and
+    /// concurrent access returns Busy. Rust owns all decoding, preflight and math.
+    fn configure_measured_json(&self, py: Python<'_>, bytes: &[u8]) -> PyResult<()> {
+        py.detach(|| self.access(|session| session.configure_measured_json(bytes)))
+    }
     /// Atomically accepts the complete Rust-parsed document and run budgets.
     ///
     /// Returns None; competing native runs return Busy and failed preparation

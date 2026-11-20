@@ -53,6 +53,7 @@ pub fn run(
         source_configuration_json: None,
         source_configuration_original: None,
         source_configuration_sha256: None,
+        measurement_provenance_json: None,
         noise_generator:
             "chacha8-standardnormal-v1; rand=0.9.5; rand_chacha=0.9.0; rand_distr=0.5.1",
         configuration: config.clone(),

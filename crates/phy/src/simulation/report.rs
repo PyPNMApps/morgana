@@ -69,6 +69,8 @@ pub struct BatchReport {
     pub source_configuration_original: Option<Vec<u8>>,
     /// SHA-256 over those exact original bytes, absent for typed-only runs.
     pub source_configuration_sha256: Option<String>,
+    /// Additive schema1 metadata: exact measured sources/associations, absent for synthetic runs.
+    pub measurement_provenance_json: Option<String>,
     /// Pinned channel-only random generator identifier and exact dependency pins.
     pub noise_generator: &'static str,
     /// Frozen scientific input snapshot including explicit synthetic provenance.

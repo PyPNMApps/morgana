@@ -48,7 +48,48 @@ impl PyUcdCapture {
 pub(crate) fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<PyUcdCapture>()?;
     module.add_class::<PyRxmerCapture>()?;
+    module.add_class::<PyPreEqCapture>()?;
     Ok(())
+}
+
+#[pyclass(from_py_object, frozen, module = "morgana", name = "PreEqCapture")]
+#[derive(Clone)]
+pub(crate) struct PyPreEqCapture(api::PreEqCapture);
+#[pymethods]
+impl PyPreEqCapture {
+    /// Decodes a bounded bank/update using shared Rust without model mutation.
+    ///
+    /// Returns owned immutable source provenance and scaled observations.
+    #[staticmethod]
+    fn from_pnm(py: Python<'_>, bytes: &[u8]) -> PyResult<Self> {
+        py.detach(|| api::PreEqCapture::from_pnm(bytes))
+            .map(Self)
+            .map_err(error)
+    }
+    /// Copies exact source bytes to an independently owned Python bytes value.
+    ///
+    /// Retains every source header and signed coefficient encoding.
+    fn original_bytes(&self, py: Python<'_>) -> Py<PyBytes> {
+        PyBytes::new(py, self.0.original_bytes()).unbind()
+    }
+    /// Hashes immutable originals in Rust with the interpreter released.
+    ///
+    /// Returns lowercase SHA-256 text, independent of JSON.
+    fn original_sha256(&self, py: Python<'_>) -> String {
+        py.detach(|| self.0.original_sha256())
+    }
+    /// Copies Rust-scaled source I/Q without Python numerical operations.
+    ///
+    /// Returns an owned list of real/imaginary tuples in physical-grid order.
+    fn coefficients(&self) -> Vec<(f64, f64)> {
+        self.0.coefficients().iter().map(|z| (z.re, z.im)).collect()
+    }
+    /// Exports shared observation JSON; missing RNG-RSP context is never guessed.
+    ///
+    /// Returns owned bounded schema-versioned text.
+    fn to_json(&self, py: Python<'_>) -> PyResult<String> {
+        py.detach(|| self.0.to_json()).map_err(error)
+    }
 }
 
 #[pyclass(from_py_object, frozen, module = "morgana", name = "RxmerCapture")]

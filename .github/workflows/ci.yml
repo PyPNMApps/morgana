@@ -1,0 +1,46 @@
+# Copyright 2026 MORGANA contributors
+# SPDX-License-Identifier: Apache-2.0
+name: Master
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validation:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    env:
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6, verified 2026-11-20
+      - name: Explicit development setup
+        run: ./install.sh --development
+      - name: Scientific and repository gates
+        run: scripts/validate.sh
+      - name: Actual optional native consumers
+        run: python3 -B tools/python/check_native.py
+      - name: Native style and Clippy
+        run: |
+          scripts/cargo-local.sh fmt --manifest-path bindings/python/Cargo.toml -- --check
+          CARGO_TARGET_DIR=target/python scripts/cargo-local.sh clippy --manifest-path bindings/python/Cargo.toml --all-targets --locked -- -D warnings
+      - name: Reviewed scientific source export
+        run: python3 -B tools/packaging/source_bundle.py
+      - name: Build and exercise the attributed host wheel
+        run: |
+          python3 -m pip install --no-deps --target target/python-tools maturin==1.8.3
+          PYTHONPATH=target/python-tools python3 -B tools/python/build_wheel.py
+      - name: Clean generated Cargo output
+        if: always()
+        run: |
+          scripts/cargo-local.sh clean --profile dev --target-dir target
+          CARGO_TARGET_DIR=target/python scripts/cargo-local.sh clean --manifest-path bindings/python/Cargo.toml --profile dev
+          CARGO_TARGET_DIR=target/python scripts/cargo-local.sh clean --manifest-path bindings/python/Cargo.toml --profile release

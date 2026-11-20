@@ -6,10 +6,15 @@
 mod error;
 mod reports;
 mod session;
+pub use crate::inputs::reassemble_ucd;
+pub use crate::inputs::{
+    CaptureAssociation, CaptureEvent, CaptureProbe, CaptureSource, MeasuredExperiment,
+};
 pub use crate::inputs::{
     ConfigurationDocument, ConfigurationPreset, RunSettings, RxmerCapture, RxmerHeader, UcdBurst,
     UcdCapture, UcdHeader, UcdTlv,
 };
+pub use crate::inputs::{PreEqCapture, PreEqCaptureKind, PreEqHeader};
 pub use error::{ApiError, ApiResult, CaptureFailure};
 pub use morgana_phy::channel::ChannelConfig;
 pub use morgana_phy::instruments::{QamSnapshot, SpectrumSnapshot, Tap};

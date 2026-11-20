@@ -4,6 +4,7 @@
 from ._native import (
     UcdCapture,
     RxmerCapture,
+    PreEqCapture,
     ConfigurationDocument, ApiError, BatchReport, ChannelConfig, ExperimentConfig, ExperimentOptions,
     ExperimentPreview, Minislot, PreEqBank, Profile, QamSnapshot, ReceiverConfig,
     RunControl, Simulation, SpectrumSnapshot, SyntheticGrant, UsConfiguration,
@@ -13,6 +14,7 @@ from ._native import (
 __all__ = [
     "UcdCapture",
     "RxmerCapture",
+    "PreEqCapture",
     "ConfigurationDocument", "ApiError", "BatchReport", "ChannelConfig", "ExperimentConfig",
     "ExperimentOptions", "ExperimentPreview", "Minislot", "PreEqBank", "Profile",
     "QamSnapshot", "ReceiverConfig", "RunControl", "Simulation", "SpectrumSnapshot",

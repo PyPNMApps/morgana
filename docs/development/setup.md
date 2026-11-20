@@ -54,3 +54,8 @@ documents locked/target-aware source acquisition. These contracts were reviewed
 Mocked transaction tests and this configured Ubuntu 22.04 host's read-only modes
 are the validation scope. Fresh-machine provisioning and Ubuntu 24.04 runtime
 remain unverified. See [design](features/development-setup/design.md).
+
+Fresh target setup has passed on isolated Ubuntu22.04 and24.04 amd64 virtual
+machines. See the [provisioning evidence](features/remaining-delivery/validation.md#fresh-target-setup)
+for signed-image hashes, normal-user apply, repeat/readiness checks and limits.
+This verifies development setup, not Windows/macOS, desktop installation or hosted CI.

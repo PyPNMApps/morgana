@@ -8,8 +8,10 @@ does not mark scientific implementation complete.
 The user authorized starting backend implementation in the accepted dependency
 order through the bounded synthetic stages, JSON and native adapter. Subsequent
 continuation includes source-verified capture prerequisites and idle Rust/native
-inspection. Measured association/model admission remain separate gates. No task grants
-commit, push, publication, provisioning or GUI implementation authorization.
+inspection. The later explicit request authorizes all fourteen remaining gates,
+including measured admission, extension designs and isolated setup validation.
+No checklist item alone authorizes commit, push, publication, host provisioning
+or GUI implementation. The explicit user scope above controls this delivery.
 
 ## How to use this checklist
 
@@ -305,27 +307,31 @@ These extensions do not become prerequisites for a typed synthetic reference exp
   Depends on: none.<br>
   Acceptance: Pinned upstream format/type/units evidence and lawful independent fixtures precede binary/decoded capture support.<br>
   Evidence: [major2 source/profile acceptance](features/rxmer-capture/validation.md); explicit byte-order/flag interpretation limits remain visible, measured association stays pending.
-- [ ] PREEQ-FORMAT-01: Verify upstream corrective bank/update formats and base/probe semantics.<br>
+- [x] PREEQ-FORMAT-01: Verify upstream corrective bank/update formats and base/probe semantics.<br>
   Requirements: [REQ-PNM-01](../requirements.md#req-pnm-01), [REQ-PNM-03](../requirements.md#req-pnm-03). Architecture: [design/owner](../architecture.md#us-pre-eq-input).<br>
   Depends on: none.<br>
-  Acceptance: Pinned format/scale/control evidence and lawful fixtures establish bank/update identity, reset and adjustment interpretation.
+  Acceptance: Pinned format/scale/control evidence and lawful fixtures establish bank/update identity, reset and adjustment interpretation.<br>
+  Evidence: [Pre-EQ source/fixture acceptance](features/remaining-delivery/validation.md#preeq-format-01).
 - [x] RXMER-INSPECT-01: Decode bounded upstream CCAP RxMER files through Rust and native Python.<br>
   Requirements: [REQ-PNM-01](../requirements.md#req-pnm-01), [REQ-PNM-02](../requirements.md#req-pnm-02), [REQ-API-03](../requirements.md#req-api-03), [REQ-API-06](../requirements.md#req-api-06), [REQ-NFR-01](../requirements.md#req-nfr-01). Architecture: [RxMER capture boundary and paths](../architecture.md#rxmer-input).<br>
   Depends on: RXMER-FORMAT-01.<br>
   Acceptance: Literal header offsets/values, all raw quarter-dB/null encodings, exact subgrid/extent limits, original bytes/hash and native ownership/error/Rust-process parity pass. Unknown metadata interpretations remain explicit; no simulation mutation.<br>
   Evidence: [RxMER decoder acceptance](features/rxmer-capture/validation.md).
-- [ ] US-CONFIG-INPUT-01: Associate/project captured UCDs into source configuration with full source validation.<br>
+- [x] US-CONFIG-INPUT-01: Associate/project captured UCDs into source configuration with full source validation.<br>
   Requirements: [REQ-PNM-01](../requirements.md#req-pnm-01), [REQ-CFG-05](../requirements.md#req-cfg-05). Architecture: [capture boundary](../architecture.md#upstream-configuration-capture-inspection).<br>
   Depends on: US-CONFIG-INSPECT-01.<br>
-  Acceptance: Complete supported channel/burst semantics, explicit external timing/grant/CM/bandwidth association, multipart reassembly and legitimate endpoint views pass independent cases before any simulation acceptance.
-- [ ] RXMER-INPUT-01: Implement original-preserving typed RxMER admission, association and single/multiple power playback.<br>
+  Acceptance: Complete supported channel/burst semantics, explicit external timing/grant/CM/bandwidth association, multipart reassembly and legitimate endpoint views pass independent cases before any simulation acceptance.<br>
+  Evidence: [accepted scope and validation](features/remaining-delivery/validation.md#capture-model-admission).
+- [x] RXMER-INPUT-01: Implement original-preserving typed RxMER admission, association and single/multiple power playback.<br>
   Requirements: [REQ-PNM-01](../requirements.md#req-pnm-01), [REQ-PNM-02](../requirements.md#req-pnm-02). Architecture: [design/owner](../architecture.md#rxmer-input).<br>
   Depends on: DEV-LOOP-01, RXMER-FORMAT-01, RXMER-INSPECT-01.<br>
-  Acceptance: Source-confirmed metadata/flag semantics, CM/channel/grid/time association and independent power/weight/null/time-boundary cases preserve originals and explicit synthetic schedule; additional captures never silently multiply trials.
-- [ ] PREEQ-INPUT-01: Implement fixed banks, multiple snapshots and explicitly based bounded updates.<br>
+  Acceptance: Source-confirmed metadata/flag semantics, CM/channel/grid/time association and independent power/weight/null/time-boundary cases preserve originals and explicit synthetic schedule; additional captures never silently multiply trials.<br>
+  Evidence: [accepted scope and validation](features/remaining-delivery/validation.md#capture-model-admission).
+- [x] PREEQ-INPUT-01: Implement fixed banks, multiple snapshots and explicitly based bounded updates.<br>
   Requirements: [REQ-PNM-01](../requirements.md#req-pnm-01), [REQ-PNM-03](../requirements.md#req-pnm-03), [REQ-TX-06](../requirements.md#req-tx-06). Architecture: [design/owner](../architecture.md#us-pre-eq-input).<br>
   Depends on: DEV-LOOP-01, PREEQ-FORMAT-01.<br>
-  Acceptance: Independent complex/base/reset/symbol-boundary cases validate immutable schedules; stale/missing/ambiguous probes or banks reject without changing accepted state.
+  Acceptance: Independent complex/base/reset/symbol-boundary cases validate immutable schedules; stale/missing/ambiguous probes or banks reject without changing accepted state.<br>
+  Evidence: [accepted scope and validation](features/remaining-delivery/validation.md#capture-model-admission).
 
 ## 8. Supported channel impairment extensions
 
@@ -357,10 +363,11 @@ Keep unsupported composition rejected. Captured-H reconstruction, fractional tim
   Acceptance: All synthetic extension/joint-model checks pass with preserved original synthetic values and partial outcomes; binary capture acceptance remains WAVE-CH-CAPTURE-01. Unsupported combinations remain unavailable.<br>
   Evidence: [backend stage validation](features/backend-stages/validation.md).
 
-- [ ] WAVE-CH-CAPTURE-01: Accept verified measured capture import/association through the supported channel models.<br>
+- [x] WAVE-CH-CAPTURE-01: Accept verified measured capture import/association through the supported channel models.<br>
   Requirements: [REQ-PNM-01](../requirements.md#req-pnm-01), [REQ-PNM-04](../requirements.md#req-pnm-04). Architecture: [RxMER](../architecture.md#rxmer-input), [Pre-EQ](../architecture.md#us-pre-eq-input).<br>
   Depends on: RXMER-INPUT-01, PREEQ-INPUT-01, WAVE-CH-02.<br>
-  Acceptance: Original bytes/hash/time/exact RF grid/CM/channel associations and source/control formats pass independent valid/invalid/boundary fixtures; actual shared Rust/native capture-driven runs preserve that provenance. Synthetic array/replay tests do not close this task.
+  Acceptance: Original bytes/hash/time/exact RF grid/CM/channel associations and source/control formats pass independent valid/invalid/boundary fixtures; actual shared Rust/native capture-driven runs preserve that provenance. Synthetic array/replay tests do not close this task.<br>
+  Evidence: [accepted scope and validation](features/remaining-delivery/validation.md#aggregate-api-and-scientific-acceptance).
 
 ## 9. High-level Rust and native Python delivery
 
@@ -378,53 +385,64 @@ Python wrapper is outside this delivery order. Python consumes working Rust oper
   Depends on: API-PY/STUB-01.<br>
   Acceptance: Actual deterministic runs compare settings/seeds/provenance/status/FEC/partial coverage within declared numerical tolerances; cancellation/concurrency/lifetime and supported schema cases pass, not mocks.<br>
   Evidence: [backend stage validation](features/backend-stages/validation.md).
-- [ ] API-01: Close all supported high-level Rust and Python API delivery gates.<br>
+- [x] API-01: Close all supported high-level Rust and Python API delivery gates.<br>
   Requirements: [REQ-API-01](../requirements.md#req-api-01), [REQ-API-02](../requirements.md#req-api-02), [REQ-API-03](../requirements.md#req-api-03), [REQ-API-04](../requirements.md#req-api-04), [REQ-API-05](../requirements.md#req-api-05), [REQ-API-06](../requirements.md#req-api-06). Architecture: [design/owner](../architecture.md#high-level-rust-and-python-apis).<br>
   Depends on: API-PARITY/DOCS-01.<br>
-  Acceptance: Required API feature gates and documented supported configurations pass; delivered input modes include their shared Rust/Python semantics. Deferred modes are explicitly scoped, not silently dropped.
+  Acceptance: Required API feature gates and documented supported configurations pass; delivered input modes include their shared Rust/Python semantics. Deferred modes are explicitly scoped, not silently dropped.<br>
+  Evidence: [accepted scope and validation](features/remaining-delivery/validation.md#aggregate-api-and-scientific-acceptance).
 
 ## 10. Foundation delivery and deferred design gates
 
-The remaining foundation/extension items stay pending. GUI and broader PHY modes need a dedicated design/authorization gate; listed design work is not an implementation claim.
+Foundation/extension status is recorded per item below. The four extension design
+gates define future GUI/PHY ownership and acceptance; their completion is not
+runtime implementation of those modes.
 
-- [ ] DEV-LICENSE-01: Complete copied-material/dependency attribution and package-scope review.<br>
+- [x] DEV-LICENSE-01: Complete copied-material/dependency attribution and package-scope review.<br>
   Requirements: [REQ-NFR-02](../requirements.md#req-nfr-02). Architecture: [design/owner](../architecture.md#ownership-results-and-acceptance).<br>
   Depends on: none.<br>
-  Acceptance: Retain actual notices/licenses/modifications; no private evidence/captures/generated outputs or GPL presentation code enter the independent Apache scientific distribution.
-- [ ] SETUP-04: Validate actual fresh-machine setup on each declared target.<br>
+  Acceptance: Retain actual notices/licenses/modifications; no private evidence/captures/generated outputs or GPL presentation code enter the independent Apache scientific distribution.<br>
+  Evidence: [accepted scope and validation](features/remaining-delivery/validation.md#distribution-and-platform-boundaries).
+- [x] SETUP-04: Validate actual fresh-machine setup on each declared target.<br>
   Requirements: [REQ-NFR-03](../requirements.md#req-nfr-03). Architecture: [design/owner](../architecture.md#checkpoint-and-target-overview).<br>
   Depends on: none.<br>
-  Acceptance: Real provisioning/lifecycle evidence is recorded separately from existing mocked/read-only checks; no automatic system install is authorized by this checklist.
-- [ ] DEV-UI-PLAN-01: Define the presentation implementation plan and readiness/editor acceptance before GUI work.<br>
+  Acceptance: Real provisioning/lifecycle evidence is recorded separately from existing mocked/read-only checks; no automatic system install is authorized by this checklist.<br>
+  Evidence: [accepted scope and validation](features/remaining-delivery/validation.md#fresh-target-setup).
+- [x] DEV-UI-PLAN-01: Define the presentation implementation plan and readiness/editor acceptance before GUI work.<br>
   Requirements: [REQ-OBS-03](../requirements.md#req-obs-03), [REQ-OBS-04](../requirements.md#req-obs-04). Architecture: [design/owner](../architecture.md#planned-upstream-signal-path-and-workbenches).<br>
   Depends on: DEV-LOOP-01, INSTRUMENTS-01.<br>
-  Acceptance: Dedicated plan maps block/stage routes, actual tap selection, draft/apply/cancel, text readiness and truthful complete/partial results to concrete UI owners/tests; GUI implementation remains pending that plan and authorization.
-- [ ] RX-EXT-01: Design wider received-signal acquisition, tracking, calibrated confidence and finite-file framing.<br>
+  Acceptance: Dedicated plan maps block/stage routes, actual tap selection, draft/apply/cancel, text readiness and truthful complete/partial results to concrete UI owners/tests; GUI implementation remains pending that plan and authorization.<br>
+  Evidence: [accepted scope and validation](features/extension-designs/ui.md).
+- [x] RX-EXT-01: Design wider received-signal acquisition, tracking, calibrated confidence and finite-file framing.<br>
   Requirements: [REQ-RX-01](../requirements.md#req-rx-01), [REQ-RX-04](../requirements.md#req-rx-04), [REQ-RX-06](../requirements.md#req-rx-06), [REQ-SYS-04](../requirements.md#req-sys-04). Architecture: [design/owner](../architecture.md#cmts-us-rx-block-architecture).<br>
   Depends on: DEV-LOOP-01.<br>
-  Acceptance: Define source applicability, algorithms, bounds and independent acceptance before claiming any extension; configured-timing/frame-policy support stays explicitly bounded.
-- [ ] CH-EXT-02: Design captured-H reconstruction, fractional clock/phase noise and broader RxMER/C/H composition.<br>
+  Acceptance: Define source applicability, algorithms, bounds and independent acceptance before claiming any extension; configured-timing/frame-policy support stays explicitly bounded.<br>
+  Evidence: [accepted scope and validation](features/extension-designs/receiver.md).
+- [x] CH-EXT-02: Design captured-H reconstruction, fractional clock/phase noise and broader RxMER/C/H composition.<br>
   Requirements: [REQ-CH-03](../requirements.md#req-ch-03), [REQ-CH-04](../requirements.md#req-ch-04), [REQ-CH-05](../requirements.md#req-ch-05), [REQ-PNM-04](../requirements.md#req-pnm-04). Architecture: [design/owner](../architecture.md#channel-simulator-unity-stub-first).<br>
   Depends on: WAVE-CH-02.<br>
-  Acceptance: Resolve evidence/model/reference/combination decisions and independent test oracles before execution support; unknown bins and inverse-C truth are not invented.
-- [ ] ARCH-RANGING-01: Design initial/fine-ranging preambles, probing and received-signal acquisition.<br>
+  Acceptance: Resolve evidence/model/reference/combination decisions and independent test oracles before execution support; unknown bins and inverse-C truth are not invented.<br>
+  Evidence: [accepted scope and validation](features/extension-designs/channel.md).
+- [x] ARCH-RANGING-01: Design initial/fine-ranging preambles, probing and received-signal acquisition.<br>
   Requirements: [REQ-SYS-04](../requirements.md#req-sys-04), [REQ-CFG-04](../requirements.md#req-cfg-04). Architecture: [design/owner](../architecture.md#deferred-burst-modes-and-preambles).<br>
   Depends on: DEV-LOOP-01.<br>
-  Acceptance: Pinned PHY/MULPI applicability, distinct waveforms/controls and bounded RX acceptance are defined; modes remain unsupported until separately implemented and validated.
-- [ ] FOUNDATION-03: Complete independent workspace delivery, required CI/tooling/user guides and reviewed distribution scope.<br>
+  Acceptance: Pinned PHY/MULPI applicability, distinct waveforms/controls and bounded RX acceptance are defined; modes remain unsupported until separately implemented and validated.<br>
+  Evidence: [accepted scope and validation](features/extension-designs/ranging.md).
+- [x] FOUNDATION-03: Complete independent workspace delivery, required CI/tooling/user guides and reviewed distribution scope.<br>
   Requirements: [REQ-SYS-03](../requirements.md#req-sys-03), [REQ-NFR-02](../requirements.md#req-nfr-02), [REQ-NFR-03](../requirements.md#req-nfr-03), [REQ-NFR-04](../requirements.md#req-nfr-04). Architecture: [design/owner](../architecture.md#checkpoint-and-target-overview).<br>
   Depends on: DEV-LICENSE-01.<br>
-  Acceptance: Declared foundation gates have actual evidence; existing local workspace/tooling is partial completion, not hosted/native/publication proof. Setup provisioning remains SETUP-04.
-- [ ] DEV-HANDOFF-01: Reconcile requirements, architecture, checklist, user guides and actual evidence for the accepted delivery scope.<br>
+  Acceptance: Declared foundation gates have actual evidence; existing local workspace/tooling is partial completion, not hosted/native/publication proof. Setup provisioning remains SETUP-04.<br>
+  Evidence: [accepted scope and validation](features/remaining-delivery/validation.md#design-gates-and-foundation-delivery).
+- [x] DEV-HANDOFF-01: Reconcile requirements, architecture, checklist, user guides and actual evidence for the accepted delivery scope.<br>
   Requirements: [REQ-NFR-04](../requirements.md#req-nfr-04), [REQ-SYS-05](../requirements.md#req-sys-05). Architecture: [design/owner](../architecture.md#api-delivery-and-validation-gates).<br>
   Depends on: DEV-LOOP-01, API-01, FOUNDATION-03.<br>
-  Acceptance: Record actual commands/outcomes/limits, keep unsupported/platform/source gaps visible, and never treat this checklist as authorization to commit/push/install. Measurement/UI extensions close only with their own gates.
+  Acceptance: Record actual commands/outcomes/limits, keep unsupported/platform/source gaps visible, and never treat this checklist as authorization to commit/push/install. Measurement/UI extensions close only with their own gates.<br>
+  Evidence: [final reconciliation and cleanup](features/remaining-delivery/validation.md#cleanup-and-final-handoff).
 
 The synthetic stage handoff is documented in the backend validation record.
-DEV-HANDOFF-01/API-01/FOUNDATION-03 remain unchecked for the required wider
-capture/distribution/platform work; no aggregate completion is inferred from
-these checked scientific stages. Capture research findings are retained under
-RXMER-FORMAT-01/PREEQ-FORMAT-01, not marked as implemented decoders.
+Measured/API/foundation gates now have separate local acceptance evidence;
+DEV-HANDOFF-01 records completed reconciliation and generated-output cleanup.
+Hosted/publication/other-platform scope remains explicitly unverified. Bounded capture decoders, association and playback are recorded under their
+individual format/input gates and [delivery evidence](features/remaining-delivery/validation.md).
 
 ## Requirement coverage
 

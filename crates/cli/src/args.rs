@@ -5,7 +5,7 @@
 //! A bounded, explicit CLI surface for the first executable milestone.
 use morgana::{DocsisLdpcCode, LdpcSettings};
 
-pub(crate) const USAGE: &str = "Usage: morgana ldpc <long|medium|short> [information-bits] [seed]\nRuns one noiseless upstream LDPC word; JSON goes to stdout.\nOmit information-bits for the full mother code; seed defaults to 42.\nUse morgana upstream <configuration.json> for the actual bounded\nPRBS to upstream waveform to recovered source experiment.";
+pub(crate) const USAGE: &str = "Usage: morgana ldpc <long|medium|short> [information-bits] [seed]\nRuns one noiseless upstream LDPC word; JSON goes to stdout.\nOmit information-bits for the full mother code; seed defaults to 42.\nUse morgana upstream <configuration.json> for the actual bounded\nPRBS to upstream waveform to recovered source experiment.\nUse morgana measured <plan.json> for capture-driven admission.";
 
 pub(crate) struct Arguments {
     pub settings: LdpcSettings,

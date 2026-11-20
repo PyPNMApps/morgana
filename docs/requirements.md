@@ -1,8 +1,8 @@
 # MORGANA requirements
 
 Status: architecture-derived requirements baseline. Bounded synthetic stages,
-source JSON and native APIs are implemented; capture/platform/extension acceptance
-remains incomplete. This document consolidates the existing
+source JSON, bounded measured admission and native APIs are implemented;
+platform evidence and delivery scope are recorded in the official checklist. This document consolidates the existing
 [architecture](architecture.md), [feature plans](development/README.md) and
 [official checklist](development/checklist.md). It does not authorize scientific
 implementation or establish specification compliance.
@@ -80,8 +80,8 @@ Compact delivery notation such as `WAVE-TX/CH/RX-01` refers to the separate
 | Standalone LDPC, FEC facade and CLI | All-family source audit and standalone codec acceptance pass locally; waveform integration passes its separate stage/closed-loop cases. |
 | Development setup and save tooling | Implemented; mock/read-only checks exist; fresh provisioning and hosted/platform evidence remain incomplete. |
 | PRBS, TX-01..08, CH-01..06, RX-01..09 | Implemented/local source-stage and bounded synthetic closed-loop acceptance; configured timing/frame-pilot policies. |
-| US Configuration JSON and PNM inputs | Applicable source-field audit/schema/parser/projections and synthetic playback implemented. Binary PNM formats/import/association remain pending. |
-| High-level Rust session and native Python wrapper | Actual typed/JSON run, controls, native conversion/runtime/type declarations and independent parity pass locally; wider capture/API aggregate remains pending. |
+| US Configuration JSON and PNM inputs | Applicable source-field audit/schema/parser/projections and synthetic playback implemented. Source-derived UCD/RxMER/Pre-EQ adapters and bounded association/playback are implemented. |
+| High-level Rust session and native Python wrapper | Actual typed/JSON run, controls, native conversion/runtime/type declarations and independent parity pass locally; capture modes use the same shared owners and native parity gates. |
 | QAM/SA and desktop workbenches | Bounded actual QAM/SA and independent matched-data MER implemented; GUI/expanded inspectors remain planned. |
 
 Requirements below apply when their capability is delivered. Extension sections
@@ -241,28 +241,32 @@ requirement IDs and deferred delivery obligations are retained.
 
 | Milestone | Required evidence / scope | Pending prerequisites |
 | --- | --- | --- |
-| Source-verified codec | REQ-SYS-05 and LDPC portion of REQ-TX-02/REQ-RX-08; independent matrix/shortening/parity and decoder outcome checks. | LDPC-01/02 complete: [source audit and codec evidence](development/features/ldpc-source-audit/validation.md). Full TX/RX integration remains pending. |
+| Source-verified codec | REQ-SYS-05 and LDPC portion of REQ-TX-02/REQ-RX-08; independent matrix/shortening/parity and decoder outcome checks. | LDPC-01/02 complete: [source audit and codec evidence](development/features/ldpc-source-audit/validation.md); all bounded TX/RX stages are integrated. |
 | Reference unity loop | REQ-SYS-01..04, REQ-PRBS-01..04, REQ-TX-01..08, REQ-CH-01/02/06, REQ-RX-01..09 and applicable lifecycle/resource requirements. | Typed configuration/resource planning, source, all waveform stages and independent stage/source acceptance. No measurement import or external implementation is a prerequisite. |
 | Instruments and experiment reports | REQ-OBS-01/02 with bounded retained taps and independent source/decoder accounting. | Actual waveform/results and owned observation contracts; presentation implementation is separate. |
 | Measurement/impairment extensions | REQ-PNM-01..04 and REQ-CH-03..05 in their declared compatibility scope. | Source-verified capture formats, whole-schedule association, approved numerical implementation and model-specific independent tests. |
 | High-level language APIs | REQ-API-01..06 plus applicable lifecycle requirements. | Shared Rust foundation before bindings; real experiment execution before complete waveform API claims; native parity/type-stub checks and documented support. |
 | Optional presentation and wider modes | REQ-OBS-03/04, any later exposure of deferred modes. | Dedicated implementation plans and complete readiness/lifecycle/source/acceptance contracts; no automatic GUI or acquisition commitment. |
 
-The following remain explicit decisions or evidence gaps:
+The [capture delivery](development/features/remaining-delivery/design.md) extends
+REQ-PNM-01..04/REQ-CFG-05 through the same source/domain validators. Explicit
+PNM adapter evidence, original bytes/hashes, source times and corresponding-probe
+controls SHALL remain separate from derived model normalization/replay offsets.
+All supported modes SHALL pass both Rust and actual native consumers before
+API-01 closure. Reports preserve additive optional measured provenance under
+existing schema1 without reinterpreting standalone FEC or generic configuration.
 
-- Complete field-level coverage for `CM-SP-MULPIv3.1-I25-230419` with dependent
-  `CM-SP-PHYv3.1-I20-230419` rules; the current inventory is not a full audit.
-  DOCSIS 4.0/newer MULPI extensions require separate pinned applicability work.
-- Upstream configuration/profile, RxMER and Pre-EQ/update capture formats,
-  units/scales and lawful independent fixtures before importer support.
-- Independent pilot masks, constellation labels, randomizer/interleaver vectors
-  and source-table acceptance before claiming implemented normative behavior.
-- Concrete aggregate job budgets and complete pause/resume/signal policy before
-  exposing corresponding operations; existing per-stage bounds remain binding.
-- Broader RxMER with nonunity/time-varying C/H, captured-H reconstruction,
-  received-signal acquisition, ranging/probing and calibrated confidence models.
-- Python distribution/dependency/platform selection, native packaging and hosted
-  validation; design names and another project's releases are not runtime evidence.
+The following remain outside executable support:
+
+- DOCSIS4.0/newer-MULPI waveform extensions beyond explicitly pinned applicability.
+- Broader RxMER/nonunity-C/H composition, inferred plant response, fractional
+  clock/phase noise, wider received acquisition/confidence and finite-file transport.
+- Initial/fine-ranging and probe/testing waveforms, live MAC/scheduling/device control.
+- GUI, desktop saved experiments, Windows/macOS packaging and publication.
+
+The four extension design gates define their future source/algorithm/owner/bounds/
+acceptance contracts; they do not change runtime support. Fresh target setup,
+local source/wheel artifacts and hosted execution have separate evidence records.
 
 ## Baseline maintenance
 

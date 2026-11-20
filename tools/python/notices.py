@@ -16,6 +16,29 @@ import shutil
 import subprocess
 
 
+def selected_license(expression: str) -> str:
+    """Select a reviewed option without dropping conjunctive obligations.
+
+    Takes the exact pinned Cargo expression. Unknown expressions fail review;
+    Unicode and LLVM-exception obligations remain explicit when required.
+    """
+    apache_options = {
+        "MIT OR Apache-2.0", "Apache-2.0 OR MIT", "MIT/Apache-2.0",
+        "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
+        "BSD-2-Clause OR Apache-2.0 OR MIT", "Zlib OR Apache-2.0 OR MIT",
+        "MIT OR Apache-2.0 OR LGPL-2.1-or-later", "Apache-2.0 OR BSL-1.0",
+    }
+    if expression in apache_options:
+        return "Apache-2.0"
+    if expression in {"MIT", "Unlicense OR MIT"}:
+        return "MIT"
+    if expression in {"0BSD", "Apache-2.0 WITH LLVM-exception"}:
+        return expression
+    if expression == "(MIT OR Apache-2.0) AND Unicode-3.0":
+        return "Apache-2.0 AND Unicode-3.0"
+    raise ValueError(f"Unreviewed dependency license expression: {expression}")
+
+
 def notice_files(directory: Path) -> list[Path]:
     """Find actual root/license-directory notices without inventing license text.
 
@@ -94,6 +117,6 @@ def collect_notices(root: Path, destination: Path) -> int:
                     if "SPDX-FileCopyrightText:" in line:
                         authors.add(line.partition("SPDX-FileCopyrightText:")[2].strip())
             (target / "AUTHOR-NOTICES").write_text("\n".join(sorted(authors)) + "\n")
-        records.append(dict(name=package["name"], version=package["version"], license=package["license"], repository=package["repository"], notice_source=f"{source['name']}-{source['version']}", files_sha256=hashes))
+        records.append(dict(name=package["name"], version=package["version"], license=package["license"], selected_license=selected_license(package["license"]), repository=package["repository"], notice_source=f"{source['name']}-{source['version']}", files_sha256=hashes))
     (destination / "manifest.json").write_text(json.dumps(dict(host=host, packages=records), indent=2) + "\n")
     return len(records)

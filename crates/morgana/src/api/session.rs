@@ -34,6 +34,7 @@ pub struct Simulation {
     configuration: Option<ExperimentConfig>,
     generation: u64,
     document: Option<super::ConfigurationDocument>,
+    measured_provenance: Option<String>,
 }
 
 impl Simulation {
@@ -48,6 +49,7 @@ impl Simulation {
             configuration: None,
             generation: 0,
             document: None,
+            measured_provenance: None,
         })
     }
     /// Atomically accepts typed synthetic `configuration` through shared admission.
@@ -59,6 +61,7 @@ impl Simulation {
         let generation = next_id()?;
         self.configuration = Some(configuration);
         self.document = None;
+        self.measured_provenance = None;
         self.generation = generation;
         Ok(())
     }
@@ -80,8 +83,31 @@ impl Simulation {
         self.configuration = Some(configuration);
         self.options = options;
         self.document = Some(document);
+        self.measured_provenance = None;
         self.generation = generation;
         Ok(())
+    }
+    /// Atomically admits a source-preserving measured candidate without execution.
+    ///
+    /// All captures, later events, associations and report provenance validate
+    /// before accepted state changes. Failed loading preserves prior settings.
+    pub fn configure_measured(&mut self, plan: super::MeasuredExperiment) -> ApiResult<()> {
+        let (configuration, options) = plan.prepare()?;
+        plan.configuration.to_json()?;
+        let provenance = plan.provenance_json()?;
+        let generation = next_id()?;
+        self.configuration = Some(configuration);
+        self.options = options;
+        self.document = Some(plan.configuration.clone());
+        self.measured_provenance = Some(provenance);
+        self.generation = generation;
+        Ok(())
+    }
+    /// Parses and atomically admits bounded schema1 measured JSON while idle.
+    ///
+    /// Returns unit; source files and external controls retain their full values.
+    pub fn configure_measured_json(&mut self, bytes: &[u8]) -> ApiResult<()> {
+        self.configure_measured(super::MeasuredExperiment::from_json(bytes)?)
     }
     /// Borrows the retained original generic document, including unused presets.
     ///
@@ -130,6 +156,7 @@ impl Simulation {
             .as_ref()
             .ok_or(ApiError::MissingSetting)?;
         let mut report = run(config, &self.options, next_id()?, self.generation, control)?;
+        report.measurement_provenance_json = self.measured_provenance.clone();
         report.source_configuration_json = self
             .document
             .as_ref()

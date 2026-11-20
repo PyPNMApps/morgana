@@ -1,5 +1,7 @@
 # MORGANA user guides
 
+- [Capture-driven experiments](measured-experiments.md): UCD/RxMER/Pre-EQ
+  sources, associations, paired APIs and source-preserving reports.
 - [Offline UCD capture inspection](capture-inspection.md)
 - [Upstream RxMER file inspection](rxmer-captures.md)
 

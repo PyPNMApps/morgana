@@ -53,7 +53,8 @@ No real provisioning is authorized by this implementation task.
   redirected roots, repeated setup, failed commands and bootstrap checksum failure.
 - [x] Wire targeted setup tests/syntax into the local validation entrypoint.
 - [x] Run actual read-only check/plan and reconcile build/user/architecture docs.
-- [ ] Real fresh-machine provisioning on each declared target (not performed here).
+- [x] Real fresh-machine provisioning on each declared target: see the
+  [subsequent VM acceptance](../remaining-delivery/validation.md#fresh-target-setup).
 
 Mocked installation tests use temporary roots and fake package/download/tool
 commands. They cannot reach sudo/apt/network on the real host. Full Rust science
@@ -80,3 +81,11 @@ No full scientific workspace rerun was needed: simulation sources/manifests/lock
 are unchanged by this setup task. Prior FEC source-review gaps remain explicitly
 unfinished. No fresh-machine provisioning, Ubuntu 24.04 execution or hosted CI
 result is claimed. Installer apply behavior is validated through controlled mocks.
+
+## Subsequent fresh-machine acceptance
+
+The initial results above remain historical. SETUP-04 subsequently ran actual
+setup on clean signed Ubuntu22.04/24.04 amd64 cloud-image guests, using normal-user
+installation, read-only before/after checks and repeated apply. Both passed.
+See [exact environment/procedure/evidence](../remaining-delivery/validation.md#fresh-target-setup).
+No host system packages, shell startup files or external project state were changed.

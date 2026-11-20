@@ -13,6 +13,10 @@ and native Python, after the all-family LDPC source audit. Follow the
 official checklist and retain explicit evidence for each completed milestone.
 The subsequent request to continue authorizes the capture-format prerequisites
 and bounded Rust/native Python inspection, starting with upstream UCD messages.
+The subsequent request to complete all fourteen remaining gates authorizes their
+measurement/backend implementations, extension designs, scientific distribution
+review and isolated target-VM setup validation. It does not authorize host package
+installation, GUI/wider-waveform implementation or publication.
 A request for `commit-msg` means prepare the local save-helper command, not
 execute it.
 After each completed section, include the reviewed `commit-msg`

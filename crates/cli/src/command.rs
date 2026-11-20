@@ -17,11 +17,15 @@ pub(crate) fn run(arguments: Vec<String>) -> Result<(), Box<dyn std::error::Erro
         println!("MORGANA {}", env!("CARGO_PKG_VERSION"));
         return Ok(());
     }
-    if arguments.len() == 2 && arguments[0] == "upstream" {
+    if arguments.len() == 2 && matches!(arguments[0].as_str(), "upstream" | "measured") {
         use morgana::api::{ExperimentOptions, ReportJson, Simulation};
         let bytes = crate::json_io::read_configuration(std::path::Path::new(&arguments[1]))?;
         let mut simulation = Simulation::new(ExperimentOptions::default())?;
-        simulation.configure_json(&bytes)?;
+        if arguments[0] == "measured" {
+            simulation.configure_measured_json(&bytes)?;
+        } else {
+            simulation.configure_json(&bytes)?;
+        }
         let report = simulation.run()?;
         println!("{}", report.to_json()?);
         if !report.reference_recovered {

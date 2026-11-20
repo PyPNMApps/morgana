@@ -74,6 +74,8 @@ workbench and cannot be loaded as either.
 See the [source/fixture audit](../development/features/capture-formats/design.md)
 and [fixture record](../../examples/measurements/ucd/README.md). Separate
 [RxMER file decoding](rxmer-captures.md) is available for bounded inspection.
-Pre-EQ binary decoding, measured association/playback, captured-UCD projection,
-multipart assembly and transport unwrapping remain pending. After crate testing, follow the
+The separate [measured experiment plan](measured-experiments.md) implements
+Pre-EQ decoding, measured association/playback, captured-UCD projection and bounded
+multipart assembly. Transport unwrapping/MAC CRC remain unsupported.
+After crate testing, follow the
 [cleanup commands](../development/build.md) once dependent checks finish.

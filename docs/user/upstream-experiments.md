@@ -35,9 +35,10 @@ Replay offsets restart in each explicit repeated isolated grant. Capture epochs
 are not synthetic offsets. These synthetic objects do not decode binary PNM files.
 
 Ranging/probe/testing controls are representable in the generic source document
-for inspection. Their waveform/MAC execution is unsupported. Measured-file simulation,
-full captured-UCD/MAP projection, measured-grid association and live device control
-are not delivered. Separate [offline UCD inspection](capture-inspection.md)
+for inspection. Their waveform/MAC execution is unsupported. Captured UCD/RxMER/Pre-EQ
+admission and measured-grid association are implemented through the separate
+[capture-driven plan](measured-experiments.md). Raw MAP execution and live
+device control remain unsupported. Separate [offline UCD inspection](capture-inspection.md)
 preserves raw unfragmented header/TLV data without configuring a simulation.
 [Upstream RxMER inspection](rxmer-captures.md) decodes the bounded CCAP file
 without enabling measured playback or changing its raw metadata.

@@ -1,5 +1,12 @@
 # Development
 
+- [Remaining delivery plan](features/remaining-delivery/design.md) and
+  [validation](features/remaining-delivery/validation.md)
+- Extension designs: [UI](features/extension-designs/ui.md),
+  [receiver](features/extension-designs/receiver.md),
+  [channel](features/extension-designs/channel.md),
+  [ranging/probing](features/extension-designs/ranging.md)
+
 - [Architecture](../architecture.md)
 - [Accepted backend delivery decisions](../architecture.md#accepted-backend-delivery-decisions)
   and [milestone/validation record](features/backend-delivery/design.md)
@@ -51,6 +58,7 @@
   and [codec acceptance evidence](features/ldpc-source-audit/validation.md)
 - [Checkpoint validation](features/foundation/validation.md)
 - [Foundation adoption and local overrides](foundation-adoption.md)
+- [Scientific distribution inventory](../reference/distribution.md)
 - [Build guide](build.md)
 - [Development setup](setup.md) and [setup design/checklist](features/development-setup/design.md)
 - [Git save](../git.md)

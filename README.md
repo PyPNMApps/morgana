@@ -26,10 +26,10 @@ flowchart LR
     CH --> RX[CMTS-US-RX: all nine stages]
     RX --> VERIFY[Independent source comparison]
     PRBS -. expected stream only .-> VERIFY
-    CFG[US Configuration: typed or JSON] -. accepted views .-> TX
+    CFG[US Configuration: typed, JSON or captured UCD] -. accepted views .-> TX
     CFG -. accepted views .-> RX
-    PRE[Synthetic Pre-EQ banks and updates] -. C only .-> TX
-    MER[Synthetic RxMER power playback] -. restricted residual model .-> CH
+    PRE[Typed or captured Pre-EQ banks and updates] -. C only .-> TX
+    MER[Typed or captured RxMER power playback] -. restricted residual model .-> CH
 ```
 
 | Capability | Current support |
@@ -37,10 +37,10 @@ flowchart LR
 | Waveform | 2K/50 kHz and 4K/25 kHz scheduled data, source-audited upstream LDPC, QAM through 4096 including non-square orders, all 14 pilot patterns, exact CP/rolloff/overlap. |
 | Receiver | Configured timing and received-pilot frame-flat or bounded linear-frequency correction; actual failed decisions, iterations, parity and source coverage stay separate. |
 | Channel | Exact unity, causal synthetic FIR, sample AWGN, integer delay, constant phase/CFO and restricted synthetic RxMER residual waveform. |
-| Side inputs | Explicit synthetic RxMER single/average/hold/interpolation; Pre-EQ fixed banks/snapshots/probe-based updates at symbol boundaries. Measured-file association/playback remains pending. |
+| Side inputs | Explicit synthetic RxMER single/average/hold/interpolation; Pre-EQ fixed banks/snapshots/probe-based updates at symbol boundaries. Measured files retain exact sources and use explicit CM/channel/grid/time/probe association. |
 | Configuration | Versioned generic US Configuration JSON with named inventory/selection, source-field audit, strict bounded parsing and atomic shared endpoint projections. |
-| Capture inspection | Offline unfragmented Type51/version5 UCD header/TLV inspection through Rust/native Python, retaining exact originals, hashes and error offsets. Full captured-channel projection remains pending. |
-| Measured RxMER inspection | Bounded CCAP upstream major2 file decoding through Rust/native Python, preserving metadata, raw/quarter-dB values and missing subcarrier positions. Measured association/playback remains pending. |
+| Capture inspection | Offline Type51/version5 inspection plus bounded multipart reconstruction and source-valid captured-channel projection through shared Rust/native admission. |
+| Measured RxMER inspection | Bounded CCAP upstream major2 file decoding through Rust/native Python, preserving metadata, raw/quarter-dB values and missing subcarrier positions. Explicit measured association and bounded single/average/hold/interpolated playback are implemented. |
 | APIs and controls | High-level Rust and optional native Python; preview/run, progress, pause/resume/cancel and owned complete/partial reports. |
 | Instruments | Bounded actual QAM/SA taps and independent matched-data MER; no invented history, calibrated RF power or target-to-RX shortcut. |
 
@@ -48,7 +48,7 @@ The [validation record](docs/development/features/backend-stages/validation.md)
 separates independent source/numerical cases, internal closed-loop results and
 actual native/wheel checks. There is no external interoperability, live MAC,
 modem-certification or installed-platform claim. Ranging/probe/testing waveform
-execution, measured-file simulation/full captured-configuration projection, GUI and wider platforms remain
+execution, GUI and wider platform delivery remain
 explicitly pending in the [checklist](docs/development/checklist.md).
 
 ## Run an experiment
@@ -71,6 +71,8 @@ scripts/cargo-local.sh run --locked -p morgana-cli -- ldpc short 420 42
 
 Use the [experiment guide](docs/user/upstream-experiments.md) for typed Rust/native
 Python examples, controls, model compatibility, units, limits and report semantics.
+The [capture-driven experiment guide](docs/user/measured-experiments.md) covers
+actual UCD/RxMER/Pre-EQ admission, paired APIs and preserved provenance.
 The [UCD inspection guide](docs/user/capture-inspection.md) defines its exact
 byte envelope, examples and structural-only acceptance.
 The [example index](examples/README.md) includes generic JSON, mixed/zero loading,
@@ -89,7 +91,7 @@ applying host changes:
 
 `./install.sh --development` explicitly applies missing prerequisites and prepares
 the isolated pinned Rust toolchain; it does not build/install the application.
-See the [setup guide](docs/development/setup.md). Fresh-machine provisioning,
+See the [setup guide](docs/development/setup.md). Fresh Ubuntu22.04/24.04 VM provisioning has passed;
 hosted CI and native Windows/macOS lifecycle acceptance remain unverified.
 
 Run the core and optional native gates:

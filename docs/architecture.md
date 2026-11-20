@@ -7,7 +7,9 @@ Source-valid generic configuration JSON, synthetic RxMER/Pre-EQ replay,
 pause/resume/cancellation and actual QAM/SA reports are implemented.
 Offline Type51 UCD inspection preserves raw originals/header/TLVs separately from
 executable configuration; see the [capture boundary](#upstream-configuration-capture-inspection).
-Measured-file simulation, Pre-EQ binary import, GUI and broader receiver/MAC modes remain pending.
+Bounded source-derived UCD/RxMER/Pre-EQ capture admission and playback are implemented.
+GUI and broader receiver/MAC modes remain unsupported; their extension designs
+are defined without claiming runtime support. See [capture delivery](#measured-capture-admission).
 See [current validation and limits](development/features/backend-stages/validation.md).
 The [foundation design](development/features/foundation/design.md)
 contains requirements, reuse assessments, evidence, API proposal and milestones.
@@ -44,16 +46,16 @@ and preserves completed design records separately from scientific completion.
 | `crates/cli` | Bounded JSON files or standalone FEC request; JSON stdout | Actual upstream and existing LDPC commands |
 | `bindings/python` | Optional native conversions/dispatch and matching type declarations | Actual local Linux/Python 3.10 import/parity; no published wheel |
 | `skills/`, `scripts/`, `tools/git/` | Guidance, validation and guarded save | Local gates; no commit/push implied |
-| `install.sh`, `scripts/bootstrap/` | Explicit development setup | Existing inspection/mock checks; fresh provisioning unverified |
+| `install.sh`, `scripts/bootstrap/` | Explicit development setup | Actual fresh Ubuntu22.04/24.04 VM provisioning, inspection and repeat checks pass |
 
 ```mermaid
 flowchart LR
     PRBS[Continuous PRBS15] --> TX[CM-US-TX: TX-01..08]
-    CFG[US Configuration: typed or generic JSON] -. accepted views .-> TX
+    CFG[US Configuration: typed, JSON or captured UCD] -. accepted views .-> TX
     CFG -. received-only configuration .-> RX
-    PRE[Synthetic Pre-EQ bank/update plan] -. C only .-> TX
+    PRE[Typed or captured Pre-EQ bank/update plan] -. C only .-> TX
     TX --> CH[CH-SIM: unity or admitted model]
-    MER[Synthetic RxMER power playback] -. restricted residual .-> CH
+    MER[Typed or captured RxMER power playback] -. restricted residual .-> CH
     CH --> RX[CMTS-US-RX: RX-01..09]
     RX --> VERIFY[Independent source comparison and data MER]
     PRBS -. expected stream only .-> VERIFY
@@ -75,6 +77,57 @@ probe configuration is represented and validated; selected ranging, probe,
 profile-testing or raw MAP execution is explicitly unsupported. Binary capture
 admission/association remains separate from typed synthetic measurements.
 No GUI, desktop saved-workbench format or stable C ABI is delivered.
+
+## Measured capture admission
+
+The [remaining delivery design](development/features/remaining-delivery/design.md)
+and [paired guide](user/measured-experiments.md) define implemented schema1
+`morgana.measured-experiment`. Pinned CM-OSSI I27 Tables77/78 complement the
+existing MULPI I25 UCD and CCAP-OSSI I18 RxMER evidence. PNM numeric byte order
+and Boolean0/1 interpretation are an explicit adapter/exporter profile with
+retained evidence, never a universal vendor-format assumption.
+
+| Path | Disposition / responsibility |
+| --- | --- |
+| `crates/morgana/src/inputs/pre_eq.rs` | Add (implemented):34-byte major1 header, applied s2.13/update s1.14, exact original/hash/IQ. |
+| `crates/morgana/src/inputs/ucd_projection.rs` | Add (implemented):ordered multipart reconstruction and all supported Table28/29 fields through existing source validation. |
+| `crates/morgana/src/inputs/measured.rs` | Add (implemented):strict bounded plan, source/CM/channel/RF-grid/time association, explicit probe/base/status and full-schedule model preflight. |
+| `crates/morgana/src/api/session.rs` | Extend:atomic idle measured configuration and retained source provenance on complete/partial runs. |
+| `bindings/python/src/capture.rs`, `simulation.rs` | Extend:native inspection and measured JSON dispatch, shared errors/ownership and interpreter release. |
+| `crates/morgana/tests/pre_eq_capture.rs`, `measured_experiment.rs` | Add:literal source vectors, associations, both numerologies, multiple power/update policies and actual capture-driven loops. |
+| `bindings/python/tests/test_measured.py` | Add:actual native behavior, independent Rust-process comparison, bounds/errors/lifetimes/cancel. |
+| `examples/measurements/pre-eq/`, `measured/` | Add:invented source-derived fixtures, not modem recordings. |
+
+Flow: original captures + explicit generic context/associations → immutable
+measured candidate → optional complete UCD projection → per-file exact identity/
+grid/time checks → existing power/bank/update owners → entire joint preflight →
+atomic idle accepted configuration → explicit bounded run. Normal RX sees only
+received samples and legitimate endpoint configuration. All source values,
+original JSON/file bytes, hashes and explicit controls remain in report metadata;
+derived normalized C and unit-reference residual targets are separate models.
+No extra capture silently increases grant/trial count. Wrong/later incompatible
+inputs reject before generation replacement or source/RNG consumption.
+
+Rust exposes `MeasuredExperiment::from_json/prepare/to_json/provenance_json` and
+`Simulation::configure_measured/configure_measured_json`; native Python exposes
+`Simulation.configure_measured_json(bytes)`. Both share all supported input modes.
+`PreEqCapture::from_pnm/original_bytes/original_sha256/coefficients/to_json` has
+matching native names; raw kind/header are returned in native observation JSON.
+The existing standalone inspection APIs remain idle and source-preserving.
+
+Report schema1 adds optional `measurement_provenance_json`; existing fields and
+synthetic/FEC semantics are unchanged. It contains original plan/file bytes and
+hashes, explicit model/adapter evidence and external controls. Configure preflights
+bounded source/provenance serialization; loading never starts work. Source generic
+JSON remains the supplied context, while the frozen scientific configuration is
+the captured projection. No saved desktop workbench schema is introduced.
+
+Design-only wider work is now defined in [UI](development/features/extension-designs/ui.md),
+[receiver](development/features/extension-designs/receiver.md),
+[channel](development/features/extension-designs/channel.md) and
+[ranging/probing](development/features/extension-designs/ranging.md). Each names
+planned owners, sources, algorithms, bounds and independent future acceptance;
+its design completion does not enable the corresponding execution mode.
 
 ## Accepted backend delivery decisions
 
@@ -144,8 +197,9 @@ bounds, not claims about normative maximum cable frames.
 Inspection SHALL remain idle and explicitly structural-only. It MUST NOT claim
 full channel conformance or supply missing clock/bandwidth/grant/CM association,
 select a profile, configure a simulation or start transmission. Multipart
-reassembly, MAC CRC validation, PCAP/transport decoding and full captured-UCD
-projection remain pending US-CONFIG-INPUT-01. Existing source-domain validators
+reassembly and full captured-UCD
+projection are implemented by the separate measured adapter described below.
+MAC CRC and PCAP/transport decoding remain unsupported. Existing source-domain validators
 remain the execution authority. Python SHALL dispatch to the same Rust loader;
 both APIs expose exact originals/hash and versioned inspection JSON.
 
@@ -268,7 +322,7 @@ association is a separate pending capture-admission contract.
 [CM-US-TX](#cm-us-tx-block-architecture) ·
 [CMTS-US-RX](#cmts-us-rx-block-architecture).
 
-Status: **typed and generic JSON configuration/projections implemented; GUI editor and binary capture import pending**. This is the upstream counterpart to
+Status: **typed, generic JSON and captured UCD projections implemented; GUI editor pending**. This is the upstream counterpart to
 the reference modulation-profile input/editor concept. Use the name **US
 Configuration**, including diagram labels; it supplies accepted common channel,
 profile and grant settings to both endpoints. It does not implement a CMTS MAC.
@@ -1904,7 +1958,7 @@ Unknown grid coverage, coefficient direction or normalization is an admission ga
 not permission to interpolate, conjugate, invert or fill missing values with one.
 
 The [US-Pre-EQ side input](#us-pre-eq-input) defines capture/update admission and
-scheduled replay; typed synthetic replay is implemented, while binary parsers remain pending. No inferred-channel
+scheduled replay; typed synthetic and measured binary replay are implemented. No inferred-channel
 mode is introduced. A later
 channel hypothesis from `1/C` needs an explicit gain/delay reference, treatment of
 zeros/missing carriers, regularization and a separate validation/acceptance plan.
@@ -2404,15 +2458,16 @@ overlap, cadence and prefix/useful references. The full-index cosine form is
 a local derivation of that equation. Isolated-burst drain, optional simulation
 silence, buffer bounds and transactional streaming are explicit engineering
 policies, not additional MAC guard requirements. All eight TX stages now have
-architecture; source-table audits, scientific implementations and the integrated
-closed loop remain unfinished and require the existing approval/prerequisites.
+architecture, source-table acceptance and implemented scientific/closed-loop
+coverage; see the backend validation record for actual supported scope.
 
 ### US-Pre-EQ input
 
 [Return to CM-US-TX](#cm-us-tx-block-architecture) ·
 [TX-06 application](#tx-06-cm-pre-eq) · [RxMER side input](#rxmer-input).
 
-Status: **typed synthetic single-shot/multi-bank/update replay implemented; binary format admission remains pending**. This side input supplies corrective coefficients
+Status: **typed and measured single-shot/multi-bank/update replay implemented**.
+The [measured adapter](#measured-capture-admission) owns source formats/associations. This side input supplies corrective coefficients
 C to TX-06. It supplies neither a physical channel H to CH-SIM nor a known
 correction to normal CMTS-US-RX. The initial reference experiment still uses
 the explicit unity default and needs no capture.
@@ -2427,7 +2482,8 @@ the explicit unity default and needs no capture.
 | `crates/morgana/src/inputs/synthetic.rs` | Add (implemented) | Explicit synthetic JSON values and lineage materialization. |
 | `crates/phy/tests/measurement_playback.rs` | Add (implemented) | Older probe bases, complete replacements, updates and boundaries. |
 | `crates/morgana/tests/experiment.rs` | Add (implemented) | Actual changed waveform/received-pilot recovery and joint preflight. |
-| `crates/morgana/src/inputs/pre_eq.rs` | Create (planned) | Original-preserving verified binary corrective capture/update admission. |
+| `crates/morgana/src/inputs/pre_eq.rs` | Add (implemented) | Original-preserving major1 bank/update observation decoding. |
+| `crates/morgana/src/inputs/measured.rs` | Add (implemented) | Source/control association and existing whole-bank playback admission. |
 
 Register these leaves under the existing planned measurement/configuration/
 transmitter/facade module roots. No empty source placeholders represent readiness; actual synthetic operations
@@ -2507,8 +2563,9 @@ original files to 16 MiB each and 64 MiB per batch. Bound aggregate raw update
 values to 1,048,576 as well; check allocation/work arithmetic before decoding or
 deriving banks. Store bounded event references, not a new N-element bank per
 emitted symbol or an unbounded generation cache. These are engineering limits,
-not DOCSIS requirements; synthetic fixtures/budgets are implemented, while capture
-byte/association admission remains separate work.
+not DOCSIS requirements. Synthetic and captured association/replay are now
+implemented; the measured adapter uses stricter actual per-format byte caps and
+a16MiB complete-plan/provenance bound as documented above.
 
 **Relationship to multi-RxMER.** Both inputs can be inspected and accepted
 independently. Optional capture/probe pairing requires explicit identities and
@@ -2562,8 +2619,8 @@ tracks all six stage contracts, accepted synthetic models and remaining capture 
 
 The table is the linked stage index for the diagram. All six stages have
 architecture and implementation for the admitted synthetic modes below.
-Unity passed before the impairment extensions. Capture-based admission and broader
-composition remain separately pending.
+Unity passed before the impairment extensions. Bounded capture admission now
+projects through those owners; broader composition remains unsupported.
 
 | Stage | Responsibility / output | Architecture and initial mode |
 | --- | --- | --- |
@@ -2635,7 +2692,8 @@ errors, partial status and sample ordering after the public Rust operations exis
 
 [Return to channel stages](#channel-stage-sequence).
 
-Status: **typed synthetic playback and bounded major2 binary decoding are implemented; measured association/playback and UI remain pending**.
+Status: **typed/major2 capture decoding, measured association and bounded playback are implemented; UI remains pending**.
+See the [measured adapter](#measured-capture-admission) for its exact source profile.
 Use the reference workbench's separate RxMER input concept: select one or more
 local inputs, inspect original/combined values, choose policy, then Apply an
 accepted immutable draft. A future focused editor/viewer opens from this input;
@@ -2702,9 +2760,9 @@ to ideal BPSK (PHY I20 §9.4.8), separate from injected channel/noise truth.
 | `bindings/python/src/capture.rs`, `bindings/python/src/lib.rs`, `bindings/python/python/morgana/__init__.py`, `bindings/python/python/morgana/__init__.pyi` | Edit (existing) | Native conversion/exports and exact runtime declarations. |
 | `bindings/python/tests/test_rxmer_capture.py` | Add (implemented) | Actual native consumer, errors, ownership and Rust-process parity. |
 | `tools/python/check_native.py`, `tools/python/build_wheel.py` | Edit (existing) | Reuse actual native/artifact gates and add independent RxMER reference. |
-| `docs/user/rxmer-captures.md` | Add (implemented) | Paired API usage, provenance, limits and pending associations. |
+| `docs/user/rxmer-captures.md` | Add (implemented) | Paired API usage, provenance, limits and separate model association. |
 
-**Code paths and pending adapters (repository-relative).**
+**Code paths and model adapters (repository-relative).**
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
@@ -2713,7 +2771,7 @@ to ideal BPSK (PHY I20 §9.4.8), separate from injected channel/noise truth.
 | `crates/morgana/src/inputs/synthetic.rs` | Add (implemented) | Versioned synthetic target JSON materialization. |
 | `crates/phy/tests/measurement_playback.rs` | Add (implemented) | Independent power/weights/offsets/null/duplicate/budget cases. |
 | `crates/phy/tests/rxmer_channel.rs` | Add (implemented) | Physical-bin draw-order, actual useful outputs and chunk invariance. |
-| `crates/morgana/src/inputs/rxmer.rs` | Add (implemented) | Original-preserving major2 decoding; future extension supplies measured association. |
+| `crates/morgana/src/inputs/rxmer.rs` | Add (implemented) | Original-preserving major2 decoding; measured.rs owns explicit association. |
 
 The existing planned measurement/configuration/signal-processing/channel roots
 register the PHY leaves. Future facade registration extends
@@ -4251,9 +4309,10 @@ pause/resume preserves source, randomizer, interleaver and receiver state.
 Retain `crates/ldpc` as the waveform-independent codec. The
 [planned code layout](#planned-code-layout) defines the proposed `crates/phy`
 module roots; the per-stage tables above name their implementation/test files.
-These are actual backend responsibilities; pending capture/UI entries stay explicitly planned.
+These are actual backend responsibilities; measured adapters are implemented and
+UI/wider-mode execution remains explicitly planned.
 `crates/morgana` exposes their typed Rust facade
-and reports; the CLI and future Python wrapper consume it. Numerical reuse from
+and reports; the CLI and native Python wrapper consume it. Numerical reuse from
 the reference toolkit follows a reviewed local-adaptation plan with preserved
 licenses and independently checked upstream behavior; no project dependency
 is introduced by the accepted reuse strategy.
@@ -4341,7 +4400,8 @@ bytes and call the same Rust loaders; the engine accepts typed domain inputs.
 ### API modules and planned stub paths
 
 Every path is repository-relative; the table records actual backend ownership.
-Binary capture adapters remain explicitly pending in their input sections.
+Binary adapters and measured admission are implemented in the bounded profiles
+described under [capture admission](#measured-capture-admission).
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
@@ -4391,7 +4451,7 @@ are re-exported by `crates/morgana/src/api/mod.rs`; Rust ownership is canonical.
 | `RunControl::new/pause/resume/cancel/progress` | `RunControl()`, `pause/resume/cancel/progress_json` | Shared bounded control; acknowledged pause retains stack and excludes paused time. |
 | `ConfigurationDocument::from_json/to_json/inventory` | Same names | Full retained named inventory; unknown versions/fields reject. |
 | `UcdCapture::from_mac_management/original_bytes/original_sha256/to_json` | Same names | Bounded offline structural inspection; raw Rust header/TLV getters and equivalent native JSON, immutable originals and zero-based error offsets. No configuration/run side effects. |
-| `RxmerCapture::from_pnm/header/raw_readings/readings_db/ccap_id_text/pre_eq_enabled/original_bytes/original_sha256/to_json` | Same query names except raw header via JSON | Immutable bounded CCAP major2 decoded observation, explicit raw/optional metadata, units/nulls/source offsets; measured association remains pending. |
+| `RxmerCapture::from_pnm/header/raw_readings/readings_db/ccap_id_text/pre_eq_enabled/original_bytes/original_sha256/to_json` | Same query names except raw header via JSON | Immutable bounded CCAP major2 decoded observation, explicit raw/optional metadata, units/nulls/source offsets; separate measured-plan admission performs association. |
 | `ConfigurationDocument::original_bytes/original_sha256` | Same names | Exact admitted source bytes and SHA-256, distinct from canonical serialization. |
 | `PreEqBank::unity/normalized/coefficients/generation` | Same names/property | One numerical normalization/application owner; full physical indices retained. |
 | `SyntheticRxmer::new(config,id,db)` | `SyntheticRxmer(config,id,mer_db)` | Explicit synthetic unit-probe-reference input; nulls stay null. |
@@ -4409,8 +4469,12 @@ Actual native tests also cover SIGINT, interpreter release, Busy, cancellation,
 pause/resume, atomic load and report lifetimes. See the user guide for runnable
 paired examples, limits and the separate optional adapter gate.
 
-**Still proposed capture APIs.** `NamedInput`, capture IDs and the following
-signatures are design stubs only, not exported callable operations:
+**Still proposed convenience APIs.** Input-mode delivery now uses the atomic
+measured candidate above: complete captured single/multiple selections and update
+lineage are admitted together before accepted state changes. `NamedInput`,
+per-file mutators and the following signatures remain convenience proposals,
+not required substitutes for the implemented measured-plan operation. No
+input-mode capability is omitted by that interface choice:
 
 | Proposed Rust | Proposed Python | Pending gate |
 | --- | --- | --- |
