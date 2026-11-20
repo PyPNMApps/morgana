@@ -335,7 +335,7 @@ maps these requirements to owners and planned checks:
 
 
 Status: **planned**. ARCH-TX-00 defines the transmitter block; ARCH-TX-01 through
-ARCH-TX-03 expand its first three stages below. The isolated LDPC codec is a
+ARCH-TX-04 expand its first four stages below. The isolated LDPC codec is a
 dependency; it does not make this transmitter implemented. CM-US-TX converts meaningful
 PRBS source bits and an accepted upstream grant into complex baseband samples
 delivered to the Channel Simulator.
@@ -417,7 +417,7 @@ run and invalidates older observations by generation. Explicit cancellation
 retains completed work and reports partial emission rather than treating
 generated codewords as proof that their waveform was delivered.
 
-Detailed contracts below cover TX-01 through TX-03. TX-04 through TX-08 remain
+Detailed contracts below cover TX-01 through TX-04. TX-05 through TX-08 remain
 overview contracts and will be expanded one at a time in processing order. The local
 [CM-US-TX feature record](development/features/cm-us-tx/design.md) tracks those
 architecture steps separately from implementation.
@@ -993,20 +993,222 @@ upstream algorithms. No reference implementation is copied or linked here.
 
 #### TX-04: Cell-word construction and QAM mapping
 
-**Planned code paths (repository-relative).**
+[Return to TX stage overview](#internal-stage-sequence).
+
+Status: **architecture defined; implementation remains planned**. ARCH-TX-04
+converts TX-03's ordered randomized bits into normalized, labeled complex cells.
+It does not complete the shared resource permutation, receiver or waveform.
+
+**Planned code paths (repository-relative).** All files below are **create
+(planned)**; module registration uses the roots in the
+[planned code layout](#planned-code-layout). No code/data files are created now.
 
 | Path | Disposition | Responsibility |
 | --- | --- | --- |
-| `crates/phy/src/signal_processing/qam.rs` | Create (planned) | Shared constellation/bit-label/normalization algorithms; exact mapping awaits this stage design. |
-| `crates/phy/src/transmitter/mapping.rs` | Create (planned) | Group ordered randomized bits by accepted cell loading and map cell words. |
-| `crates/phy/tests/qam_mapping.rs` | Create (planned) | Independent bit-label, normalization and varying-loading cases. |
+| `crates/phy/src/configuration/modulation.rs` | Create (planned) | Checked constellation/role/loading models, endpoint requirements and separate implementation availability. |
+| `crates/phy/src/signal_processing/qam_tables.rs` | Create (planned) | Immutable label-indexed integer coordinates, Table 54 energy constants and source identifiers. |
+| `crates/phy/src/signal_processing/qam.rs` | Create (planned) | Shared checked lookup and normalization used by TX, future RX and instruments. |
+| `crates/phy/src/resources/grid.rs` | Create (planned) | Accepted cell roles/loading and the shared grant-cell descriptor contract. |
+| `crates/phy/src/resources/permutation.rs` | Create (planned) | Single address/visit-order owner shared with TX-05 and RX-05; its detailed algorithm remains ARCH-TX-05 work. |
+| `crates/phy/src/transmitter/mapping.rs` | Create (planned) | Stateful cell-word assembly, bit-range association, bounded normalized output and partial status. |
+| `crates/phy/tests/qam_mapping.rs` | Create (planned) | Independently transcribed label/energy/shape and invalid-lookup cases. |
+| `crates/phy/tests/tx_mapping.rs` | Create (planned) | Mixed cell loading, split words, plan/bit conservation, failures and observer neutrality. |
 
+**Placement and shared address plan.** TX-04 and TX-05 are functional boundaries
+inside one upstream operation. The mapper needs the next destination cell's role
+and loading from the shared grant-cell visit plan before consuming its bits.
+That plan derives from accepted resources and the upstream interleaving address
+sequence, not a frequency-sorted list or the modulation of the previous cell.
+Its run/configuration/grant identity and sum of data-bearing cell loadings must
+agree with TX-01/02/03's coded capacity `G`.
 
-Status: **placeholder; detailed architecture and implementation remain planned**.
-Preserve randomized-bit order and accepted loading while constructing cell words
-and mapping their normalized constellation points.
-ARCH-TX-04 stays unchecked until its detailed contract and acceptance criteria
-are defined. [Return to TX stage overview](#internal-stage-sequence).
+TX-04 emits loaded cells in that visit order, with their planned destination
+coordinates as metadata. TX-05 writes them into the physical grid and generates
+known pilots; exclusions and zero-valued resources remain explicit. The stages
+may be fused without duplicating address generation or changing either tap's
+meaning. Do not add downstream bit demultiplexing, parity interleaving, twist or
+another bit permutation to construct upstream cell words. TX-05 must supply its
+verified visit plan before a grant-integrated TX-04 implementation can run.
+
+```mermaid
+flowchart LR
+    B[TX-03 ordered randomized bits] --> VALIDATE[Validate identity, offset and binary input]
+    PLAN[Shared accepted cell visit plan] --> WORD[Assemble next m-bit cell word]
+    VALIDATE --> WORD
+    WORD --> LOOKUP[Exact Annex A label lookup]
+    LOOKUP --> SCALE[Apply Table 54 reference scale]
+    SCALE --> OUT[Owned mapped cells with bit ranges and planned coordinates]
+    OUT --> FRAME[TX-05 physical grid and known pilots]
+    OUT -. passive snapshots .-> QAM[Shared QAM Analyzer]
+```
+
+**Supported roles and loading.** Let `m` be bits per cell and `M = 2^m` be its
+constellation size. Never use these quantities interchangeably. For the pinned
+ordinary upstream contract, data loading is 2 through 12 bits: QPSK, 8-QAM,
+16-QAM, 32-QAM, 64-QAM, 128-QAM, 256-QAM, 512-QAM, 1024-QAM, 2048-QAM and
+4096-QAM. BPSK is used for known pilots and complementary data, not ordinary
+data cells. Zero-valued minislots are a separate inactive role, not a zero-bit
+constellation or a request to emit label zero. Annex A excludes 8192-QAM and
+16384-QAM from upstream; their downstream tables do not enable upstream use.
+
+PHY3.1 §7.4.7.1 requires the CM modulator to support the listed upstream formats.
+The CMTS demodulator MUST support the listed formats through 1024-QAM and SHOULD
+support 2048-QAM and 4096-QAM. Preserve those endpoint distinctions in capability
+metadata. MORGANA's actual mapping, demapping and grant-integrated coding support
+are separate implementation states; every mapping here is currently planned.
+An accepted run requires all of its data/complementary orders to be implemented
+at the required endpoints. A known order never permits a substitute constellation.
+
+| Cell role | Bit consumption and mapping |
+| --- | --- |
+| Ordinary data | Consume `m_data` randomized bits using the accepted minislot's data constellation. |
+| Complementary data | Consume `m_comp = max(m_data - 4, 1)` randomized bits and use its own constellation. These bits are payload, including when `m_comp = 1` (BPSK). |
+| Known pilot | Consume no randomized grant bits. TX-05 supplies the prescribed known BPSK value using the same reference convention. |
+| Zero-valued minislot | Consume no payload bits; TX-05 sets every resource, including pilot/complementary positions, to zero. Exclude it from the interleaving plan. |
+| Excluded, unused or ungranted resource | Consume no payload bits here; preserve its distinct resource role for framing. |
+
+The complementary loading rule follows §7.4.16, PDF p102: a 12-bit data cell uses
+8-bit complementary data, a 7-bit data cell uses 3-bit complementary data, and a
+4-bit data cell uses 1-bit complementary data. Loading is constant per resource
+type within one minislot; different minislots may differ. Validate the profile
+and the cell descriptors against this rule before consuming input, rather than
+accepting an independently inconsistent complementary order.
+
+**Cell-word and reference convention.** For a cell beginning at coded offset `b`,
+assign `y_i = randomized[b+i]` for `i = 0..m-1`, then form
+`label = sum(y_i * 2^(m-1-i))`. Thus the first incoming bit is the MSB. A label is
+an integer in `[0, M)`, proposed storage `u16`; validate before narrowing. Label
+values identify constellation points, not resource codes or source-byte order.
+Consecutive cells partition the ordered randomized stream, including randomized
+grant padding. A cell word may cross codeword, byte or incoming chunk boundaries;
+none of those boundaries add bits, reset grouping or restart the randomizer.
+
+Look up the exact integer `(I,Q)` for that label in the pinned Annex A figure.
+The horizontal axis is I/real and the vertical axis is Q/imaginary. Do not sort
+points geometrically, rotate/conjugate them, swap axes, infer labels from raw
+resource row order, or apply a generic Gray-code formula without full agreement
+with the relevant figure. In particular 8-QAM and cross-shaped 32-QAM need their
+own exact coordinates; odd-bit constellations are not fabricated square grids.
+Tables are compiled Rust reference data, with no runtime filesystem or Python
+generation/calculation dependency. RX and instruments share the same reference
+owner; tests require an independently transcribed source of expected labels.
+
+Let `E_ref` be the integer-coordinate mean energy represented by Table 54's
+scaling factor. Apply `z = (I + j*Q) / sqrt(E_ref)` to both axes exactly once:
+
+| Constellation | Bits per cell | `E_ref` | Scale on I and Q |
+| --- | ---: | ---: | --- |
+| BPSK | 1 | 1 | `1` |
+| QPSK | 2 | 2 | `1/sqrt(2)` |
+| 8-QAM | 3 | 10 | `1/sqrt(10)` |
+| 16-QAM | 4 | 10 | `1/sqrt(10)` |
+| 32-QAM | 5 | 20 | `1/sqrt(20)` |
+| 64-QAM | 6 | 42 | `1/sqrt(42)` |
+| 128-QAM | 7 | 82 | `1/sqrt(82)` |
+| 256-QAM | 8 | 170 | `1/sqrt(170)` |
+| 512-QAM | 9 | 330 | `1/sqrt(330)` |
+| 1024-QAM | 10 | 682 | `1/sqrt(682)` |
+| 2048-QAM | 11 | 1322 | `1/sqrt(1322)` |
+| 4096-QAM | 12 | 2730 | `1/sqrt(2730)` |
+
+The unit-energy statement is the average over all labels of a constellation.
+Individual symbol energies and finite-grant averages need not equal one. Never
+normalize each symbol or observed chunk to its measured energy. Pre-Eq, transmit
+power allocation, pilot construction and IFFT normalization belong to their own
+stages; this reference scale is not an RF output-power setting.
+
+Small unscaled label anchors, visually checked in Figures 99–103, are:
+
+| Constellation | MSB-first label | Integer `(I,Q)` before reference scale |
+| --- | --- | --- |
+| BPSK | `0`, `1` | `(1,0)`, `(-1,0)` respectively. |
+| QPSK | `00`, `01`, `10`, `11` | `(1,1)`, `(1,-1)`, `(-1,1)`, `(-1,-1)` respectively. |
+| 8-QAM | `000`, `101`, `110` | `(1,-3)`, `(-3,1)`, `(3,3)` respectively. |
+| 16-QAM | `0000`, `1111` | `(3,3)`, `(-1,-1)` respectively. |
+| 32-QAM | `00000`, `11001` | `(3,5)`, `(-5,-3)` respectively. |
+
+For a visit sequence of three data cells in different minislots with loadings
+2, 3 and 5, the stream `10|101|11001` yields labels 2, 5 and 25 and the
+corresponding QPSK, 8-QAM and 32-QAM points above. The separators illustrate cell
+boundaries; they are not stream bits. These anchors are local figure
+transcriptions, not externally supplied interoperability vectors. Full mapping
+acceptance still needs every label of every enabled order verified.
+
+**State, streaming and failures.** A proposed mapping context owns accepted
+identity/plan, next coded-bit offset, next data-bearing visit ordinal and at most
+11 pending bits for an incomplete 12-bit word. It does not own the PRBS source,
+PHY randomizer state, global profile mutations or receiver results. Proposed
+mapped-cell records own normalized finite I/Q, order/loading, label, role, cell
+ordinal, coded-bit range and planned destination identity. Retain bit-role span
+associations when one cell crosses a codeword/information/parity/padding boundary.
+
+Use checked bit/visit/offset arithmetic and explicit configured limits for pending
+plans, input chunks, output records and retained observations. Proposed per-call
+ceilings are 1,048,576 input bits and 16,384 emitted cells, with an independently
+bounded output queue; these are engineering work limits, not PHY constants.
+Admission computes the required output budget before committing any input or
+state. Callers split work under these limits and use backpressure instead of
+allocating a whole unbounded grant. Immutable shared reference tables are bounded
+by the explicitly admitted constellation set; no arbitrary order-sized allocation.
+
+Validate identity, exact input offset, bits, plan role/loading, mapping availability
+and output budget against candidate state, then commit together. Invalid, stale,
+duplicate, reordered, overlong or budget-exceeding calls preserve prior state and
+output; never silently drop bits, select a lower order or replace bad I/Q with
+zero. An incomplete cell can retain accepted bits across valid chunks, with no
+emitted point until its `m` bits exist. Empty calls are no-ops. Distinguish accepted
+input-bit progress from emitted complete-cell progress in diagnostics.
+
+End-of-grant succeeds only when exactly `G` bits have been consumed, every planned
+data-bearing cell has been emitted and no partial word remains. Do not add a final
+cell-fill bit; TX-01/02's padding already fills accepted coded capacity. Pause
+preserves the partial word and visit cursor. Cancellation retains earlier emitted
+cells and reports accepted-but-unemitted bits as partial; a fresh grant uses a new
+context without carrying those bits forward. Passive previews use an independent
+context or retained snapshots, and cannot advance the active stream.
+
+**Receiver, API and instrument boundary.** RX-05 reconstructs this cell order and
+RX-06 uses each cell's accepted order and the same immutable references to return
+MSB-first positive-for-zero soft bits. RX-07 then reverses grant randomization.
+Receiver recovery needs no TX labels, original bits or TX diagnostic snapshots.
+The inverse's noise/LLR metric policy remains RX-06 work; a TX mapping table does
+not establish an implemented demapper or full coding chain.
+
+The future public Rust facade owns loading/role/label validation and returned
+snapshots. Future Python/Qt adapters reuse those checks and finite numeric values;
+Python integers are range-checked before conversion, errors map to domain
+exceptions, and unavailable observations remain absent rather than fabricated.
+No callable API, export schema or saved-setting change is introduced here.
+
+The `tx.qam.mapped` tap shows actual normalized loaded cells before physical-grid
+assembly/Pre-Eq, selected by role, order and grant/range. Overlay the corresponding
+reference without rescaling actual points. Keep BPSK complementary data distinct
+from known pilots and label plans/previews as such. Missing retained history is
+unavailable. No time waveform exists at this boundary for the Spectrum Analyzer,
+and decoder iterations, BER and RxMER require their later processing/observers.
+
+**Implementation acceptance and evidence.** Verify every enabled table's label
+coverage, exact integer coordinates, uniqueness, finite normalized points and
+uniform-label energy, with independent expected values and explicit float
+comparison tolerances. Include 8-QAM/32-QAM and every admitted higher order;
+cardinality/energy or a map/demap round trip alone cannot prove correct labels.
+Test literal MSB-first/mixed-loading anchors, all complementary-loading pairs,
+zero-minislot/known-pilot non-consumption, split words at every bit position,
+codeword/chunk continuity, exact `G` conservation, bad plans/labels/bits, work
+bounds, stale/duplicate input, pause/cancel and observer neutrality. Grant-level
+placement acceptance depends on TX-05's independently checked permutation.
+
+Controlling source: CM-SP-PHYv3.1-I20-230419 §7.4.5.1, PDF p61 (shared
+address/loading contract, extracted prose); §7.4.6–7.4.7.2, pp64–65, Figure 13;
+§7.4.16, p102; Annex A/A.1, pp197–198, Figures 99–103; and A.2, p206, Table 54.
+Original PDF pp64–65/102/197–198/206 were rendered and visually inspected for
+bit order, roles, endpoint requirements, low-order labels and scale factors.
+Higher-order diagrams remain a complete-label implementation-time audit; no
+claim of their completed transcription follows from the verified scaling table.
+Read-only reference review informed checked label lookup, immutable references
+and bounded observations. Its downstream-only order list omits 8-QAM/32-QAM
+and includes higher orders unsuitable here. No source code or table assets are
+copied, and no external source checkout is linked or required by this design.
 
 #### TX-05: Pilots, OFDMA framing and interleaving
 

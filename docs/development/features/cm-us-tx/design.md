@@ -1,6 +1,6 @@
 # CM-US-TX block and stage design
 
-Status: transmitter overview and TX-01/02/03 architecture defined; integration is
+Status: transmitter overview and TX-01/02/03/04 architecture defined; integration is
 planned. Subsequent stages are expanded one at a time in processing order.
 Scope is documentation in this repository, with no links to another source
 checkout and no scientific, UI, CLI or binding implementation changes.
@@ -25,6 +25,10 @@ checkout and no scientific, UI, CLI or binding implementation changes.
 | TX-RAND-02 | Process exactly transmitted grant bits, including parity/pad, without extra clocks for shortening or pilots. | Grant stream adapter; role/length/offset conservation and arbitrary-chunk continuity. |
 | TX-RAND-03 | Preserve state on invalid input and completed output on bounded cancellation. | Independent job-owned contexts; stale/duplicate/overrun, budget, observer and pause/resume cases. |
 | TX-RAND-04 | Regenerate the mask independently at RX and reverse randomization on soft bits before LDPC. | Shared Rust mask algorithm with separate RX state; sign/magnitude/position and future adapter parity checks. |
+| TX-QAM-01 | Build MSB-first cell words in the shared resource-visit order with exact per-role loading. | Rust mapping adapter; mixed-loading, partial-word and coded-bit conservation cases. |
+| TX-QAM-02 | Use exact Annex A labels and Table 54 scaling for upstream BPSK/QPSK through 4096-QAM. | Shared Rust tables/lookup; independent literal vectors, cardinality and uniform-label energy checks, including 8-QAM and 32-QAM. |
+| TX-QAM-03 | Distinguish data, complementary data, known pilots and inactive resources. | Accepted profile/resource validation; complementary loading max(data bits minus four, one), no payload clocks for known pilots or zero minislots. |
+| TX-QAM-04 | Preserve bounded state/results on invalid input, backpressure and cancellation. | TX adapter; chunk invariance, stale/duplicate/overrun cases, partial status and passive QAM observations. |
 
 The canonical [CM-US-TX block](../../../architecture.md#cm-us-tx-block-architecture)
 owns the overview and
@@ -43,9 +47,17 @@ defines module roots. TX-01 maps to shared resource/grant planning and
 `crates/phy/src/transmitter/framing.rs`; TX-02 adds
 `crates/phy/src/transmitter/ldpc.rs` around the existing codec; TX-03 uses
 `crates/phy/src/bit_processing/randomizer.rs` with separate transmitter/receiver
-adapters. TX-04..08 have proposed file locations while their detailed designs
+adapters. TX-05..08 have proposed file locations while their detailed designs
 remain pending. Test filenames are recorded beside each owner in the canonical
 section rather than creating empty modules or duplicate algorithms.
+The [TX-04 section](../../../architecture.md#tx-04-cell-word-construction-and-qam-mapping)
+defines exact label/role/scaling contracts and stateful word assembly. It adds
+planned `crates/phy/src/configuration/modulation.rs`,
+`crates/phy/src/signal_processing/qam_tables.rs` and
+`crates/phy/tests/tx_mapping.rs` alongside the existing planned lookup/adapter
+paths. Shared `resources/permutation.rs` supplies the visit sequence; its detailed
+implementation remains dependent on ARCH-TX-05. The first four stage designs do
+not establish a running grant-integrated transmitter.
 
 ## Reference and source boundaries
 
@@ -82,10 +94,24 @@ Read-only reference inspection confirmed state/error handling and soft-inverse
 patterns. Its downstream cell-based arithmetic/reset is unsuitable for this
 upstream bit stream; no implementation is copied or linked.
 
+TX-04 uses §7.4.5.1, p61 (shared address/loading inputs, extracted prose),
+§7.4.6–7.4.7.2, pp64–65, Figure 13, §7.4.16, p102, and Annex A/A.1,
+pp197–198, Figures 99–103, plus A.2, p206, Table 54. Original PDF
+pp64–65/102/197–198/206 were rendered and visually inspected for roles,
+MSB-first words, endpoint capability distinctions, low-order labels and scale
+factors. Higher-order full-label audits remain implementation acceptance.
+The [publisher's I20 edition](https://account.cablelabs.com/server/alfresco/4eb470eb-aca3-4e64-af88-773b8c594fbd)
+identifies the same pinned document; local PDF review controls the design.
+Read-only reference review covered checked lookup, immutable embedding,
+provenance and independent-label/energy tests. Its downstream table set omits
+8-QAM/32-QAM and includes 8192-QAM/16384-QAM, so it cannot be adopted wholesale
+as the upstream capability set. No reference tables, source or third-party assets
+are copied; future actual reuse requires its own attribution/compatibility review.
+
 ## Dependency-ordered checklist
 
 - [x] ARCH-TX-NAV: Link all eight TX overview/output labels to unique local
-  sections; mark TX-04..08 as pending placeholders and add overview backlinks.
+  sections; mark TX-05..08 as pending placeholders and add overview backlinks.
 - [x] ARCH-TX-PATH: Name planned implementation/test files in every TX section
   and distinguish existing codec reuse from new PHY adapters.
 - [x] ARCH-TX-00: Standardize CM-US-TX and document the ordered internal stages.
@@ -97,7 +123,8 @@ upstream bit stream; no implementation is copied or linked.
   reuse boundaries, bounded assembly, inspection and independent validation.
 - [x] ARCH-TX-03: Define grant-seeded PHY randomization, precise register/first-bit
   behavior, bit coverage, bounded state, inspection and independent soft inverse.
-- [ ] ARCH-TX-04: Expand cell-word construction and QAM mapping.
+- [x] ARCH-TX-04: Define cell-word construction, exact label/scale/role contracts,
+  shared visit-order dependency, bounded mapping and independent acceptance.
 - [ ] ARCH-TX-05: Expand pilots, grant resource mapping and joint interleaving.
 - [ ] ARCH-TX-06: Expand CM Pre-Eq and its reference plane.
 - [ ] ARCH-TX-07: Expand IFFT geometry, bin order and normalization.
@@ -149,3 +176,13 @@ no external-checkout links. The development-workflow skill metadata check and
 PDE adoption hashes passed; the shared procedure/template match their scoped
 source inputs. This is documentation/checkpoint validation, not executed PHY
 randomizer, transmitter or receiver acceptance.
+
+For TX-04, `scripts/validate.sh` passed 20 skills, 281 local links, the existing
+23 Rust tests, 19 setup tests and 5 Git tests, formatting and Clippy. Focused
+documentation checks resolved 49 section links in changed files, retained all
+16 TX overview/output links and confirmed that TX-04's eight planned code/test
+paths remain absent. TX-05..08 remain placeholders; LDPC-01/02, grant integration
+and waveform implementation acceptance remain unchecked. `git diff --check`
+passed. PDF visual review supports the documented low-order anchors/scaling and
+role/bit-order contracts; it does not complete the higher-order full-label audit
+or execute the proposed mapper, streaming adapter, Python bindings or QAM UI.

@@ -35,8 +35,9 @@ covered seven block-level sections, eight TX stages and nine RX adapter rows.
 Nine existing code/test files and the root Cargo.toml resolved; all 81 proposed
 files in the complete inventory remained absent. The receiver table locates
 each adapter/test and identifies shared algorithms. No PHY/binding directories,
-source modules or Cargo registrations were created. TX-04..08 and scientific
-implementation milestones remain pending.
+source modules or Cargo registrations were created. At that layout-backfill
+checkpoint TX-04..08 and scientific implementation milestones remained pending;
+subsequent stage designs update the canonical architecture/checklist separately.
 
 Focused checks resolved 59 local section links, preserved all 16 TX overview/
 output links, and verified the updated PDE source hashes and matching procedure/

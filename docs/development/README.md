@@ -10,7 +10,8 @@
 - [CM-US-TX block architecture](../architecture.md#cm-us-tx-block-architecture),
   [TX-01 grant framing](../architecture.md#tx-01-grant-framing-and-fec-selection),
   [TX-02 LDPC encoding](../architecture.md#tx-02-ldpc-encoding-and-shortening),
-  [TX-03 PHY randomization](../architecture.md#tx-03-grant-seeded-phy-randomization)
+  [TX-03 PHY randomization](../architecture.md#tx-03-grant-seeded-phy-randomization),
+  [TX-04 cell-word/QAM mapping](../architecture.md#tx-04-cell-word-construction-and-qam-mapping)
   and [transmitter design/checklist](features/cm-us-tx/design.md)
 - [Official checklist](checklist.md)
 - [Foundation design and reuse/specification assessments](features/foundation/design.md)

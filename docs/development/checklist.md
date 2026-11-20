@@ -28,8 +28,11 @@ See [architecture](../architecture.md) and [foundation design](features/foundati
 - [x] ARCH-TX-03: Define the 23-bit grant randomizer, register/first-bit convention,
   bit coverage, state validation and independent RX soft inverse;
   see [TX-03](../architecture.md#tx-03-grant-seeded-phy-randomization). Architecture only.
-- [ ] ARCH-TX-04..08: Expand the remaining transmitter stages one at a time in
-  processing order, starting with cell-word construction and QAM mapping.
+- [x] ARCH-TX-04: Define MSB-first cell words, exact upstream constellation/role
+  loading, reference scaling, bounded mapping, QAM inspection and code/test paths;
+  see [TX-04](../architecture.md#tx-04-cell-word-construction-and-qam-mapping). Architecture only.
+- [ ] ARCH-TX-05..08: Expand the remaining transmitter stages one at a time in
+  processing order, starting with pilots, resource placement and joint interleaving.
 - [x] ARCH-RANGING-00: Reserve explicit future ranging/preamble and probing modes;
   see [placeholder](../architecture.md#deferred-burst-modes-and-preambles).
 - [x] SETUP-01..03: Adopt generic installer guidance and implement/test explicit
