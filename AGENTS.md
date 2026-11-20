@@ -11,6 +11,8 @@ The current scientific implementation is an unfinished checkpoint. Further
 simulation implementation requires explicit approval of the plan. Saving this
 checkpoint and adopting skills/instructions are authorized. A request for
 `commit-msg` means prepare the local save-helper command, not execute it.
+After each completed section, include the reviewed `commit-msg`
+command in the handoff automatically; the user does not need to ask again.
 Development-installer implementation and its generic foundation guidance update
 are authorized; executing system installation is a separate action.
 Do not commit, push, tag, publish or install system packages without an explicit

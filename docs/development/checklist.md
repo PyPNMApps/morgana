@@ -14,13 +14,19 @@ See [architecture](../architecture.md) and [foundation design](features/foundati
   see [PRBS design](features/prbs-source/design.md). Implementation stays planned.
 - [x] ARCH-TX-00: Define the CM-US-TX block, eight internal stages and typed
   observation boundaries; see [transmitter design](features/cm-us-tx/design.md).
+- [x] ARCH-TX-NAV: Link all TX overview/output labels to local stage sections,
+  retain pending placeholder status and adopt the generic rule in local/PDE
+  development-workflow skills and architecture templates.
 - [x] ARCH-TX-01: Expand grant framing/FEC selection, source/fill/shortening/pad
   accounting, bounded admission and stage acceptance. Documentation only.
 - [x] ARCH-TX-02: Define LDPC encoding/shortening, exact transmitted bit order,
   grant assembly, codec ownership, inspection and source-validation boundaries;
   see [TX-02](../architecture.md#tx-02-ldpc-encoding-and-shortening). Architecture only.
-- [ ] ARCH-TX-03..08: Expand the remaining transmitter stages one at a time in
-  processing order, starting with grant-seeded PHY randomization.
+- [x] ARCH-TX-03: Define the 23-bit grant randomizer, register/first-bit convention,
+  bit coverage, state validation and independent RX soft inverse;
+  see [TX-03](../architecture.md#tx-03-grant-seeded-phy-randomization). Architecture only.
+- [ ] ARCH-TX-04..08: Expand the remaining transmitter stages one at a time in
+  processing order, starting with cell-word construction and QAM mapping.
 - [x] ARCH-RANGING-00: Reserve explicit future ranging/preamble and probing modes;
   see [placeholder](../architecture.md#deferred-burst-modes-and-preambles).
 - [x] SETUP-01..03: Adopt generic installer guidance and implement/test explicit

@@ -13,6 +13,15 @@ Keep completed, partial and planned work distinct. At completion reconcile requi
 
 [Skill catalog](../README.md)
 
+## Architecture navigation
+
+Link every block/stage label in overview tables to its canonical local section.
+Give diagrams a companion linked index when their labels cannot be navigated
+reliably. Keep stage IDs stable and label future sections as placeholders;
+a working link does not mean the design or implementation is complete.
+Use the [navigation procedure](references/procedure.md#architecture-navigation)
+when adding stages or renaming headings.
+
 ## Standalone procedure
 
 Read the [operational guide](references/procedure.md) for inputs, implementation

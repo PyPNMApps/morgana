@@ -260,8 +260,8 @@ maps these requirements to owners and planned checks:
 
 ### CM-US-TX block architecture
 
-Status: **planned**. ARCH-TX-00 defines the transmitter block; ARCH-TX-01 and
-ARCH-TX-02 expand its first two stages below. The isolated LDPC codec is a
+Status: **planned**. ARCH-TX-00 defines the transmitter block; ARCH-TX-01 through
+ARCH-TX-03 expand its first three stages below. The isolated LDPC codec is a
 dependency; it does not make this transmitter implemented. CM-US-TX converts meaningful
 PRBS source bits and an accepted upstream grant into complex baseband samples
 delivered to the Channel Simulator.
@@ -274,6 +274,8 @@ receiver estimates are outside this block. A presentation adapter opens a
 transmitter workbench; opening an inspector does not start transmission.
 
 #### Internal stage sequence
+
+Each stage label in the tables below links to its local section.
 
 ```mermaid
 flowchart LR
@@ -290,14 +292,14 @@ flowchart LR
 
 | Stage | Responsibility and inspectable result |
 | --- | --- |
-| TX-01: grant framing | Derive usable grant bits and codeword sequence from accepted profile/resources; consume exact PRBS ranges and keep meaningful data, information fill and grant padding distinct. |
-| TX-02: upstream LDPC | Select long/medium/short mother codes; append shortening zeros, encode systematic information/parity, omit shortened zeros and account for remaining grant padding. No downstream BCH or ordinary-data puncturing. Expose code identity, retained length and encoded bits. |
-| TX-03: randomization | Randomize the encoded grant stream, including padding as specified, with accepted upstream seed/state. Reset the PHY randomizer at the grant boundary; never reset PRBS15 because a grant starts. |
-| TX-04: cell-word/QAM mapping | Group randomized bits in MSB-first cell order; map data and data-bearing complementary-pilot cells using their respective loading and normalized constellation references. |
-| TX-05: OFDMA framer/interleaver | Generate known BPSK pilots and edge/body patterns; allocate logical grant cells, perform the upstream joint time/frequency interleaving and map to physical carriers with exclusions/unused bins preserved. Export role/order/grid metadata. |
-| TX-06: CM Pre-Eq | Apply one complex corrective coefficient per carrier; identity coefficients initially. Keep the correction response distinct from an injected physical channel. |
-| TX-07: IFFT | Convert the complete physical frequency grid into complex baseband useful-symbol samples with explicit transform normalization and bin order. |
-| TX-08: sample assembly | Add configured CP/roll-off extension, apply the specified transmit window/overlap treatment, and emit correctly indexed burst/guard samples. Preserve state across arbitrary output chunk boundaries. |
+| [TX-01: grant framing](#tx-01-grant-framing-and-fec-selection) | Derive usable grant bits and codeword sequence from accepted profile/resources; consume exact PRBS ranges and keep meaningful data, information fill and grant padding distinct. |
+| [TX-02: upstream LDPC](#tx-02-ldpc-encoding-and-shortening) | Select long/medium/short mother codes; append shortening zeros, encode systematic information/parity, omit shortened zeros and account for remaining grant padding. No downstream BCH or ordinary-data puncturing. Expose code identity, retained length and encoded bits. |
+| [TX-03: randomization](#tx-03-grant-seeded-phy-randomization) | Randomize the encoded grant stream, including padding as specified, with accepted upstream seed/state. Reset the PHY randomizer at the grant boundary; never reset PRBS15 because a grant starts. |
+| [TX-04: cell-word/QAM mapping](#tx-04-cell-word-construction-and-qam-mapping) | Group randomized bits in MSB-first cell order; map data and data-bearing complementary-pilot cells using their respective loading and normalized constellation references. |
+| [TX-05: OFDMA framer/interleaver](#tx-05-pilots-ofdma-framing-and-interleaving) | Generate known BPSK pilots and edge/body patterns; allocate logical grant cells, perform the upstream joint time/frequency interleaving and map to physical carriers with exclusions/unused bins preserved. Export role/order/grid metadata. |
+| [TX-06: CM Pre-Eq](#tx-06-cm-pre-eq) | Apply one complex corrective coefficient per carrier; identity coefficients initially. Keep the correction response distinct from an injected physical channel. |
+| [TX-07: IFFT](#tx-07-ifft) | Convert the complete physical frequency grid into complex baseband useful-symbol samples with explicit transform normalization and bin order. |
+| [TX-08: sample assembly](#tx-08-sample-assembly) | Add configured CP/roll-off extension, apply the specified transmit window/overlap treatment, and emit correctly indexed burst/guard samples. Preserve state across arbitrary output chunk boundaries. |
 
 The boundaries carry three different representations: TX-01..03 operate on
 information/coded bits and explicit bit-role plans; TX-04..06 operate on loaded
@@ -308,14 +310,14 @@ meaning depends on the selected viewer.
 
 | Stage output | Retained identity and inspection |
 | --- | --- |
-| TX-01 grant plan | Ordered codewords, source ranges, information fill, shortening and grant padding; plan/bit inspector. |
-| TX-02 encoded grant | Actual systematic/parity bits, transmitted lengths and zero grant padding; bounded bit inspector. |
-| TX-03 randomized grant | Actual post-randomization bits with accepted seed/grant epoch; bounded bit inspector. |
-| TX-04 mapped cells | Actual symbol values, constellation/loading and logical cell identity; shared QAM Analyzer. |
-| TX-05 physical grid | Physical carrier/symbol coordinates with known-pilot, complementary-data, data and excluded/unused roles; shared QAM Analyzer. |
-| TX-06 Pre-Eq grid | Actual corrected carrier values and response reference plane; shared QAM Analyzer. |
-| TX-07 useful samples | Contiguous complex time samples per symbol, transform normalization and sample rate; shared Spectrum Analyzer. |
-| TX-08 burst samples | Actual windowed/assembled stream with sample indices and burst boundaries; shared Spectrum Analyzer and channel input. |
+| [TX-01 grant plan](#tx-01-grant-framing-and-fec-selection) | Ordered codewords, source ranges, information fill, shortening and grant padding; plan/bit inspector. |
+| [TX-02 encoded grant](#tx-02-ldpc-encoding-and-shortening) | Actual systematic/parity bits, transmitted lengths and zero grant padding; bounded bit inspector. |
+| [TX-03 randomized grant](#tx-03-grant-seeded-phy-randomization) | Actual post-randomization bits with accepted seed/grant epoch; bounded bit inspector. |
+| [TX-04 mapped cells](#tx-04-cell-word-construction-and-qam-mapping) | Actual symbol values, constellation/loading and logical cell identity; shared QAM Analyzer. |
+| [TX-05 physical grid](#tx-05-pilots-ofdma-framing-and-interleaving) | Physical carrier/symbol coordinates with known-pilot, complementary-data, data and excluded/unused roles; shared QAM Analyzer. |
+| [TX-06 Pre-Eq grid](#tx-06-cm-pre-eq) | Actual corrected carrier values and response reference plane; shared QAM Analyzer. |
+| [TX-07 useful samples](#tx-07-ifft) | Contiguous complex time samples per symbol, transform normalization and sample rate; shared Spectrum Analyzer. |
+| [TX-08 burst samples](#tx-08-sample-assembly) | Actual windowed/assembled stream with sample indices and burst boundaries; shared Spectrum Analyzer and channel input. |
 
 Retain the existing shared tap names; detailed later stages may add a typed tap
 only for an actual produced boundary. Bit arrays are not QAM or SA inputs, and
@@ -341,7 +343,7 @@ run and invalidates older observations by generation. Explicit cancellation
 retains completed work and reports partial emission rather than treating
 generated codewords as proof that their waveform was delivered.
 
-Detailed contracts below cover TX-01 and TX-02. TX-03 through TX-08 remain
+Detailed contracts below cover TX-01 through TX-03. TX-04 through TX-08 remain
 overview contracts and will be expanded one at a time in processing order. The local
 [CM-US-TX feature record](development/features/cm-us-tx/design.md) tracks those
 architecture steps separately from implementation.
@@ -379,6 +381,8 @@ preambles and probing pilots were identified in the pinned extraction at PDF
 pp89–95 and pp98–99; their detailed construction is not specified by this placeholder.
 
 #### TX-01: Grant framing and FEC selection
+
+[Return to TX stage overview](#internal-stage-sequence).
 
 **Purpose:** build a complete, deterministic upstream grant plan before consuming
 source bits. This is a PHY convergence/planning boundary, not a MAC scheduler.
@@ -524,6 +528,8 @@ remain outside this synthetic-grant path. DOCSIS 4.0 mode extensions require
 separate applicability review; this section does not claim full FDD/FDX support.
 
 #### TX-02: LDPC encoding and shortening
+
+[Return to TX stage overview](#internal-stage-sequence).
 
 Status: **architecture defined; transmitter integration remains planned**.
 ARCH-TX-02 uses the existing standalone codec as the numerical owner. It does
@@ -690,6 +696,220 @@ ordering, matrix dimensions/right-shift convention, the known long-table cell
 and shortening steps. This is not a completed cell-by-cell transcription audit.
 Stage metadata, bounded streaming and pre-emission checks are engineering
 contracts around the normative CM encoding/shortening behavior.
+
+#### TX-03: Grant-seeded PHY randomization
+
+[Return to TX stage overview](#internal-stage-sequence).
+
+Status: **architecture defined; implementation remains planned**. ARCH-TX-03
+defines the upstream data randomizer and its matching receiver inverse. It is
+separate from the PRBS15 payload source, pilot generation and channel noise.
+
+**Purpose and placement.** Randomize the ordered encoded-grant bits from TX-02
+before TX-04 groups them into loaded QAM cell words. The transform is additive
+binary XOR with a deterministic 23-bit-register sequence. It preserves length,
+bit order, grant offsets and all bit-role associations. The PHY polynomial is
+`x^23 + x^18 + 1`, with the seed supplied by accepted virtual-CMTS configuration.
+Actual UCD wire-field parsing remains outside this synthetic-grant path.
+
+```mermaid
+flowchart LR
+    CONFIG[Accepted seed and grant identity] --> LOAD[Clear and load register at grant start]
+    INPUT[TX-02 ordered encoded-grant chunk] --> VALIDATE[Validate identity, offset, length and bits]
+    LOAD --> MASK[Compute next bit from delays 18 and 23]
+    VALIDATE --> XOR[XOR each input bit with its mask bit]
+    MASK --> XOR
+    XOR --> COMMIT[Commit bounded output and next register state]
+    COMMIT --> NEXT[TX-04 randomized bits in the same order]
+```
+
+**Seed and first-bit convention.** Figure 7 in PHY3.1 §7.4.4 labels delay element
+1 with seed LSB and delay element 23 with seed MSB. Let `D1..D23` be those delay
+elements before a bit is processed. Load numeric seed bit 0 into `D1`, bit 17
+into `D18` and bit 22 into `D23`. For each encoded-grant position `j`:
+
+```text
+mask[j]       = D18 XOR D23
+randomized[j] = encoded[j] XOR mask[j]
+next D1       = mask[j]
+next Di       = old D(i-1), for i = 2..23
+```
+
+Compute the first mask from the loaded state, XOR the first input bit, then
+clock the register. Do not discard a warm-up sequence, emit seed bits as a
+prefix, output a single register tap in place of the XOR, or feed payload bits
+back into the register. The register evolution depends on the seed and number
+of processed bit positions, not on the coded data values.
+
+For a Rust numeric register `q` with bit 0 representing `D1`, the equivalent
+explicit convention is `m = ((q >> 17) XOR (q >> 22)) AND 1`, followed by
+`q_next = ((q << 1) AND 0x7fffff) OR m`. This expression fixes the internal
+representation; it does not specify a UCD byte-serialization format.
+
+| Loaded numeric seed | First mask bit | Register after one clock |
+| --- | ---: | --- |
+| `0x020000` (only D18 set) | 1 | `0x040001` |
+| `0x400000` (only D23 set) | 1 | `0x000001` |
+| `0x7fffff` (all 23 elements set) | 0 | `0x7ffffe` |
+
+These are locally derived Figure 7 first-step cases, not external reference
+vectors. Implementation requires longer independent literal vectors to catch
+phase, shift-direction and tap errors beyond the first clock.
+
+A proposed `PhyRandomizerSeed23` uses checked integer admission before conversion
+to `u32`; values must fit 23 bits. Never silently truncate a wider integer or
+substitute the PRBS15 source seed. Require an explicitly accepted seed; this
+section assigns no implicit modem/UCD default. The raw register primitive also
+has defined all-zero behavior: its mask remains zero. Do not copy PRBS15's
+nonzero rule into this primitive or silently repair a zero seed. Whether an
+actual UCD field permits that value requires its separate MULPI field review;
+a raw-state reference test does not establish wire-configuration conformance.
+
+**Bit coverage and reset boundary.** Process exactly the `G` encoded-grant bit
+positions from TX-02, in their accepted order:
+
+| Input role/resource | Randomizer behavior |
+| --- | --- |
+| Retained information, including information-fill ones | XOR and advance once per transmitted bit. Preserve role metadata; fill need not remain one after randomization. |
+| LDPC parity | XOR and advance once per parity bit, continuing the same grant sequence. |
+| Final zero grant padding | XOR and advance once per pad position. Zero padding is defined before this stage; its randomized output need not be zero. |
+| Omitted shortening coordinates | Not in the transmitted stream; consume no mask bits. |
+| Data-bearing complementary-pilot cells | Their payload bits are included in the grant stream and consume mask bits through ordinary ordered mapping. |
+| Known pilot cells, excluded/unused carriers and ungranted/idle resources | Not encoded-grant bit positions; do not consume mask bits or randomize their symbols here. |
+
+Clear/load once at the start of each admitted grant, including a later grant
+using the same seed. Codeword, byte, QAM-cell, minislot, OFDMA-frame and transport-
+chunk boundaries inside a grant do not reset this state. TX-04/05 keep one
+consistent address/loading plan; they cannot insert extra randomizer clocks
+because a grid contains a pilot or an excluded carrier. No-transmission grants
+produce no randomized data, and the next actual grant starts from its own seed.
+PRBS15 payload continuity remains independent across all these grant resets.
+
+**Stateful interface, bounds and failures.** The proposed Rust PHY bit-processing
+owner contains one mask-generation algorithm, used with independently owned TX
+and RX state. A grant context records accepted run/configuration/grant identity,
+seed, capacity `G`, next coded-bit offset and active/complete/aborted status.
+Begin-grant is explicit; repeating it to restart an active grant is an error.
+
+A proposed `RandomizedGrantChunk` contains owned 0/1 output values, first
+coded-bit offset, matching configuration/grant identity and inherited role/range
+metadata. Optional before/after state and mask snapshots are diagnostics with
+bounded retention, not mandatory copies of the entire mask stream. Ordinary RX
+processing does not consume TX register snapshots or original coded bits.
+
+Each transform checks active identity, exact next offset, binary input, remaining
+grant capacity and checked counter/allocation arithmetic before changing state.
+Use a configured per-call bit budget no greater than 1,048,576; this is a proposed
+application work limit, not a PHY limit. Process larger grants through ordered
+calls with bounded queues and constant-size register state. Empty input produces
+empty output without clocking, reseeding or changing counters.
+
+Perform a chunk against candidate state, then commit its output and next state
+together after admission succeeds. Invalid/stale/duplicate/reordered chunks,
+overruns and exhausted output budgets preserve the prior state and results;
+they never trigger a phase search, hidden rewind or automatic reset. If an earlier
+prefix was already handed downstream, retain that actual progress on a later
+failure and mark the grant partial. Do not manufacture missing bits to reach `G`.
+
+Pause/resume keeps the live register and offset. Cancellation stops new work at
+a bounded boundary and retains completed output; a fresh run or new grant uses
+a new context and seed load. Preview/inspection reads completed snapshots or a
+separate state copy without advancing the active stream. Constant-size state
+does not remove the need to bound chunk buffers, queues and retained views.
+
+**Matching RX-07 inverse.** After resource deinterleaving and soft demapping,
+CMTS-RX uses the accepted grant configuration and its own register to regenerate
+the same mask at the same ordered coded-bit positions. The PHY seed is legitimate
+receiver configuration; it is separate from hidden PRBS payload truth.
+For natural-log `L = log(P(randomized_bit=0)/P(randomized_bit=1))`, return `L`
+when the mask is zero and `-L` when it is one. Preserve finite magnitude, zero
+confidence and caller buffers; a hard-decision diagnostic can instead XOR its
+binary decisions with the same mask. Hard slicing must not replace the LLR path.
+
+RX-07 walks the planned grant positions, including padding, then removes grant-
+only padding before codeword decoding. It restores encoded-bit order before
+RX-08 inserts known-zero shortening priors and invokes LDPC. Do not run this
+inverse after LDPC or advance it for omitted shortening zeros. Missing received
+cells must retain their planned positions through the receiver's erasure/validity
+contract; compacting available LLRs would shift every subsequent mask position.
+A missing/reordered chunk is an explicit state/coverage failure, not permission
+to guess phase. Receiver synchronization details remain a later RX design.
+
+Rust owns seed validation, masks, bit XOR and LLR sign operations. The future
+public Rust facade returns typed errors and owned snapshots; future Python/Qt
+adapters reuse it with matching integer/bit/finite-LLR validation and optional-
+value semantics. This section adds no callable methods, saved settings or report
+fields; those changes require their own versioned API work when implemented.
+
+**Stage view and acceptance.** Show accepted seed in decimal/hex with its 23-bit
+width, fixed polynomial/tap convention, grant identity, processed/remaining count
+and complete/partial status. A bounded bit inspector can pair input, mask and
+output at exact grant offsets, with codeword/pad roles retained. Live register
+state is read-only diagnostic data. Pre-run previews are labeled as plans;
+unretained history is unavailable. This stage supplies bits, not QAM points or
+time samples for SA, and has no decoder-iteration or RxMER metric.
+
+Implementation acceptance requires independently derived literal masks for
+multiple seeds, explicit first-bit/shift tests, zero-register reference behavior,
+bit-exact XOR and soft-inverse checks. Cover all transmitted roles, final pad,
+omitted-zero/pilot non-consumption, repeated equal-seed grants, different-seed
+grants, continuity across every internal boundary, empty/rejected calls, bounds,
+counter limits, pause/resume and passive observations. Test malformed/stale/
+duplicate/missing chunks and preservation of completed prefixes on cancellation.
+An XOR round trip alone cannot establish the right polynomial, phase or reset
+rule; full FEC/source recovery remains separate closed-loop acceptance.
+
+Evidence: CM-SP-PHYv3.1-I20-230419 §7.4.1.2–3, PDF p50, and §7.4.4,
+Figure 7, PDF p58. The original PDF pp50/58 were rendered and visually
+checked: Figure 6 identifies scrambled FEC codewords and scrambled minislot
+padding; Figure 7 fixes grant reset, seed loading, delay-element labels, taps
+and first-bit behavior. Ordering/coverage prose was also reviewed in the pinned
+extraction.
+The numeric-register convention and first-step examples above are engineering
+transcriptions of that figure, requiring independent implementation vectors.
+Only general state/validation/soft-inverse patterns from the read-only reference
+were reviewed; its downstream cell-field arithmetic and reset cycle are not
+upstream algorithms. No reference implementation is copied or linked here.
+
+#### TX-04: Cell-word construction and QAM mapping
+
+Status: **placeholder; detailed architecture and implementation remain planned**.
+Preserve randomized-bit order and accepted loading while constructing cell words
+and mapping their normalized constellation points.
+ARCH-TX-04 stays unchecked until its detailed contract and acceptance criteria
+are defined. [Return to TX stage overview](#internal-stage-sequence).
+
+#### TX-05: Pilots, OFDMA framing and interleaving
+
+Status: **placeholder; detailed architecture and implementation remain planned**.
+Place data and pilots on the accepted resource grid and define the joint
+time/frequency permutation with physical carrier roles preserved.
+ARCH-TX-05 stays unchecked until its detailed contract and acceptance criteria
+are defined. [Return to TX stage overview](#internal-stage-sequence).
+
+#### TX-06: CM Pre-Eq
+
+Status: **placeholder; detailed architecture and implementation remain planned**.
+Apply the accepted complex correction on its defined carrier/reference plane;
+the initial response is unity.
+ARCH-TX-06 stays unchecked until its detailed contract and acceptance criteria
+are defined. [Return to TX stage overview](#internal-stage-sequence).
+
+#### TX-07: IFFT
+
+Status: **placeholder; detailed architecture and implementation remain planned**.
+Transform the complete frequency grid into useful complex samples with
+explicit bin order, geometry and normalization.
+ARCH-TX-07 stays unchecked until its detailed contract and acceptance criteria
+are defined. [Return to TX stage overview](#internal-stage-sequence).
+
+#### TX-08: Sample assembly
+
+Status: **placeholder; detailed architecture and implementation remain planned**.
+Define CP, roll-off, window/overlap, guard treatment and indexed burst output
+across processing chunks.
+ARCH-TX-08 stays unchecked until its detailed contract and acceptance criteria
+are defined. [Return to TX stage overview](#internal-stage-sequence).
 
 ### Channel Simulator: unity stub first
 

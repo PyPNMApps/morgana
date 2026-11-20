@@ -336,5 +336,29 @@
     "skills/modular-bootstrap/SKILL.md",
     "skills/modular-bootstrap/references/procedure.md",
     "templates/tools/development-setup.md"
+  ],
+  "adoption_updates": [
+    {
+      "date": "2026-11-20",
+      "source_revision": "6f7197d17b0efc7a4be0d44a517d886b2f03009d",
+      "source_state": "user-authorized architecture-navigation guidance update; working-tree inputs pinned below",
+      "files": [
+        {
+          "source": "skills/development-workflow/SKILL.md",
+          "destination": "skills/development-workflow/SKILL.md",
+          "sha256": "d71313f67cbcceee4631a29f46ce97d5d3c25aced2c258da738e9efd7f6d37ce"
+        },
+        {
+          "source": "skills/development-workflow/references/procedure.md",
+          "destination": "skills/development-workflow/references/procedure.md",
+          "sha256": "c6e47c3ada140e8f6d6b372ad633c71ede93500fde4807ac4f882de737b1f3a8"
+        },
+        {
+          "source": "templates/project/architecture.md",
+          "destination": "templates/project/architecture.md",
+          "sha256": "02de19e12c618f400759c3bacc4bee4d3ba14ea1c3d548f84689a0b4c88d5207"
+        }
+      ]
+    }
   ]
 }

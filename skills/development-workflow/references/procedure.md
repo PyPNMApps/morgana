@@ -26,6 +26,39 @@ requested only a plan, stop after the design/checklist; documents do not authori
 6. At handoff reconcile requirements, architecture, checklist, user guidance and
    software facts. Report actual commands/results and any unsupported environment.
 
+## Architecture navigation
+
+1. Inventory the blocks/stages in each overview and reuse their existing canonical
+   sections. Link each overview label to the appropriate local heading or explicit
+   anchor; do the same in stage-output tables. For diagrams whose labels are not
+   reliably clickable, provide a companion Markdown table or index.
+2. Keep stage IDs and target anchors stable. If a stage has no detailed design yet,
+   add a short section with its responsibility and explicit planned/placeholder
+   status. Leave its design and implementation checklist items pending.
+3. Link detailed sections back to the overview when useful for a long staged design.
+   On a rename or move, update every incoming link and check for duplicate anchors.
+4. Verify fragment targets as well as file existence. A file-only link checker
+   cannot prove that a section exists. Review all overview rows against the section
+   inventory and confirm that links land on the intended stage.
+
+For example, the following neutral overview links to an actual section below:
+
+| Stage | Status |
+| --- | --- |
+| [STAGE-01: Transform](#stage-01-transform) | Placeholder; design pending. |
+
+### STAGE-01: Transform
+
+Placeholder: converts the accepted input representation to the next stage's
+representation. Detailed contracts and implementation remain planned.
+[Return to the overview](#architecture-navigation).
+
+Acceptance: every overview stage resolves to one intended local section, section
+IDs remain unique, and placeholders retain pending status. In a new project,
+start with the linked architecture template; in an existing project, add links to
+current owners without duplicating their design. Missing fragments, renamed
+headings, duplicate section IDs and placeholders marked complete are failures.
+
 ## Worked example
 
 R1: cancelling an import leaves the previous accepted document usable.

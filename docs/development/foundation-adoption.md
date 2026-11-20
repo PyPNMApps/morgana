@@ -38,6 +38,14 @@ Downstream PLC/NCP processing, Qt and release tooling were not imported.
 Full specification corpora are copied only under ignored local evidence; tracked
 skills retain metadata/topic maps/indexes, not bulk specification text.
 
+On 2026-11-20 the user authorized the generic architecture-navigation rule in
+PDE and its local adoption. Scoped additions update development-workflow, its
+procedure and the architecture template: overview/output labels link to local
+stage sections, diagrams have a companion linked index, future sections retain
+placeholder status, and renamed anchors require incoming-link checks. The source
+manifest retains the initial snapshot and separately pins the three updated PDE
+inputs by SHA-256. Local wording overrides and unrelated PDE work are preserved.
+
 Canonical skills are under `skills/`. Both `.agents/skills/` and `.claude/skills/`
 contain relative links to each canonical folder. Validate frontmatter, local links,
 resource closure, private-evidence exclusion and tool behavior with

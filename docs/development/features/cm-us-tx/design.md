@@ -1,6 +1,6 @@
 # CM-US-TX block and stage design
 
-Status: transmitter overview and TX-01/02 architecture defined; integration is
+Status: transmitter overview and TX-01/02/03 architecture defined; integration is
 planned. Subsequent stages are expanded one at a time in processing order.
 Scope is documentation in this repository, with no links to another source
 checkout and no scientific, UI, CLI or binding implementation changes.
@@ -10,6 +10,7 @@ checkout and no scientific, UI, CLI or binding implementation changes.
 | ID | Requirement | Owner / acceptance |
 | --- | --- | --- |
 | TX-ARCH-01 | Use CM-US-TX consistently and describe its eight internal stages. | Canonical architecture, README and development records; one ordered TX path. |
+| TX-NAV-01 | Link every TX overview/output label to its canonical local section. | Eight unique stage targets; future sections explicitly remain placeholders. |
 | TX-ARCH-02 | Distinguish bit, complex-cell/frequency-grid and time-sample boundaries. | Rust stage contracts; meaningful bit/QAM/SA instrumentation with bounded passive observations. |
 | TX-PLAN-01 | Derive coded capacity from accepted grant resources/loading, then choose the exact upstream codeword sequence. | Shared resource owner and Rust grant planner; independent capacity/threshold/order/borrowing cases. |
 | TX-PLAN-02 | Separate meaningful bytes, information-fill ones, shortening zeros, parity and zero grant padding. | Framing/codec boundary; conservation, byte-residue and source-consumption checks. |
@@ -19,6 +20,10 @@ checkout and no scientific, UI, CLI or binding implementation changes.
 | TX-FEC-01 | Preserve TX-01's codeword identity and encode retained information with systematic parity. | Existing Rust codec; source-verified upstream matrices, independent parity oracle and exact bit ordering. |
 | TX-FEC-02 | Append shortening zeros before encoding and omit only those coordinates afterward. | Codec shortening owner; all families, full/shortened boundaries and unchanged information-fill ones. |
 | TX-FEC-03 | Assemble ordered encoded words and final grant pad with bounded, explicit partial status. | Transmitter adapter; checked offsets/totals, chunk invariance, stale-input and failure/cancellation coverage. |
+| TX-RAND-01 | Use the Figure 7 23-bit seed/tap/first-bit convention and reset once per grant. | Rust PHY randomizer; independent literal vectors and repeated-grant/first-step checks. |
+| TX-RAND-02 | Process exactly transmitted grant bits, including parity/pad, without extra clocks for shortening or pilots. | Grant stream adapter; role/length/offset conservation and arbitrary-chunk continuity. |
+| TX-RAND-03 | Preserve state on invalid input and completed output on bounded cancellation. | Independent job-owned contexts; stale/duplicate/overrun, budget, observer and pause/resume cases. |
+| TX-RAND-04 | Regenerate the mask independently at RX and reverse randomization on soft bits before LDPC. | Shared Rust mask algorithm with separate RX state; sign/magnitude/position and future adapter parity checks. |
 
 The canonical [CM-US-TX block](../../../architecture.md#cm-us-tx-block-architecture)
 owns the overview and
@@ -26,7 +31,11 @@ owns the overview and
 owns grant planning. The [TX-02 section](../../../architecture.md#tx-02-ldpc-encoding-and-shortening)
 owns encoding, shortening and ordered grant assembly. The existing codec stays independent of
 source, grant resources, modulation and waveform processing. Further stage
-sections will define their detailed contracts rather than creating empty modules.
+sections are linked placeholders until their detailed contracts are developed;
+this does not complete their design or create empty modules.
+The [TX-03 section](../../../architecture.md#tx-03-grant-seeded-phy-randomization)
+owns grant-seeded bit randomization and the paired RX soft inverse. Its primitive
+belongs in the proposed Rust PHY bit-processing owner, independently of the codec.
 
 ## Reference and source boundaries
 
@@ -51,8 +60,22 @@ complete the all-cell matrix audit. Existing local definitions, sparse encoder,
 codec operations and shortening tests were inspected; no reference-project
 implementation or new numerical code is introduced.
 
+TX-03 adds original-PDF review of §7.4.4, Figure 7, p58. The seed LSB/MSB labels,
+delays 18/23, feedback direction, reset boundary and pre-clock first mask were
+checked visually. The numeric register expression and first-step cases in the
+canonical section are local engineering transcriptions, not externally supplied
+vectors. Original PDF p50, Figure 6 was also rendered and visually checked
+for scrambled FEC codewords and scrambled minislot padding; the pinned extraction
+provides the associated §7.4.1.2–3 ordering/coverage prose. Real UCD seed-field constraints remain separate
+MULPI evidence; raw 23-bit primitive behavior is not a wire-conformance claim.
+Read-only reference inspection confirmed state/error handling and soft-inverse
+patterns. Its downstream cell-based arithmetic/reset is unsuitable for this
+upstream bit stream; no implementation is copied or linked.
+
 ## Dependency-ordered checklist
 
+- [x] ARCH-TX-NAV: Link all eight TX overview/output labels to unique local
+  sections; mark TX-04..08 as pending placeholders and add overview backlinks.
 - [x] ARCH-TX-00: Standardize CM-US-TX and document the ordered internal stages.
 - [x] ARCH-TX-01: Define grant capacity, selection, framing/bit roles, admission,
   inspection and independent acceptance checks.
@@ -60,7 +83,8 @@ implementation or new numerical code is introduced.
   with explicit unsupported-mode dispatch and matching RX requirements.
 - [x] ARCH-TX-02: Define upstream LDPC encoding/shortening, transmitted ordering,
   reuse boundaries, bounded assembly, inspection and independent validation.
-- [ ] ARCH-TX-03: Expand grant-seeded PHY randomization.
+- [x] ARCH-TX-03: Define grant-seeded PHY randomization, precise register/first-bit
+  behavior, bit coverage, bounded state, inspection and independent soft inverse.
 - [ ] ARCH-TX-04: Expand cell-word construction and QAM mapping.
 - [ ] ARCH-TX-05: Expand pilots, grant resource mapping and joint interleaving.
 - [ ] ARCH-TX-06: Expand CM Pre-Eq and its reference plane.
@@ -103,3 +127,13 @@ contract and kept LDPC-01/02 implementation/source acceptance unchecked.
 23 Rust, 19 setup and 5 Git tests, formatting and Clippy. This is checkpoint
 regression evidence; grant-integrated TX-02 and future adapter parity remain
 unimplemented, and the known matrix-source discrepancy remains unresolved.
+
+For TX-03 and navigation, `scripts/validate.sh` passed 20 skills, 269 local
+links, 23 existing Rust tests, 19 setup tests and 5 Git tests, formatting and
+Clippy. Focused checks resolved 46 local section targets in changed Markdown,
+including all 16 TX overview/output labels to eight unique stage sections.
+TX-04..08 remain five explicitly pending placeholders. The new TX sections have
+no external-checkout links. The development-workflow skill metadata check and
+PDE adoption hashes passed; the shared procedure/template match their scoped
+source inputs. This is documentation/checkpoint validation, not executed PHY
+randomizer, transmitter or receiver acceptance.
