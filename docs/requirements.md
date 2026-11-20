@@ -211,9 +211,17 @@ Those declarations remain design stubs until implemented and validated.
 | <a id="req-nfr-01"></a>REQ-NFR-01 | Inputs, expanded plans, per-call work, cumulative runtime/memory, output queues and retained observations SHALL be bounded before allocation/execution. | Existing architecture budgets and independently checked overflow/exhaustion cases reject without state mutation; final cumulative job budgets are documented before execution support. | [Configuration limits](architecture.md#us-configuration), [API limits](architecture.md#api-lifecycle-errors-and-result-contracts); US-CONFIG-01, API-RUN-01. |
 | <a id="req-nfr-02"></a>REQ-NFR-02 | Reusable code/tooling SHALL preserve Apache-2.0 ownership and all applicable third-party notices, licenses and provenance. Reviewed reference-code adaptations SHALL remain locally owned and MUST NOT introduce a MERLIN crate/checkout/runtime dependency. | Dependency/reuse/package review retains actual copied notices and modifications; GPL presentation code does not enter the independent scientific core; private PDFs/captures/build outputs remain excluded. Each adaptation retains source/revision/notices/modifications and passes independent upstream checks. | [Foundation/reuse](development/features/foundation/design.md#foundation-02-merlin-reuse-assessment); FOUNDATION-03. |
 | <a id="req-nfr-03"></a>REQ-NFR-03 | Development setup SHALL require explicit intent and provide read-only check/dry-run behavior on declared targets. | Mode/host/pin/path/bounds/failure tests pass; inspection creates no caches or installs; apply obtains only missing declared prerequisites with pinned local Rust/locked sources; real fresh provisioning is verified separately. | [Setup requirements](development/features/development-setup/design.md#setup-01-requirements); SETUP-01..04. |
-| <a id="req-nfr-04"></a>REQ-NFR-04 | Validation and delivery records SHALL state actual evidence and preserve reproducible local tooling. | Required local gate passes with caches retained; hosted/native/package/interoperability claims require actual corresponding runs; prepared save commands do not imply commit/push/release execution. | [Checkpoint](architecture.md#checkpoint-and-target-overview), [Git workflow](git.md); FOUNDATION-03, official completion reviews. |
+| <a id="req-nfr-04"></a>REQ-NFR-04 | Validation and delivery records SHALL state actual evidence and preserve reproducible local tooling. | Required local gate passes with downloaded source/toolchain caches retained and generated Cargo outputs cleaned after testing; hosted/native/package/interoperability claims require actual corresponding runs; prepared save commands do not imply commit/push/release execution. | [Checkpoint](architecture.md#checkpoint-and-target-overview), [Git workflow](git.md); FOUNDATION-03, official completion reviews. |
 
 ## Accepted backend staging
+
+Capture inspection refines REQ-PNM-01, REQ-API-01/03/06 and REQ-NFR-01:
+the [UCD inspection boundary](architecture.md#upstream-configuration-capture-inspection)
+SHALL retain exact originals and offsets, enforce byte/record budgets and expose
+the same idle Rust/native Python operation. Inspection MUST NOT imply executable
+capture projection. US-CONFIG-FORMAT-01 verifies its source/fixture contract;
+US-CONFIG-INSPECT-01 delivers inspection; US-CONFIG-INPUT-01 retains the full
+association/projection and reassembly obligations.
 
 The [six accepted delivery decisions](architecture.md#accepted-backend-delivery-decisions)
 refine the requirements above: all-family codec audit; standalone local reference

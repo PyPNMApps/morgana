@@ -11,6 +11,8 @@ The user has approved starting the accepted backend plan in dependency order,
 through the bounded synthetic PRBS/TX/channel/RX stages, generic configuration
 and native Python, after the all-family LDPC source audit. Follow the
 official checklist and retain explicit evidence for each completed milestone.
+The subsequent request to continue authorizes the capture-format prerequisites
+and bounded Rust/native Python inspection, starting with upstream UCD messages.
 A request for `commit-msg` means prepare the local save-helper command, not
 execute it.
 After each completed section, include the reviewed `commit-msg`

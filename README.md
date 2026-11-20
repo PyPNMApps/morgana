@@ -39,6 +39,7 @@ flowchart LR
 | Channel | Exact unity, causal synthetic FIR, sample AWGN, integer delay, constant phase/CFO and restricted synthetic RxMER residual waveform. |
 | Side inputs | Explicit synthetic RxMER single/average/hold/interpolation; Pre-EQ fixed banks/snapshots/probe-based updates at symbol boundaries. Binary PNM import remains pending. |
 | Configuration | Versioned generic US Configuration JSON with named inventory/selection, source-field audit, strict bounded parsing and atomic shared endpoint projections. |
+| Capture inspection | Offline unfragmented Type51/version5 UCD header/TLV inspection through Rust/native Python, retaining exact originals, hashes and error offsets. Full captured-channel projection remains pending. |
 | APIs and controls | High-level Rust and optional native Python; preview/run, progress, pause/resume/cancel and owned complete/partial reports. |
 | Instruments | Bounded actual QAM/SA taps and independent matched-data MER; no invented history, calibrated RF power or target-to-RX shortcut. |
 
@@ -46,7 +47,7 @@ The [validation record](docs/development/features/backend-stages/validation.md)
 separates independent source/numerical cases, internal closed-loop results and
 actual native/wheel checks. There is no external interoperability, live MAC,
 modem-certification or installed-platform claim. Ranging/probe/testing waveform
-execution, binary PNM/configuration capture import, GUI and wider platforms remain
+execution, binary PNM import/full captured-configuration projection, GUI and wider platforms remain
 explicitly pending in the [checklist](docs/development/checklist.md).
 
 ## Run an experiment
@@ -69,6 +70,8 @@ scripts/cargo-local.sh run --locked -p morgana-cli -- ldpc short 420 42
 
 Use the [experiment guide](docs/user/upstream-experiments.md) for typed Rust/native
 Python examples, controls, model compatibility, units, limits and report semantics.
+The [UCD inspection guide](docs/user/capture-inspection.md) defines its exact
+byte envelope, examples and structural-only acceptance.
 The [example index](examples/README.md) includes generic JSON, mixed/zero loading,
 synthetic playback and inspection-only ranging/probe controls. Optional vendor
 numbers such as 224 are provenance rather than normative profile meanings.

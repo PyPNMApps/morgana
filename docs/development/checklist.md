@@ -288,10 +288,16 @@ These extensions do not become prerequisites for a typed synthetic reference exp
   Depends on: DEV-LOOP-01, USJSON-FORMAT/PRESETS-01, US-CONFIG-01.<br>
   Acceptance: Round trips, all-field conditional validation, inventory, atomic replacement and source-preserving projections pass in shared Rust; native Python parity closes under API-PARITY/DOCS-01.<br>
   Evidence: [backend stage validation](features/backend-stages/validation.md).
-- [ ] US-CONFIG-FORMAT-01: Verify any claimed upstream configuration/profile capture format before adding its importer.<br>
+- [x] US-CONFIG-FORMAT-01: Verify the declared upstream configuration/profile capture envelope before adding its importer.<br>
   Requirements: [REQ-PNM-01](../requirements.md#req-pnm-01), [REQ-CFG-05](../requirements.md#req-cfg-05). Architecture: [design/owner](../architecture.md#us-configuration).<br>
   Depends on: none.<br>
-  Acceptance: Pinned format evidence and lawful valid/invalid/boundary fixtures identify actual upstream semantics; synthetic JSON is not evidence of a PNM binary decoder.
+  Acceptance: Pinned MULPI Type51/version5 management/burst framing and lawful authored valid/invalid/boundary fixtures establish the declared raw envelope. Full semantic projection/association remains US-CONFIG-INPUT-01; synthetic JSON is not binary-decoder evidence.<br>
+  Evidence: [UCD source/fixture acceptance](features/capture-formats/validation.md).
+- [x] US-CONFIG-INSPECT-01: Implement bounded offline Type51 UCD structural inspection through Rust/native Python.<br>
+  Requirements: [REQ-PNM-01](../requirements.md#req-pnm-01), [REQ-API-03](../requirements.md#req-api-03), [REQ-API-06](../requirements.md#req-api-06), [REQ-NFR-01](../requirements.md#req-nfr-01). Architecture: [capture boundary and paths](../architecture.md#upstream-configuration-capture-inspection).<br>
+  Depends on: US-CONFIG-FORMAT-01.<br>
+  Acceptance: Exact source-derived headers, message/nested lengths, duplicate/unknown preservation, offset errors, allocation caps, unsupported multipart and independent actual Rust/Python consumer parity pass; no simulation mutation.<br>
+  Evidence: [UCD source/fixture acceptance](features/capture-formats/validation.md).
 - [ ] RXMER-FORMAT-01: Verify upstream RxMER format/reference/units/nulls.<br>
   Requirements: [REQ-PNM-01](../requirements.md#req-pnm-01). Architecture: [design/owner](../architecture.md#rxmer-input).<br>
   Depends on: none.<br>
@@ -300,6 +306,10 @@ These extensions do not become prerequisites for a typed synthetic reference exp
   Requirements: [REQ-PNM-01](../requirements.md#req-pnm-01), [REQ-PNM-03](../requirements.md#req-pnm-03). Architecture: [design/owner](../architecture.md#us-pre-eq-input).<br>
   Depends on: none.<br>
   Acceptance: Pinned format/scale/control evidence and lawful fixtures establish bank/update identity, reset and adjustment interpretation.
+- [ ] US-CONFIG-INPUT-01: Associate/project captured UCDs into source configuration with full source validation.<br>
+  Requirements: [REQ-PNM-01](../requirements.md#req-pnm-01), [REQ-CFG-05](../requirements.md#req-cfg-05). Architecture: [capture boundary](../architecture.md#upstream-configuration-capture-inspection).<br>
+  Depends on: US-CONFIG-INSPECT-01.<br>
+  Acceptance: Complete supported channel/burst semantics, explicit external timing/grant/CM/bandwidth association, multipart reassembly and legitimate endpoint views pass independent cases before any simulation acceptance.
 - [ ] RXMER-INPUT-01: Implement original-preserving typed RxMER admission, association and single/multiple power playback.<br>
   Requirements: [REQ-PNM-01](../requirements.md#req-pnm-01), [REQ-PNM-02](../requirements.md#req-pnm-02). Architecture: [design/owner](../architecture.md#rxmer-input).<br>
   Depends on: DEV-LOOP-01, RXMER-FORMAT-01.<br>
@@ -424,7 +434,7 @@ completion; deferred UI/wider-mode work remains subject to its explicit gates.
 | [REQ-CFG-02](../requirements.md#req-cfg-02) | US-CONFIG-01, USJSON-CORE/PROJECTION/PARITY-01 |
 | [REQ-CFG-03](../requirements.md#req-cfg-03) | USJSON-FORMAT/PRESETS-01, USJSON-CORE/PROJECTION/PARITY-01 |
 | [REQ-CFG-04](../requirements.md#req-cfg-04) | USJSON-COVERAGE-01, ARCH-RANGING-01 |
-| [REQ-CFG-05](../requirements.md#req-cfg-05) | US-CONFIG-01, PHY-01, USJSON-CORE/PROJECTION/PARITY-01, US-CONFIG-FORMAT-01 |
+| [REQ-CFG-05](../requirements.md#req-cfg-05) | US-CONFIG-01, PHY-01, USJSON-CORE/PROJECTION/PARITY-01, US-CONFIG-FORMAT-01, US-CONFIG-INPUT-01 |
 | [REQ-CFG-06](../requirements.md#req-cfg-06) | USJSON-FORMAT/PRESETS-01 |
 | [REQ-PRBS-01](../requirements.md#req-prbs-01) | SOURCE-01 |
 | [REQ-PRBS-02](../requirements.md#req-prbs-02) | SOURCE-01 |
@@ -453,7 +463,7 @@ completion; deferred UI/wider-mode work remains subject to its explicit gates.
 | [REQ-RX-07](../requirements.md#req-rx-07) | DEV-RX-07, WAVE-RX-01 |
 | [REQ-RX-08](../requirements.md#req-rx-08) | LDPC-01, LDPC-02, DEV-RX-08, WAVE-RX-01 |
 | [REQ-RX-09](../requirements.md#req-rx-09) | DEV-RX-09, WAVE-RX-01 |
-| [REQ-PNM-01](../requirements.md#req-pnm-01) | US-CONFIG-FORMAT-01, RXMER-FORMAT-01, PREEQ-FORMAT-01, RXMER-INPUT-01, PREEQ-INPUT-01 |
+| [REQ-PNM-01](../requirements.md#req-pnm-01) | US-CONFIG-FORMAT-01, RXMER-FORMAT-01, PREEQ-FORMAT-01, RXMER-INPUT-01, PREEQ-INPUT-01, US-CONFIG-INSPECT-01, US-CONFIG-INPUT-01 |
 | [REQ-PNM-02](../requirements.md#req-pnm-02) | RXMER-SYNTHETIC-01, RXMER-INPUT-01 |
 | [REQ-PNM-03](../requirements.md#req-pnm-03) | PREEQ-FORMAT-01, PREEQ-INPUT-01 |
 | [REQ-PNM-04](../requirements.md#req-pnm-04) | DEV-COMPOSE-01, WAVE-CH-02, CH-EXT-02 |
@@ -463,14 +473,14 @@ completion; deferred UI/wider-mode work remains subject to its explicit gates.
 | [REQ-OBS-04](../requirements.md#req-obs-04) | DEV-UI-PLAN-01 |
 | [REQ-API-01](../requirements.md#req-api-01) | API-RUST/INPUT-01, API-RUN-01, API-01 |
 | [REQ-API-02](../requirements.md#req-api-02) | API-PY/STUB-01, API-01 |
-| [REQ-API-03](../requirements.md#req-api-03) | API-RUST/INPUT-01, API-RUN-01, API-PY/STUB-01, API-PARITY/DOCS-01, API-01, DEV-PAUSE-01 |
+| [REQ-API-03](../requirements.md#req-api-03) | API-RUST/INPUT-01, API-RUN-01, API-PY/STUB-01, API-PARITY/DOCS-01, API-01, DEV-PAUSE-01, US-CONFIG-INSPECT-01 |
 | [REQ-API-04](../requirements.md#req-api-04) | API-PY/STUB-01, API-PARITY/DOCS-01, API-01 |
 | [REQ-API-05](../requirements.md#req-api-05) | API-PY/STUB-01, API-PARITY/DOCS-01, API-01 |
-| [REQ-API-06](../requirements.md#req-api-06) | DEV-RESULTS-01, USJSON-FORMAT/PRESETS-01, USJSON-CORE/PROJECTION/PARITY-01, API-PARITY/DOCS-01, API-01 |
+| [REQ-API-06](../requirements.md#req-api-06) | DEV-RESULTS-01, USJSON-FORMAT/PRESETS-01, USJSON-CORE/PROJECTION/PARITY-01, API-PARITY/DOCS-01, API-01, US-CONFIG-INSPECT-01 |
 | [REQ-LIFE-01](../requirements.md#req-life-01) | DEV-CORE-01, DEV-RUN-01, DEV-LOOP-01, API-RUN-01 |
 | [REQ-LIFE-02](../requirements.md#req-life-02) | DEV-RUN-01, DEV-LOOP-01, API-RUN-01 |
 | [REQ-LIFE-03](../requirements.md#req-life-03) | DEV-RUN-01, API-RUN-01, DEV-PAUSE-01 |
-| [REQ-NFR-01](../requirements.md#req-nfr-01) | DEV-CORE-01, DEV-RUN-01 |
+| [REQ-NFR-01](../requirements.md#req-nfr-01) | DEV-CORE-01, DEV-RUN-01, US-CONFIG-INSPECT-01 |
 | [REQ-NFR-02](../requirements.md#req-nfr-02) | DEV-LICENSE-01, FOUNDATION-03 |
 | [REQ-NFR-03](../requirements.md#req-nfr-03) | SETUP-04, FOUNDATION-03 |
 | [REQ-NFR-04](../requirements.md#req-nfr-04) | FOUNDATION-03, DEV-HANDOFF-01 |

@@ -9,9 +9,29 @@ use std::fmt;
 /// Shared API result consumed directly by Rust and native adapters.
 pub type ApiResult<T> = Result<T, ApiError>;
 
+/// Capture adapter failure category, shared by Rust and native Python.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CaptureFailure {
+    /// Malformed bytes within the explicitly selected envelope.
+    InvalidInput,
+    /// Recognized framing or version outside the delivered capture scope.
+    Unsupported,
+    /// Input or expanded record count exceeds the declared adapter budget.
+    ResourceLimit,
+}
+
 /// Expected public failure; scientific failed recovery remains a report.
 #[derive(Debug)]
 pub enum ApiError {
+    /// Offline capture failure at a zero-based position in the supplied bytes.
+    Capture {
+        /// Stable category; unsupported is distinct from malformed input.
+        category: CaptureFailure,
+        /// Stable field name without requiring diagnostic-string parsing.
+        field: &'static str,
+        /// Byte offset, including the first unavailable position for truncation.
+        offset: usize,
+    },
     /// An optional adapter failed outside scientific domain validation.
     AdapterFailure(&'static str),
     /// Configuration is absent; construction and preview never invent defaults.
@@ -28,6 +48,11 @@ impl ApiError {
     /// Native bindings use the same category and retain the human cause text.
     pub fn code(&self) -> &'static str {
         match self {
+            Self::Capture { category, .. } => match category {
+                CaptureFailure::InvalidInput => "InvalidInput",
+                CaptureFailure::Unsupported => "UnsupportedCapability",
+                CaptureFailure::ResourceLimit => "ResourceLimit",
+            },
             Self::AdapterFailure(_) => "Engine",
             Self::MissingSetting => "MissingSetting",
             Self::Serialization(_) => "Serialization",
@@ -62,7 +87,7 @@ impl std::error::Error for ApiError {
         match self {
             Self::Domain(error) => Some(error),
             Self::Serialization(error) => Some(error),
-            Self::MissingSetting | Self::AdapterFailure(_) => None,
+            Self::MissingSetting | Self::AdapterFailure(_) | Self::Capture { .. } => None,
         }
     }
 }

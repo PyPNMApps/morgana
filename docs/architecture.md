@@ -5,6 +5,8 @@ PRBS → all eight CM-US-TX stages → supported CH-SIM → all nine CMTS-US-RX 
 → independent comparison executes through Rust and optional native Python.
 Source-valid generic configuration JSON, synthetic RxMER/Pre-EQ replay,
 pause/resume/cancellation and actual QAM/SA reports are implemented.
+Offline Type51 UCD inspection preserves raw originals/header/TLVs separately from
+executable configuration; see the [capture boundary](#upstream-configuration-capture-inspection).
 Binary PNM capture import, GUI and broader receiver/MAC modes remain pending.
 See [current validation and limits](development/features/backend-stages/validation.md).
 The [foundation design](development/features/foundation/design.md)
@@ -117,6 +119,49 @@ independent pinned Rust dependencies remain valid; this decision selects no new
 external numerical library or shared cross-project crate. MERLIN inspection
 remains read-only. Preserve every actual copied/adapted notice and modification.
 
+## Upstream configuration capture inspection
+
+US-CONFIG-FORMAT-01 starts with one offline unfragmented Type51/version5 UCD
+MAC-management message. Its byte slice starts at DA and ends at the management
+payload, excluding the common DOCSIS MAC header and trailing CRC. MULPI I25
+§6.2.1.2 and §6.4.1–3, Figures30/32/34 and Tables26–29 establish octet order,
+message length, fixed fields, channel TLVs and IUC-prefixed burst TLVs.
+This is an explicit adapter envelope, not a new PNM file type or automatic
+PCAP/Ethernet/container detection. The [source/fixture audit](development/features/capture-formats/design.md)
+records the independent evidence before implementation.
+
+The Rust `UcdCapture::from_mac_management(bytes)` operation SHALL validate exact
+lengths and structural boundaries before retaining an immutable original. It
+SHALL preserve channel/attribute TLV order, duplicate and unknown values, exact
+offsets, raw fixed fields and SHA-256. Header type/version mismatch and valid
+multipart input SHALL return structured unsupported errors. Invalid fragment
+sequence, LLC and truncated TLVs SHALL return structured invalid-input errors.
+Error offsets are zero-based in the admitted byte span. Maximum input is65549
+bytes (14 plus the unsigned16-bit message length); at most1024 total TLVs are
+retained, counting burst wrappers and nested attributes. These are allocation
+bounds, not claims about normative maximum cable frames.
+
+Inspection SHALL remain idle and explicitly structural-only. It MUST NOT claim
+full channel conformance or supply missing clock/bandwidth/grant/CM association,
+select a profile, configure a simulation or start transmission. Multipart
+reassembly, MAC CRC validation, PCAP/transport decoding and full captured-UCD
+projection remain pending US-CONFIG-INPUT-01. Existing source-domain validators
+remain the execution authority. Python SHALL dispatch to the same Rust loader;
+both APIs expose exact originals/hash and versioned inspection JSON.
+
+| Path | Disposition | Responsibility |
+| --- | --- | --- |
+| `crates/morgana/src/inputs/ucd.rs` | Add (implemented) | Bounded immutable Type51 header/TLV/burst inspection. |
+| `crates/morgana/src/api/error.rs` | Edit (existing) | Structured capture error category, field and byte offset. |
+| `crates/morgana/src/inputs/mod.rs`, `crates/morgana/src/api/mod.rs` | Edit (existing) | Preserve existing exports and add the capture surface. |
+| `crates/morgana/tests/ucd_capture.rs` | Add (implemented) | Independent source-derived bytes, bounds and rejection cases. |
+| `examples/measurements/ucd/` | Add (implemented) | Frozen authored hex fixtures, hashes and source mapping. |
+| `crates/morgana/examples/inspect_ucd.rs` | Add (implemented) | Independently executed Rust inspection consumer. |
+| `bindings/python/src/capture.rs` | Add (implemented) | Native bytes conversion and dispatch only. |
+| `bindings/python/src/lib.rs`, `bindings/python/python/morgana/__init__.py`, `bindings/python/python/morgana/__init__.pyi` | Edit (existing) | Matching registration, exports, signatures and capture errors. |
+| `bindings/python/tests/test_capture.py`, `tools/python/check_native.py` | Add/Edit (implemented) | Actual runtime/error/lifetime and independent Rust-process parity. |
+| `docs/user/capture-inspection.md` | Add (implemented) | Paired usage and explicit envelope/support limits. |
+
 ## Planned upstream signal path and workbenches
 
 ARCH-01 defines the processing organization. The backend path and passive
@@ -173,7 +218,7 @@ validation and bounded orchestration stay Rust; adapters present owned results.
 | `crates/phy/src/instruments/mod.rs` | Add (implemented) | observer.rs, spectrum.rs and metrics.rs: bounded actual observations. |
 | `crates/phy/src/simulation/mod.rs` | Add (implemented) | request.rs, control.rs, run.rs and report.rs: admission/lifecycle/science. |
 | `crates/morgana/src/api/mod.rs` | Add (implemented) | session.rs/errors/reports and canonical public domain re-exports. |
-| `crates/morgana/src/inputs/mod.rs` | Add (implemented) | us_configuration.rs and synthetic.rs versioned source loader/materialization. |
+| `crates/morgana/src/inputs/mod.rs` | Add (implemented) | us_configuration.rs/synthetic.rs source loaders; ucd.rs structural capture inspection. |
 | `bindings/python/src/lib.rs` | Add (implemented) | Optional native configuration/document/measurement/session/report modules. |
 | `crates/phy/tests` | Add (implemented) | Independent stage/source cases, not only TX/RX round trips. |
 | `crates/morgana/tests` | Add (implemented) | Actual reference API, controls, documents, failures and ownership. |
@@ -4300,6 +4345,7 @@ are re-exported by `crates/morgana/src/api/mod.rs`; Rust ownership is canonical.
 | `run()`, `run_with_control(control)` | Same names | Same Rust engine; native releases interpreter access and returns owned results. |
 | `RunControl::new/pause/resume/cancel/progress` | `RunControl()`, `pause/resume/cancel/progress_json` | Shared bounded control; acknowledged pause retains stack and excludes paused time. |
 | `ConfigurationDocument::from_json/to_json/inventory` | Same names | Full retained named inventory; unknown versions/fields reject. |
+| `UcdCapture::from_mac_management/original_bytes/original_sha256/to_json` | Same names | Bounded offline structural inspection; raw Rust header/TLV getters and equivalent native JSON, immutable originals and zero-based error offsets. No configuration/run side effects. |
 | `ConfigurationDocument::original_bytes/original_sha256` | Same names | Exact admitted source bytes and SHA-256, distinct from canonical serialization. |
 | `PreEqBank::unity/normalized/coefficients/generation` | Same names/property | One numerical normalization/application owner; full physical indices retained. |
 | `SyntheticRxmer::new(config,id,db)` | `SyntheticRxmer(config,id,mer_db)` | Explicit synthetic unit-probe-reference input; nulls stay null. |

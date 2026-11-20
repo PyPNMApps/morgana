@@ -88,7 +88,7 @@ def main() -> None:
                     raise RuntimeError("Packaged dependency notice changed")
         archive.extractall(runtime)
     environment = dict(os.environ, PYTHONPATH=str(runtime))
-    for setting, name in [("MORGANA_RUST_REFERENCE_JSON", "rust-reference.json"), ("MORGANA_RUST_MEASUREMENTS_JSON", "rust-measurements.json"), ("MORGANA_RUST_DOCUMENT_JSON", "rust-document.json"), ("MORGANA_RUST_SYNTHETIC_JSON", "rust-synthetic-document.json")]:
+    for setting, name in [("MORGANA_RUST_UCD_JSON", "rust-ucd.json"), ("MORGANA_RUST_REFERENCE_JSON", "rust-reference.json"), ("MORGANA_RUST_MEASUREMENTS_JSON", "rust-measurements.json"), ("MORGANA_RUST_DOCUMENT_JSON", "rust-document.json"), ("MORGANA_RUST_SYNTHETIC_JSON", "rust-synthetic-document.json")]:
         environment[setting] = str(ROOT / "target/python-runtime" / name)
     subprocess.run([sys.executable, "-B", "-m", "unittest", "discover", "-s", "bindings/python/tests", "-v"], cwd=ROOT, env=environment, stdin=subprocess.DEVNULL, check=True, timeout=120)
     print(f"Verified local Linux wheel: {wheels[0].relative_to(ROOT)}; {len(names)} package entries, {dependencies} attributed dependencies")

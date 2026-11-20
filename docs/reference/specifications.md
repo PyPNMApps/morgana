@@ -30,3 +30,10 @@ See the [completed LDPC audit](../development/features/ldpc-source-audit/validat
 for the resolved transcription findings and independent source fixtures. The
 [backend validation](../development/features/backend-stages/validation.md) records
 additional rendered PHY/MULPI source pages and separate pending capture research.
+
+The [capture source/fixture audit](../development/features/capture-formats/design.md)
+pins MULPI I25 for Type51 UCD inspection. Its exact hash, source sections,
+original rendered pages and authored fixture provenance are recorded there.
+This wire format is controlled by MULPI, independently from PHY numerology and
+OSSI PNM file formats. Private PDFs remain excluded; no source checkout is needed
+to use the implemented inspector or its tracked fixtures.

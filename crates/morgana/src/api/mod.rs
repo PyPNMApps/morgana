@@ -6,8 +6,11 @@
 mod error;
 mod reports;
 mod session;
-pub use crate::inputs::{ConfigurationDocument, ConfigurationPreset, RunSettings};
-pub use error::{ApiError, ApiResult};
+pub use crate::inputs::{
+    ConfigurationDocument, ConfigurationPreset, RunSettings, UcdBurst, UcdCapture, UcdHeader,
+    UcdTlv,
+};
+pub use error::{ApiError, ApiResult, CaptureFailure};
 pub use morgana_phy::channel::ChannelConfig;
 pub use morgana_phy::instruments::{QamSnapshot, SpectrumSnapshot, Tap};
 pub use morgana_phy::measurements::{

@@ -4,6 +4,8 @@
 - [Accepted backend delivery decisions](../architecture.md#accepted-backend-delivery-decisions)
   and [milestone/validation record](features/backend-delivery/design.md)
 - [Backend stage implementation and independent cases](features/backend-stages/design.md)
+- [Upstream capture format/fixture verification](features/capture-formats/design.md)
+  and [UCD inspection acceptance](features/capture-formats/validation.md)
 - [Requirements baseline](../requirements.md) and
   [consolidation/validation record](features/requirements/design.md)
 - [Planned code layout](../architecture.md#planned-code-layout) and

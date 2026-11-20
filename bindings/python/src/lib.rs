@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 //! Optional native conversion/dispatch only; core builds never require Python.
+mod capture;
 mod configuration;
 mod document;
 mod measurements;
@@ -25,9 +26,15 @@ fn error(error: impl Into<api::ApiError>) -> PyErr {
                 | morgana::api::PhyError::Unsupported { field }
                 | morgana::api::PhyError::Association { field },
             ) => Some(*field),
+            api::ApiError::Capture { field, .. } => Some(*field),
             _ => None,
         };
         let _ = exception.value(py).setattr("field", field);
+        let offset = match &error {
+            api::ApiError::Capture { offset, .. } => Some(*offset),
+            _ => None,
+        };
+        let _ = exception.value(py).setattr("offset", offset);
         exception
     })
 }
@@ -41,6 +48,7 @@ fn _native(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add("ApiError", module.py().get_type::<ApiError>())?;
     configuration::register(module)?;
     document::register(module)?;
+    capture::register(module)?;
     simulation::register(module)?;
     reports::register(module)?;
     measurements::register(module)?;

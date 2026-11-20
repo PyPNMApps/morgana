@@ -2,6 +2,9 @@
 
 Current execution status: bounded synthetic stage science, generic source JSON
 and native APIs are recorded in the [backend validation](../backend-stages/validation.md).
+The [capture-format milestone](../capture-formats/design.md) adds bounded raw
+Type51 UCD inspection; captured-channel projection and PNM formats retain
+separate delivery gates.
 The design history below is retained; capture/import, broader PHY and presentation
 items do not gain runtime acceptance from completed design checkboxes.
 

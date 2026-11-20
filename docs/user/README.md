@@ -1,5 +1,7 @@
 # MORGANA user guides
 
+- [Offline UCD capture inspection](capture-inspection.md)
+
 - [Upstream experiments](upstream-experiments.md): supported stages, limits,
   generic configuration, CLI, Rust/native Python, controls and actual reports.
 - [Configuration examples](../../examples/configuration/README.md): generic
