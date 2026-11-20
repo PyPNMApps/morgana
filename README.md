@@ -139,6 +139,7 @@ remain unimplemented.
 ## Documentation and development guidance
 
 - [Development index](docs/development/README.md): feature plans and validation records.
+- [Requirements](docs/requirements.md): observable behavior, acceptance and delivery traceability.
 - [Architecture](docs/architecture.md): current owners and planned processing contracts.
 - [Foundation design](docs/development/features/foundation/design.md): requirements and reuse decisions.
 - [Agent instructions](AGENTS.md) and [skill catalog](skills/README.md): local engineering and pinned PHY guidance.

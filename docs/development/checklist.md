@@ -2,7 +2,12 @@
 
 Current authorization: preserve this checkpoint, adopt local guidance/tooling and
 implement development setup; further scientific implementation awaits plan approval.
-See [architecture](../architecture.md) and [foundation design](features/foundation/design.md).
+See [requirements](../requirements.md), [architecture](../architecture.md) and
+[foundation design](features/foundation/design.md).
+
+- [x] REQ-BASELINE-01: Consolidate the current architecture into a project-wide
+  [requirements baseline](../requirements.md) with stable behavior/acceptance IDs,
+  scope, owner/delivery traceability and explicit evidence gaps; documentation only.
 
 - [x] FOUNDATION-01: Inspect PDE and record selective adoption decisions.
 - [x] FOUNDATION-02: Inspect MERLIN and document reusable/upstream-specific owners.

@@ -3,6 +3,8 @@
 Status: unfinished checkpoint; further scientific implementation awaits plan
 approval. The [foundation design](development/features/foundation/design.md)
 contains requirements, reuse assessments, evidence, API proposal and milestones.
+The consolidated [requirements baseline](requirements.md) defines stable behavior
+and acceptance IDs; this document owns their design and planned code/test layout.
 
 **Table of contents**
 
